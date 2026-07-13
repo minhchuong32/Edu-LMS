@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/common/Card";
-import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
 
 export default function GuestLanding() {
-  const { login, isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Redirect authenticated users to their correct workspace dashboard
   useEffect(() => {
@@ -29,25 +23,6 @@ export default function GuestLanding() {
       }
     }
   }, [isAuthenticated, user, navigate]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    if (!email || !password) {
-      setError("Vui lòng điền đầy đủ thông tin đăng nhập.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await login(email, password);
-    } catch (err) {
-      setError(err?.message || "Sai email hoặc mật khẩu. Vui lòng kiểm tra lại.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const lmsFeatures = [
     {
@@ -106,12 +81,18 @@ export default function GuestLanding() {
           </div>
 
           <div className="flex items-center gap-6 text-sm font-semibold text-neutral-600">
-            <a href="#about" className="hover:text-primary transition-colors">Giới thiệu</a>
-            <a href="#features" className="hover:text-primary transition-colors">Tính năng</a>
-            <div className="h-4 w-px bg-neutral-200"></div>
-            <span className="text-xs font-bold bg-neutral-100 text-neutral-600 px-3 py-1 rounded-full border border-neutral-200">
-              Hotline: 1900 12xx
-            </span>
+            <a href="#about" className="hover:text-primary transition-colors hidden md:block">Giới thiệu</a>
+            <a href="#features" className="hover:text-primary transition-colors hidden md:block">Tính năng</a>
+            <div className="h-4 w-px bg-neutral-200 hidden md:block"></div>
+            
+            {/* Header Login CTA Button */}
+            <Button
+              variant="primary"
+              className="text-xs px-4 py-2 font-extrabold rounded-lg shadow-sm shadow-primary/10"
+              onClick={() => navigate("/login")}
+            >
+              Đăng nhập
+            </Button>
           </div>
         </div>
       </header>
@@ -150,81 +131,43 @@ export default function GuestLanding() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: LOGIN FORM */}
+        {/* RIGHT COLUMN: PLATFORM METRICS & STATS */}
         <div className="w-full lg:w-[420px] flex-shrink-0">
           <Card className="p-8 shadow-xl border-neutral-200/50 space-y-6">
-            <div className="text-center space-y-1">
-              <h3 className="text-xl font-extrabold text-neutral-900">Đăng nhập hệ thống</h3>
-              <p className="text-xs text-neutral-600">
-                Nhập tài khoản được cấp bởi Quản trị viên nhà trường
+            <div className="space-y-2">
+              <h3 className="text-lg font-extrabold text-neutral-900">Môi trường Giáo dục Số</h3>
+              <p className="text-xs text-neutral-600 leading-relaxed">
+                Hệ thống hỗ trợ quản lý học tập đồng bộ dữ liệu thời gian thực giữa các phân hệ vai trò:
               </p>
             </div>
 
-            {error && (
-              <div className="p-3.5 bg-rose-50 border border-danger/20 text-danger text-xs font-semibold rounded-lg flex items-center gap-2">
-                <svg className="w-4.5 h-4.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span>{error}</span>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3.5 bg-neutral-50 border border-neutral-200 rounded-lg">
+                <span className="text-xs font-bold text-neutral-900">Ban Giám Hiệu</span>
+                <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-md border border-orange-100 uppercase tracking-wide">Admin</span>
               </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Địa chỉ Email"
-                id="email-input"
-                type="email"
-                placeholder="e.g. admin@edulms.edu"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-
-              <Input
-                label="Mật khẩu"
-                id="password-input"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-
-              <div className="flex items-center justify-between text-xs pt-1">
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-neutral-600">
-                  <input
-                    type="checkbox"
-                    className="rounded border-neutral-200 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                  />
-                  Ghi nhớ đăng nhập
-                </label>
-                <span
-                  onClick={() => navigate("/activate")}
-                  className="font-bold text-primary hover:text-primary-hover hover:underline cursor-pointer"
-                >
-                  Kích hoạt tài khoản mới
-                </span>
+              <div className="flex items-center justify-between p-3.5 bg-neutral-50 border border-neutral-200 rounded-lg">
+                <span className="text-xs font-bold text-neutral-900">Hội Đồng Sư Phạm</span>
+                <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-100 uppercase tracking-wide">Teacher</span>
               </div>
+              <div className="flex items-center justify-between p-3.5 bg-neutral-50 border border-neutral-200 rounded-lg">
+                <span className="text-xs font-bold text-neutral-900">Học Sinh Phổ Thông</span>
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100 uppercase tracking-wide">Student</span>
+              </div>
+              <div className="flex items-center justify-between p-3.5 bg-neutral-50 border border-neutral-200 rounded-lg">
+                <span className="text-xs font-bold text-neutral-900">Phụ Huynh Học Sinh</span>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100 uppercase tracking-wide">Parent</span>
+              </div>
+            </div>
 
-              <Button type="submit" variant="primary" className="w-full font-bold py-2.5 mt-2" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    Đang đăng nhập...
-                  </>
-                ) : (
-                  "Đăng Nhập"
-                )}
+            <div className="pt-2">
+              <Button
+                variant="primary"
+                className="w-full font-bold py-3 text-sm shadow-md shadow-primary/10"
+                onClick={() => navigate("/login")}
+              >
+                Đăng Nhập Hệ Thống
               </Button>
-            </form>
-
-            {/* Quick Login reference list */}
-            <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-lg space-y-1.5">
-              <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">Tài khoản thử nghiệm:</p>
-              <div className="text-[11px] text-neutral-600 font-medium space-y-1 leading-normal">
-                <p>🔑 <span className="font-semibold">admin@edulms.edu</span> (Mật khẩu bất kỳ)</p>
-                <p>🔑 <span className="font-semibold">teacher@edulms.edu</span> (Mật khẩu bất kỳ)</p>
-                <p>🔑 <span className="font-semibold">student@edulms.edu</span> (Mật khẩu bất kỳ)</p>
-                <p>🔑 <span className="font-semibold">parent@edulms.edu</span> (Mật khẩu bất kỳ)</p>
-              </div>
             </div>
           </Card>
         </div>
