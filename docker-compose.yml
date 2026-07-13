@@ -1,0 +1,31 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: edulms-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
+
+  backend:
+    build:
+      context: ./edulms-backend
+      dockerfile: Dockerfile
+    container_name: edulms-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./edulms-backend:/app
+      - /app/node_modules
+    environment:
+      - PORT=5000
+      - NODE_ENV=development
+      - MONGO_URI=mongodb://admin:adminpassword@mongodb:27017/edulms?authSource=admin
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_data:
