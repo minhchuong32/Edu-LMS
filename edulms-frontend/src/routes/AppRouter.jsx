@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import GuestLanding from "../features/auth/GuestLanding";
 import Activate from "../features/auth/Activate";
+import Login from "../features/auth/Login";
 import AdminLayout from "../layouts/AdminLayout";
 import TeacherLayout from "../layouts/TeacherLayout";
 import StudentLayout from "../layouts/StudentLayout";
@@ -322,7 +323,7 @@ export default function AppRouter() {
       <Routes>
         {/* Public Landing & Authentication Routes */}
         <Route path="/" element={<GuestLanding />} />
-        <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/activate" element={<Activate />} />
 
         {/* Protected Session Routes */}

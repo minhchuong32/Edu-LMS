@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/common/Card";
@@ -6,13 +6,24 @@ import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const role = user.role.toLowerCase();
+      if (role === "admin") navigate("/admin");
+      else if (role === "teacher") navigate("/teacher");
+      else if (role === "parent") navigate("/parent");
+      else navigate("/student");
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,6 +57,19 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center font-sans p-6">
       <Card className="max-w-md w-full p-8 shadow-xl space-y-6">
+        {/* Back button */}
+        <div className="flex justify-start">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-1 text-xs text-neutral-600 hover:text-primary transition-colors font-semibold"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Quay lại trang chủ
+          </button>
+        </div>
+
         {/* Brand identity */}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 bg-primary text-white font-extrabold font-outfit rounded-xl flex items-center justify-center text-2xl mx-auto shadow-md shadow-primary/20">
