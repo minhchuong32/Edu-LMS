@@ -11,6 +11,7 @@ import RoleRoute from "./RoleRoute";
 import Card from "../components/common/Card";
 import Badge from "../components/common/Badge";
 import Button from "../components/common/Button";
+import UserManagement from "../features/users/UserManagement";
 
 // Styled placeholder component for workspace sub-views
 const PagePlaceholder = ({ title, desc, icon, badgeText, badgeRole }) => (
@@ -333,7 +334,7 @@ export default function AppRouter() {
           <Route element={<RoleRoute allowedRoles={["admin"]} />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
-              <Route path="users" element={<AdminUsers />} />
+              <Route path="users" element={<UserManagement />} />
               <Route path="courses" element={<AdminCourses />} />
               <Route path="logs" element={<AdminLogs />} />
               <Route path="settings" element={<AdminSettings />} />
