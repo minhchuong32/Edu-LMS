@@ -275,6 +275,33 @@ const importUsersFromExcel = async (fileBuffer, defaultRole) => {
   };
 };
 
+/**
+ * Retrieve user list based on query criteria (search & role)
+ */
+const getUsers = async (filters = {}) => {
+  const { role, search } = filters;
+  const query = {};
+
+  if (role && ["student", "teacher", "parent", "admin"].includes(role)) {
+    query.role = role;
+  }
+
+  if (search) {
+    const searchRegex = new RegExp(search.trim(), "i");
+    query.$or = [
+      { name: searchRegex },
+      { email: searchRegex },
+      { studentCode: searchRegex },
+      { teacherCode: searchRegex }
+    ];
+  }
+
+  return await User.find(query)
+    .populate("classRef", "name")
+    .sort({ createdAt: -1 });
+};
+
 module.exports = {
-  importUsersFromExcel
+  importUsersFromExcel,
+  getUsers
 };
