@@ -1,53 +1,21 @@
 const express = require("express");
 const router = express.Router();
+const authController = require("../controllers/auth.controller");
+const authMiddleware = require("../middlewares/auth.middleware");
 
 // POST /api/v1/auth/login
-router.post("/login", async (req, res, next) => {
-  try {
-    res.status(200).json({
-      success: true,
-      message: "Login successful (stub)",
-      token: "jwt-token-stub",
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST /api/v1/auth/activate
-router.post("/activate", async (req, res, next) => {
-  try {
-    res.status(200).json({
-      success: true,
-      message: "Account activated successfully (stub)",
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST /api/v1/auth/refresh
-router.post("/refresh", async (req, res, next) => {
-  try {
-    res.status(200).json({
-      success: true,
-      token: "new-jwt-token-stub",
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post("/login", authController.login);
 
 // POST /api/v1/auth/logout
-router.post("/logout", async (req, res, next) => {
-  try {
-    res.status(200).json({
-      success: true,
-      message: "Logout successful (stub)",
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post("/logout", authController.logout);
+
+// POST /api/v1/auth/refresh
+router.post("/refresh", authController.refresh);
+
+// POST /api/v1/auth/activate
+router.post("/activate", authController.activate);
+
+// GET /api/v1/auth/me
+router.get("/me", authMiddleware, authController.getMe);
 
 module.exports = router;
