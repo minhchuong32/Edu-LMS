@@ -228,12 +228,16 @@ const activate = async (req, res, next) => {
       throw new ApiError(400, "Mật khẩu phải chứa ít nhất 6 ký tự.");
     }
 
-    // Find user by email and either studentCode or teacherCode matching code
+    // Escape special regex characters in the code
+    const escapedCode = code.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const codeRegex = new RegExp(`^${escapedCode}$`, "i");
+
+    // Find user by email and either studentCode or teacherCode matching code case-insensitively
     const user = await User.findOne({
       email: email.toLowerCase().trim(),
       $or: [
-        { studentCode: code.trim() },
-        { teacherCode: code.trim() },
+        { studentCode: codeRegex },
+        { teacherCode: codeRegex },
       ],
     });
 
