@@ -266,6 +266,49 @@ const activate = async (req, res, next) => {
 };
 
 /**
+ * Verify activation details (code and email) before password setup
+ */
+const verifyActivation = async (req, res, next) => {
+  try {
+    const { code, email } = req.body;
+
+    if (!code || !email) {
+      throw new ApiError(400, "Vui lòng nhập đầy đủ mã định danh và email.");
+    }
+
+    // Escape special regex characters in the code
+    const escapedCode = code.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const codeRegex = new RegExp(`^${escapedCode}$`, "i");
+
+    // Find user by email and either studentCode or teacherCode matching code case-insensitively
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+      $or: [
+        { studentCode: codeRegex },
+        { teacherCode: codeRegex },
+      ],
+    });
+
+    if (!user) {
+      throw new ApiError(
+        404,
+        "Không tìm thấy tài khoản tương ứng với Email và Mã định danh đã cung cấp."
+      );
+    }
+
+    if (user.isActivated) {
+      throw new ApiError(400, "Tài khoản đã được kích hoạt trước đó.");
+    }
+
+    res.status(200).json(
+      new ApiResponse(200, { name: user.name }, "Xác thực thông tin kích hoạt thành công.")
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get current authenticated user details
  */
 const getMe = async (req, res, next) => {
@@ -283,7 +326,7 @@ const getMe = async (req, res, next) => {
             teacherCode: req.user.teacherCode,
           },
         },
-        "Lấy thông tin người dùng hiện tại thành công."
+          "Lấy thông tin người dùng hiện tại thành công."
       )
     );
   } catch (error) {
@@ -296,5 +339,7 @@ module.exports = {
   logout,
   refresh,
   activate,
+  verifyActivation,
   getMe,
 };
+

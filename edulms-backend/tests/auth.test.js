@@ -176,3 +176,123 @@ describe("Auth Activation API (POST /api/v1/auth/activate)", () => {
     expect(response.body.message).toBe("Vui lòng nhập đầy đủ mã định danh, email và mật khẩu mới.");
   });
 });
+
+describe("Auth Activation Verification API (POST /api/v1/auth/verify-activation)", () => {
+  beforeAll(async () => {
+    // Connect to test database
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(testMongoUri);
+    }
+  });
+
+  afterAll(async () => {
+    // Close DB connection
+    await mongoose.connection.close();
+  });
+
+  beforeEach(async () => {
+    // Clear user collection before each test
+    await User.deleteMany({});
+  });
+
+  test("Should verify details successfully with correct unactivated details", async () => {
+    const testUser = await User.create({
+      name: "Nguyen Van Verification",
+      email: "verifystudent@edulms.edu",
+      password: "tempPassword123",
+      role: "student",
+      studentCode: "HS-5555",
+      isActivated: false,
+    });
+
+    const response = await request
+      .post("/api/v1/auth/verify-activation")
+      .send({
+        code: "HS-5555",
+        email: "verifystudent@edulms.edu",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.name).toBe("Nguyen Van Verification");
+  });
+
+  test("Should support case-insensitive matching for studentCode", async () => {
+    await User.create({
+      name: "Tran Thi Verification",
+      email: "verifyteacher@edulms.edu",
+      password: "tempPassword123",
+      role: "teacher",
+      teacherCode: "GV-4444",
+      isActivated: false,
+    });
+
+    const response = await request
+      .post("/api/v1/auth/verify-activation")
+      .send({
+        code: "gv-4444",
+        email: "verifyteacher@edulms.edu",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+  });
+
+  test("Should fail verification if already activated", async () => {
+    await User.create({
+      name: "Nguyen Van Active",
+      email: "active@edulms.edu",
+      password: "alreadyHashedPassword",
+      role: "student",
+      studentCode: "HS-7777",
+      isActivated: true,
+    });
+
+    const response = await request
+      .post("/api/v1/auth/verify-activation")
+      .send({
+        code: "HS-7777",
+        email: "active@edulms.edu",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toBe("Tài khoản đã được kích hoạt trước đó.");
+  });
+
+  test("Should fail verification if student/teacher code does not match email", async () => {
+    await User.create({
+      name: "Nguyen Van Test",
+      email: "teststudent@edulms.edu",
+      password: "tempPassword123",
+      role: "student",
+      studentCode: "HS-9999",
+      isActivated: false,
+    });
+
+    const response = await request
+      .post("/api/v1/auth/verify-activation")
+      .send({
+        code: "HS-1111", // Mismatched code
+        email: "teststudent@edulms.edu",
+      });
+
+    expect(response.status).toBe(404);
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toContain("Không tìm thấy tài khoản");
+  });
+
+  test("Should fail verification if required fields are missing", async () => {
+    const response = await request
+      .post("/api/v1/auth/verify-activation")
+      .send({
+        code: "HS-9999",
+        email: "",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toBe("Vui lòng nhập đầy đủ mã định danh và email.");
+  });
+});
+
