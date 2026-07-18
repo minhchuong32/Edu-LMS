@@ -85,6 +85,16 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Verify account activation info (Step 1)
+  const verifyActivation = async (code, email) => {
+    setLoading(true);
+    try {
+      return await authService.verifyActivation(code, email);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Logout handler
   const logout = async () => {
     setLoading(true);
@@ -108,7 +118,9 @@ export function AuthProvider({ children }) {
     login,
     logout,
     activateAccount,
+    verifyActivation,
   };
+
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

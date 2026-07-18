@@ -96,8 +96,24 @@ async function runSeed() {
       isActivated: true,
     });
 
-    await Promise.all([admin.save(), teacher.save(), student.save(), parent.save()]);
-    console.log("Đã tạo người dùng: Admin, Giáo viên, Học sinh, Phụ huynh thành công.");
+    const unactiveStudent = new User({
+      name: "Nguyen Unactive",
+      email: "unactive@edulms.edu",
+      password: "tempPassword123",
+      role: "student",
+      studentCode: "HS-7777",
+      isActivated: false,
+    });
+
+    await Promise.all([
+      admin.save(),
+      teacher.save(),
+      student.save(),
+      parent.save(),
+      unactiveStudent.save()
+    ]);
+    console.log("Đã tạo người dùng: Admin, Giáo viên, Học sinh, Phụ huynh và Học sinh chưa kích hoạt thành công.");
+
 
     // 5. Khởi tạo Lớp học (Class) và liên kết chủ nhiệm
     console.log("-> Đang tạo Lớp học...");

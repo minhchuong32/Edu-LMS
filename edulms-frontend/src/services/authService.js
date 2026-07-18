@@ -24,6 +24,13 @@ export const activateAccount = async (code, email, password) => {
   });
 };
 
+export const verifyActivation = async (code, email) => {
+  return axiosClient.post("/auth/verify-activation", {
+    code,
+    email,
+  });
+};
+
 export const logout = async () => {
   return axiosClient.post("/auth/logout").catch(() => null);
 };
@@ -35,8 +42,10 @@ export const getMe = async () => {
 const authService = {
   login,
   activateAccount,
+  verifyActivation,
   logout,
   getMe
 };
+
 
 export default authService;

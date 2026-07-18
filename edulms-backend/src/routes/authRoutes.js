@@ -15,6 +15,10 @@ router.post("/refresh", authController.refresh);
 // POST /api/v1/auth/activate
 router.post("/activate", authController.activate);
 
+// POST /api/v1/auth/verify-activation
+router.post("/verify-activation", authController.verifyActivation);
+
+
 // GET /api/v1/auth/me
 router.get("/me", authMiddleware, authController.getMe);
 
