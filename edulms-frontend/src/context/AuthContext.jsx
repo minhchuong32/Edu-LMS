@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import axiosClient from "../api/axiosClient";
+import { createContext, useContext, useState, useEffect } from "react";
+import authService from "../services/authService";
 
 const AuthContext = createContext(null);
 
@@ -25,11 +25,12 @@ export function AuthProvider({ children }) {
       if (storedToken) {
         try {
           // Verify with server. If the server lacks this endpoint, fall back to our stored session
-          const response = await axiosClient.get("/auth/me").catch(() => null);
+          const response = await authService.getMe();
           
-          if (response?.success && response?.user) {
-            setUser(response.user);
-            localStorage.setItem("user", JSON.stringify(response.user));
+          if (response?.success && (response?.data?.user || response?.user)) {
+            const userProfile = response.data?.user || response.user;
+            setUser(userProfile);
+            localStorage.setItem("user", JSON.stringify(userProfile));
             setIsAuthenticated(true);
           } else if (storedUser) {
             // Keep the logged-in user role session details
@@ -42,7 +43,7 @@ export function AuthProvider({ children }) {
             setUser(null);
             setIsAuthenticated(false);
           }
-        } catch (err) {
+        } catch {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("user");
           setUser(null);
@@ -62,17 +63,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const response = await axiosClient.post("/auth/login", { email, password });
-      
-      const accessToken = response.token || "demo-access-token-jwt";
-      const userData = response.user || {
-        name: email.split("@")[0].replace(".", " "),
-        email: email,
-        role: email.includes("admin") ? "admin" :
-              email.includes("teacher") ? "teacher" :
-              email.includes("parent") ? "parent" : "student",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-      };
+      const { token: accessToken, user: userData } = await authService.login(email, password);
 
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("user", JSON.stringify(userData));
@@ -80,8 +71,6 @@ export function AuthProvider({ children }) {
       setUser(userData);
       setIsAuthenticated(true);
       return userData;
-    } catch (error) {
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -91,14 +80,17 @@ export function AuthProvider({ children }) {
   const activateAccount = async (code, email, password) => {
     setLoading(true);
     try {
-      const response = await axiosClient.post("/auth/activate", {
-        code,
-        email,
-        password,
-      });
-      return response;
-    } catch (error) {
-      throw error;
+      return await authService.activateAccount(code, email, password);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify account activation info (Step 1)
+  const verifyActivation = async (code, email) => {
+    setLoading(true);
+    try {
+      return await authService.verifyActivation(code, email);
     } finally {
       setLoading(false);
     }
@@ -108,7 +100,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     setLoading(true);
     try {
-      await axiosClient.post("/auth/logout").catch(() => null);
+      await authService.logout();
     } finally {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
@@ -127,7 +119,9 @@ export function AuthProvider({ children }) {
     login,
     logout,
     activateAccount,
+    verifyActivation,
   };
+
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

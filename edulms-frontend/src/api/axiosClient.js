@@ -1,14 +1,15 @@
 import axios from "axios";
 
+// Khởi tạo Axios Instance
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Crucial for receiving httpOnly refresh tokens in cookies
+  withCredentials: true, // Quan trọng để gửi/nhận cookie (Refresh Token)
 });
 
-// Request Interceptor: Attach bearer tokens to outgoing API requests
+// Request Interceptor (Gắn Bearer Token)
 axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
@@ -22,38 +23,34 @@ axiosClient.interceptors.request.use(
   }
 );
 
-// Response Interceptor: Capture authentication failures and handle tokens rotation
+// Response Interceptor (Đánh chặn 401 & Tự động Refresh)
 axiosClient.interceptors.response.use(
-  (response) => {
-    return response.data; // Return data block directly for clean controllers usage
-  },
+  (response) => response.data,
   async (error) => {
     const originalRequest = error.config;
-
-    // Trigger Token Rotation if request fails with 401 (Unauthorized) and has not been retried
+    // Nếu lỗi là 401 (Unauthorized) và request này chưa từng được thử lại (_retry)
     if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+      originalRequest._retry = true; // Đánh dấu đã thử lại để tránh lặp vô hạn
       try {
-        // Attempt rotation via the refresh API endpoint
+        // Sử dụng instance axios gốc để tránh gọi đè vào interceptor của axiosClient
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1"}/auth/refresh`,
           {},
           { withCredentials: true }
         );
-        const { token } = response.data;
-
+        
+        // Trích xuất accessToken mới từ cấu trúc ApiResponse của backend
+        const token = response.data?.data?.token || response.data?.token;
         localStorage.setItem("accessToken", token);
         originalRequest.headers.Authorization = `Bearer ${token}`;
-
-        return axiosClient(originalRequest); // Retry original request with new token
+        return axiosClient(originalRequest); // Gửi lại request ban đầu với token mới
       } catch (refreshError) {
-        // Refresh token expired or invalid; clear credentials and redirect to login
+        // Khi Refresh Token hết hạn hoặc không hợp lệ -> Đăng xuất người dùng
         localStorage.removeItem("accessToken");
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }
-
     return Promise.reject(error.response?.data || error.message);
   }
 );

@@ -24,6 +24,22 @@ const importUsers = async (req, res, next) => {
   }
 };
 
+/**
+ * Controller to list users with filters
+ */
+const listUsers = async (req, res, next) => {
+  try {
+    const { role, search } = req.query;
+    const users = await userService.getUsers({ role, search });
+    res.status(200).json(
+      new ApiResponse(200, users, "Lấy danh sách người dùng thành công")
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
-  importUsers
+  importUsers,
+  listUsers
 };
