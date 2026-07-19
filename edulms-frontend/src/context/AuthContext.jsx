@@ -27,9 +27,10 @@ export function AuthProvider({ children }) {
           // Verify with server. If the server lacks this endpoint, fall back to our stored session
           const response = await authService.getMe();
           
-          if (response?.success && response?.user) {
-            setUser(response.user);
-            localStorage.setItem("user", JSON.stringify(response.user));
+          if (response?.success && (response?.data?.user || response?.user)) {
+            const userProfile = response.data?.user || response.user;
+            setUser(userProfile);
+            localStorage.setItem("user", JSON.stringify(userProfile));
             setIsAuthenticated(true);
           } else if (storedUser) {
             // Keep the logged-in user role session details

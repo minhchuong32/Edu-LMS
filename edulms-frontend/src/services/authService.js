@@ -3,8 +3,8 @@ import axiosClient from "../api/axiosClient";
 export const login = async (email, password) => {
   const response = await axiosClient.post("/auth/login", { email, password });
   
-  const token = response.token || "demo-access-token-jwt";
-  const user = response.user || {
+  const token = response.data?.token || response.token || "demo-access-token-jwt";
+  const user = response.data?.user || response.user || {
     name: email.split("@")[0].replace(".", " "),
     email: email,
     role: email.includes("admin") ? "admin" :
