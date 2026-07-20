@@ -1,7 +1,11 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function PrivateRoute() {
+/**
+ * Route wrapper for protecting authenticated routes.
+ * Redirects unauthenticated users to /login and displays a spinner while initializing session.
+ */
+export default function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
@@ -15,5 +19,9 @@ export default function PrivateRoute() {
     );
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children ? children : <Outlet />;
 }
