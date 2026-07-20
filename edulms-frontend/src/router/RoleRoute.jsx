@@ -4,11 +4,18 @@ import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 
-export default function RoleRoute({ allowedRoles }) {
+/**
+ * Route wrapper for role-based access control (RBAC).
+ * @param {Array<string>|string} allowedRoles Single role string or array of allowed role strings
+ * @param {React.ReactNode} [children] Optional children to render instead of Outlet
+ */
+export default function RoleRoute({ allowedRoles = [], children }) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const isAuthorized = user && allowedRoles.includes(user.role.toLowerCase());
+  const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+  const userRole = user?.role?.toLowerCase();
+  const isAuthorized = user && rolesArray.some((r) => r.toLowerCase() === userRole);
 
   if (!isAuthorized) {
     return (
@@ -22,7 +29,7 @@ export default function RoleRoute({ allowedRoles }) {
           <div>
             <h3 className="font-sans font-extrabold text-xl text-neutral-900 mb-1">Access Denied</h3>
             <p className="text-sm text-neutral-600 leading-relaxed mb-4">
-              Your profile role (<span className="font-bold uppercase text-neutral-900">{user?.role}</span>) does not have privileges to view this section.
+              Your profile role (<span className="font-bold uppercase text-neutral-900">{user?.role || "UNKNOWN"}</span>) does not have privileges to view this section.
             </p>
             <div className="flex justify-center gap-2">
               <Badge variant="danger">Restricted Area</Badge>
@@ -38,5 +45,5 @@ export default function RoleRoute({ allowedRoles }) {
     );
   }
 
-  return <Outlet />;
+  return children ? children : <Outlet />;
 }
