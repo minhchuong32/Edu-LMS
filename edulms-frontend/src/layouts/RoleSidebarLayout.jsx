@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function RoleSidebarLayout({ role, navItems = [], user: propUser }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user: authUser, logout } = useAuth();
 
   const currentUser = propUser || authUser || {
@@ -18,6 +19,52 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans flex text-neutral-600 antialiased">
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutConfirm && (
+        <div
+          className="fixed inset-0 bg-neutral-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity"
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-neutral-100 transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-danger flex items-center justify-center mx-auto mb-4 ring-8 ring-rose-50/50">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </div>
+
+            <h3 className="text-base font-bold text-center text-neutral-900 mb-1.5">
+              Xác nhận đăng xuất
+            </h3>
+            <p className="text-xs text-center text-neutral-500 mb-6 leading-relaxed">
+              Bạn có chắc chắn muốn đăng xuất khỏi hệ thống EduLMS không?
+            </p>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 text-xs font-semibold py-2"
+                onClick={() => setShowLogoutConfirm(false)}
+              >
+                Hủy
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1 text-xs font-semibold py-2"
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  logout();
+                }}
+              >
+                Đăng xuất
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MOBILE DRAWER OVERLAY BACKDROP */}
       {mobileOpen && (
         <div
@@ -193,7 +240,7 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
             <Button
               variant="outline"
               className="px-3 py-1.5 text-xs font-semibold h-8 flex items-center gap-1.5 hover:border-danger hover:text-danger hover:bg-rose-50/50 transition"
-              onClick={logout}
+              onClick={() => setShowLogoutConfirm(true)}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -211,4 +258,5 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
     </div>
   );
 }
+
 
