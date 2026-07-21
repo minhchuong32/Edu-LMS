@@ -1,13 +1,16 @@
-import Dashboard from "../features/student/pages/Dashboard";
+import Schedule from "../features/student/pages/Schedule";
 import Courses from "../features/student/pages/Courses";
 import Quizzes from "../features/student/pages/Quizzes";
 import Grades from "../features/student/pages/Grades";
-import Schedule from "../features/student/pages/Schedule";
 
 export const studentRoutes = [
-  { index: true, element: Dashboard },
+  { index: true, element: Schedule },
+  { path: "schedule", element: Schedule },
+  { path: "timetable", element: Schedule },
   { path: "courses", element: Courses },
+  { path: "lessons", element: Courses },
   { path: "quizzes", element: Quizzes },
-  { path: "grades", element: Grades },
-  { path: "schedule", element: Schedule }
+  { path: "assignments", element: Quizzes },
+  { path: "grades", element: Grades }
 ];
+

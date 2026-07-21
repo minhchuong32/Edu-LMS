@@ -1,13 +1,15 @@
-import Dashboard from "../features/teacher/pages/Dashboard";
 import Classes from "../features/teacher/pages/Classes";
-import Syllabus from "../features/teacher/pages/Syllabus";
-import Grading from "../features/teacher/pages/Grading";
+import Attendance from "../features/teacher/pages/Attendance";
 import Assignments from "../features/teacher/pages/Assignments";
+import Grading from "../features/teacher/pages/Grading";
+import Syllabus from "../features/teacher/pages/Syllabus";
 
 export const teacherRoutes = [
-  { index: true, element: Dashboard },
+  { index: true, element: Classes },
   { path: "classes", element: Classes },
-  { path: "syllabus", element: Syllabus },
+  { path: "attendance", element: Attendance },
+  { path: "assignments", element: Assignments },
   { path: "grading", element: Grading },
-  { path: "assignments", element: Assignments }
+  { path: "syllabus", element: Syllabus }
 ];
+
