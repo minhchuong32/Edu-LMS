@@ -1,3 +1,4 @@
+require("dotenv").config();
 const mongoose = require("mongoose");
 const app = require("../src/app");
 const User = require("../src/models/User");
@@ -7,11 +8,11 @@ const request = supertest(app);
 // Use a separate test database inside the same cluster to avoid polluting development data
 let testMongoUri = process.env.MONGO_URI;
 if (testMongoUri && testMongoUri.includes("/?")) {
-  testMongoUri = testMongoUri.replace("/?", "/edulms_test?");
+  testMongoUri = testMongoUri.replace("/?", "/edulms_test_auth?");
 } else if (testMongoUri && testMongoUri.includes("?")) {
-  testMongoUri = testMongoUri.replace("?", "/edulms_test?");
+  testMongoUri = testMongoUri.replace("?", "/edulms_test_auth?");
 } else {
-  testMongoUri = (testMongoUri || "mongodb://localhost:27017") + "/edulms_test";
+  testMongoUri = (testMongoUri || "mongodb://localhost:27017") + "/edulms_test_auth";
 }
 
 describe("Auth Activation API (POST /api/v1/auth/activate)", () => {
