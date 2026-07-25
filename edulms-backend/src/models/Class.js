@@ -16,7 +16,11 @@ const classSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, // Only one class per homeroom teacher
+    },
+    schoolYear: {
+      type: String,
+      required: [true, "School year is required"],
+      trim: true,
     },
   },
   {
@@ -24,7 +28,10 @@ const classSchema = new mongoose.Schema(
   }
 );
 
-// Prevent duplicate class names in same academic year (simulated by name + grade uniqueness)
-classSchema.index({ name: 1, gradeRef: 1 }, { unique: true });
+// Prevent duplicate class names in the same academic year
+classSchema.index({ name: 1, schoolYear: 1 }, { unique: true });
+
+// Prevent duplicate homeroom teacher assignments in the same academic year
+classSchema.index({ homeroomTeacherRef: 1, schoolYear: 1 }, { unique: true });
 
 module.exports = mongoose.model("Class", classSchema);
