@@ -475,4 +475,183 @@ describe("Academic Structures API Integration Tests (Real Database)", () => {
       expect(findCheck).toBeNull();
     });
   });
+
+  describe("Teaching Assignments CRUD API", () => {
+    let createdAssignmentId;
+    let localSubject;
+    let localClass;
+
+    beforeAll(async () => {
+      // Seed a local subject and class for testing assignments
+      localSubject = await Subject.create({ name: "Math Test Assignment", description: "Math description" });
+      localClass = await Class.create({
+        name: "10A10-Test",
+        gradeRef: sampleGrade._id,
+        homeroomTeacherRef: sampleTeacher._id,
+        schoolYear: "2025-2026"
+      });
+    });
+
+    afterAll(async () => {
+      await Subject.deleteOne({ _id: localSubject._id });
+      await Class.deleteOne({ _id: localClass._id });
+    });
+
+    test("Admin can create a valid TeachingAssignment using alias fields", async () => {
+      const response = await request
+        .post("/api/v1/academic/teaching-assignments")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          teacher: sampleTeacher._id,
+          class: localClass._id,
+          subject: localSubject._id
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.teacherRef).toBe(sampleTeacher._id.toString());
+      expect(response.body.data.classRef).toBe(localClass._id.toString());
+      expect(response.body.data.subjectRef).toBe(localSubject._id.toString());
+      createdAssignmentId = response.body.data._id;
+    });
+
+    test("Prevent duplicate teaching assignment for same class and subject", async () => {
+      const response = await request
+        .post("/api/v1/academic/teaching-assignments")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          teacher: sampleTeacher._id,
+          class: localClass._id,
+          subject: localSubject._id
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("đã được phân công");
+    });
+
+    test("Prevent assigning a non-teacher role as teacher", async () => {
+      const anotherSubject = await Subject.create({ name: "Physics Test Assignment" });
+      const response = await request
+        .post("/api/v1/academic/teaching-assignments")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          teacher: studentUser._id, // Student
+          class: localClass._id,
+          subject: anotherSubject._id
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("phải có vai trò là giáo viên");
+      await Subject.deleteOne({ _id: anotherSubject._id });
+    });
+
+    test("Fails if teacher, class, or subject is not found", async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const response = await request
+        .post("/api/v1/academic/teaching-assignments")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          teacher: nonExistentId,
+          class: localClass._id,
+          subject: localSubject._id
+        });
+
+      expect(response.status).toBe(404);
+    });
+
+    test("Students/Teachers cannot create, update, or delete teaching assignments", async () => {
+      // Create test
+      let res = await request
+        .post("/api/v1/academic/teaching-assignments")
+        .set("Authorization", `Bearer ${teacherToken}`)
+        .send({ teacher: sampleTeacher._id, class: localClass._id, subject: localSubject._id });
+      expect(res.status).toBe(403);
+
+      // Update test
+      res = await request
+        .put(`/api/v1/academic/teaching-assignments/${createdAssignmentId}`)
+        .set("Authorization", `Bearer ${studentToken}`)
+        .send({ teacher: teacherUser._id });
+      expect(res.status).toBe(403);
+
+      // Delete test
+      res = await request
+        .delete(`/api/v1/academic/teaching-assignments/${createdAssignmentId}`)
+        .set("Authorization", `Bearer ${teacherToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    test("Teachers/Students can retrieve teaching assignments list", async () => {
+      const response = await request
+        .get("/api/v1/academic/teaching-assignments")
+        .set("Authorization", `Bearer ${teacherToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+    });
+
+    test("Admin can update teaching assignment", async () => {
+      const response = await request
+        .put(`/api/v1/academic/teaching-assignments/${createdAssignmentId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          teacher: teacherUser._id
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.teacherRef._id).toBe(teacherUser._id.toString());
+    });
+
+    test("Prevent deletion if classroom assignments (Assignments) are linked", async () => {
+      const Assignment = require("../src/models/Assignment");
+      const dummyAssignment = await Assignment.create({
+        teachingAssignmentRef: createdAssignmentId,
+        title: "Test Assignment",
+        dueDate: new Date(Date.now() + 86400000)
+      });
+
+      const response = await request
+        .delete(`/api/v1/academic/teaching-assignments/${createdAssignmentId}`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("bài tập lớp học được liên kết");
+
+      // Cleanup
+      await Assignment.deleteOne({ _id: dummyAssignment._id });
+    });
+
+    test("Prevent deletion if exams are linked", async () => {
+      const Exam = require("../src/models/Exam");
+      const dummyExam = await Exam.create({
+        teachingAssignmentRef: createdAssignmentId,
+        title: "Test Exam",
+        duration: 45
+      });
+
+      const response = await request
+        .delete(`/api/v1/academic/teaching-assignments/${createdAssignmentId}`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("đề thi được liên kết");
+
+      // Cleanup
+      await Exam.deleteOne({ _id: dummyExam._id });
+    });
+
+    test("Admin can delete teaching assignment if unlinked", async () => {
+      const response = await request
+        .delete(`/api/v1/academic/teaching-assignments/${createdAssignmentId}`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+
+      const findCheck = await TeachingAssignment.findById(createdAssignmentId);
+      expect(findCheck).toBeNull();
+    });
+  });
 });
