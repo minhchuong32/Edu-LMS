@@ -36,6 +36,16 @@ router.route("/subjects/:id")
   .put(restrictTo("admin"), academicController.updateSubject)
   .delete(restrictTo("admin"), academicController.deleteSubject);
 
+// --- Teaching Assignments Routes ---
+router.route("/teaching-assignments")
+  .get(academicController.getTeachingAssignments)
+  .post(restrictTo("admin"), academicController.createTeachingAssignment);
+
+router.route("/teaching-assignments/:id")
+  .get(academicController.getTeachingAssignmentById)
+  .put(restrictTo("admin"), academicController.updateTeachingAssignment)
+  .delete(restrictTo("admin"), academicController.deleteTeachingAssignment);
+
 // --- Stubs for Assignments & Submissions (preserved from existing stub routes) ---
 router.post("/assignments", async (req, res, next) => {
   try {

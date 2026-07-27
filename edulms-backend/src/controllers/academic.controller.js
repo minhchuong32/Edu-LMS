@@ -141,6 +141,57 @@ const deleteSubject = async (req, res, next) => {
   }
 };
 
+// --- Teaching Assignments Controllers ---
+const createTeachingAssignment = async (req, res, next) => {
+  try {
+    const assignment = await academicService.createTeachingAssignment(req.body);
+    res.status(201).json(new ApiResponse(201, assignment, "Tạo phân công giảng dạy thành công."));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getTeachingAssignments = async (req, res, next) => {
+  try {
+    const { teacher, class: classVal, subject } = req.query;
+    const assignments = await academicService.getTeachingAssignments({
+      teacher,
+      class: classVal,
+      subject
+    });
+    res.status(200).json(new ApiResponse(200, assignments, "Lấy danh sách phân công giảng dạy thành công."));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getTeachingAssignmentById = async (req, res, next) => {
+  try {
+    const assignment = await academicService.getTeachingAssignmentById(req.params.id);
+    res.status(200).json(new ApiResponse(200, assignment, "Lấy thông tin phân công giảng dạy thành công."));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateTeachingAssignment = async (req, res, next) => {
+  try {
+    const assignment = await academicService.updateTeachingAssignment(req.params.id, req.body);
+    res.status(200).json(new ApiResponse(200, assignment, "Cập nhật phân công giảng dạy thành công."));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteTeachingAssignment = async (req, res, next) => {
+  try {
+    const result = await academicService.deleteTeachingAssignment(req.params.id);
+    res.status(200).json(new ApiResponse(200, result, "Xóa phân công giảng dạy thành công."));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createGrade,
   getGrades,
@@ -157,4 +208,9 @@ module.exports = {
   getSubjectById,
   updateSubject,
   deleteSubject,
+  createTeachingAssignment,
+  getTeachingAssignments,
+  getTeachingAssignmentById,
+  updateTeachingAssignment,
+  deleteTeachingAssignment,
 };
