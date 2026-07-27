@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import academicService from "../../../services/academicService";
-import Button from "../../../components/common/Button";
-import Badge from "../../../components/common/Badge";
 
 export default function TeachingAssignmentManager({ onRefreshData }) {
   const [assignments, setAssignments] = useState([]);
@@ -149,7 +147,7 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
     }
   };
 
-  // --- Filtering lists for Autocomplete Dropdowns ---
+  // Filtering lists for Autocomplete Dropdowns
   const filteredTeachers = teachers.filter((t) => {
     const term = teacherSearch.toLowerCase();
     return (
@@ -181,40 +179,40 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
   const selectedSubjectObj = subjects.find((s) => s._id === form.subject);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Alert Notifications */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center justify-between animate-fadeIn">
+        <div className="bg-rose-50 border border-rose-200 text-danger p-4 rounded-xl flex items-center justify-between animate-fadeIn">
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-danger flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="text-sm font-medium">{error}</span>
           </div>
-          <button onClick={() => setError("")} className="text-red-500 hover:text-red-700 text-sm">✕</button>
+          <button onClick={() => setError("")} className="text-danger hover:opacity-80 text-sm font-bold">✕</button>
         </div>
       )}
 
       {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-xl flex items-center justify-between animate-fadeIn">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-xl flex items-center justify-between animate-fadeIn">
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-success flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             <span className="text-sm font-medium">{successMsg}</span>
           </div>
-          <button onClick={() => setSuccessMsg("")} className="text-emerald-500 hover:text-emerald-700 text-sm">✕</button>
+          <button onClick={() => setSuccessMsg("")} className="text-emerald-700 hover:opacity-80 text-sm font-bold">✕</button>
         </div>
       )}
 
       {/* Header and Filter Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800/80 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 flex-1">
           {/* Filter by Teacher */}
           <select
             value={filterTeacher}
             onChange={(e) => setFilterTeacher(e.target.value)}
-            className="bg-slate-950/80 border border-slate-800 text-slate-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500"
+            className="bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
           >
             <option value="">Tất cả Giáo viên</option>
             {teachers.map((t) => (
@@ -228,7 +226,7 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
           <select
             value={filterClass}
             onChange={(e) => setFilterClass(e.target.value)}
-            className="bg-slate-950/80 border border-slate-800 text-slate-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500"
+            className="bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
           >
             <option value="">Tất cả Lớp học</option>
             {classes.map((c) => (
@@ -242,7 +240,7 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
           <select
             value={filterSubject}
             onChange={(e) => setFilterSubject(e.target.value)}
-            className="bg-slate-950/80 border border-slate-800 text-slate-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500"
+            className="bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
           >
             <option value="">Tất cả Môn học</option>
             {subjects.map((s) => (
@@ -259,36 +257,39 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                 setFilterClass("");
                 setFilterSubject("");
               }}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
+              className="text-xs text-primary hover:underline font-medium"
             >
               Xóa bộ lọc
             </button>
           )}
         </div>
 
-        <Button onClick={handleOpenCreate} variant="primary" className="text-xs px-4 py-2">
+        <button
+          onClick={handleOpenCreate}
+          className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors shadow-sm"
+        >
           + Phân công Giảng dạy mới
-        </Button>
+        </button>
       </div>
 
       {/* Table Content */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
         {loading ? (
-          <div className="flex justify-center items-center py-16 text-slate-400">
-            <svg className="animate-spin h-7 w-7 text-indigo-500 mr-3" viewBox="0 0 24 24">
+          <div className="flex justify-center items-center py-16 text-neutral-600">
+            <svg className="animate-spin h-7 w-7 text-primary mr-3" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <span className="text-sm font-medium">Đang tải phân công giảng dạy...</span>
           </div>
         ) : assignments.length === 0 ? (
-          <div className="text-center py-16 text-slate-500 text-sm">
+          <div className="text-center py-16 text-neutral-600 text-sm">
             Chưa có dữ liệu phân công giảng dạy nào. Nhấn "+ Phân công Giảng dạy mới" để thêm.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-300">
-              <thead className="bg-slate-800/60 text-xs uppercase text-slate-400 border-b border-slate-800">
+            <table className="w-full text-left text-sm text-neutral-900">
+              <thead className="bg-neutral-50 text-xs uppercase text-neutral-600 border-b border-neutral-200 font-semibold tracking-wider">
                 <tr>
                   <th className="py-3.5 px-5">Giáo Viên Phụ Trách</th>
                   <th className="py-3.5 px-5">Lớp Học</th>
@@ -297,7 +298,7 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                   <th className="py-3.5 px-5 text-right">Thao Tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-neutral-200">
                 {assignments.map((assign) => {
                   const teacher = assign.teacherRef;
                   const cls = assign.classRef;
@@ -305,30 +306,30 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                   const gradeName = cls?.gradeRef?.name || "N/A";
 
                   return (
-                    <tr key={assign._id} className="hover:bg-slate-800/40 transition-colors">
+                    <tr key={assign._id} className="hover:bg-neutral-50 transition-colors">
                       <td className="py-3.5 px-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-xs">
-                            {teacher?.name ? teacher.name.charAt(0).toUpperCase() : "G"}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-slate-100">{teacher?.name || "N/A"}</p>
-                            <p className="text-[11px] text-slate-400">{teacher?.email || ""}</p>
-                          </div>
+                        <div className="flex items-center gap-2.5">
+                          {/* Role Badge Teacher: Light Purple */}
+                          <span className="bg-purple-50 text-purple-700 border border-purple-200 rounded-lg px-2.5 py-1 text-xs font-medium inline-flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                            {teacher?.name || "N/A"}
+                          </span>
                         </div>
                       </td>
                       <td className="py-3.5 px-5">
-                        <span className="font-bold text-slate-200">{cls?.name || "N/A"}</span>
-                        <span className="text-xs text-slate-400 ml-2">({cls?.schoolYear || ""})</span>
+                        <span className="font-semibold text-neutral-900">{cls?.name || "N/A"}</span>
+                        <span className="text-xs text-neutral-600 ml-2">({cls?.schoolYear || ""})</span>
                       </td>
                       <td className="py-3.5 px-5">
-                        <Badge variant="info" className="text-xs">Khối {gradeName}</Badge>
+                        <span className="bg-primary-light text-primary border border-primary-light rounded-lg px-2.5 py-0.5 text-xs font-medium">
+                          Khối {gradeName}
+                        </span>
                       </td>
                       <td className="py-3.5 px-5">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-indigo-300">{subject?.name || "N/A"}</span>
+                          <span className="font-semibold text-primary">{subject?.name || "N/A"}</span>
                           {subject?.code && (
-                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+                            <span className="text-[11px] font-mono text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded-md">
                               {subject.code}
                             </span>
                           )}
@@ -338,7 +339,7 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleOpenEdit(assign)}
-                            className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors"
+                            className="p-1.5 text-neutral-600 hover:text-warning hover:bg-amber-50 rounded-lg transition-colors"
                             title="Thay đổi phân công"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -347,7 +348,7 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                           </button>
                           <button
                             onClick={() => handleDelete(assign._id)}
-                            className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+                            className="p-1.5 text-neutral-600 hover:text-danger hover:bg-rose-50 rounded-lg transition-colors"
                             title="Xóa phân công"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -367,24 +368,24 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
 
       {/* --- Biểu mẫu phân công giảng dạy (Teaching Assignment Modal Form with Autocomplete Dropdowns) --- */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl p-6 relative">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
-              <h3 className="text-lg font-bold text-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white border border-neutral-200 w-full max-w-lg rounded-xl shadow-xl p-6 relative">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-200">
+              <h3 className="text-xl font-semibold text-neutral-900">
                 {editingAssignment ? "Chỉnh Sửa Phân Công Giảng Dạy" : "Biểu Mẫu Phân Công Giảng Dạy Mới"}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">✕</button>
+              <button onClick={() => setShowModal(false)} className="text-neutral-600 hover:text-neutral-900 text-lg font-bold">✕</button>
             </div>
 
             <form onSubmit={handleSave} className="space-y-4">
               {/* 1. Chọn Giáo Viên (Autocomplete Dropdown) */}
               <div className="relative">
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  1. Chọn Giáo Viên Phụ Trách<span className="text-red-400">*</span>
+                <label className="block text-xs font-semibold text-neutral-900 mb-1">
+                  1. Chọn Giáo Viên Phụ Trách<span className="text-danger">*</span>
                 </label>
 
                 <div
-                  className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3.5 py-2.5 text-sm flex items-center justify-between cursor-pointer focus-within:border-indigo-500"
+                  className="w-full bg-white border border-neutral-200 text-neutral-900 rounded-lg px-3.5 py-2 text-sm flex items-center justify-between cursor-pointer focus-within:border-primary"
                   onClick={() => {
                     setIsTeacherDropdownOpen(!isTeacherDropdownOpen);
                     setIsClassDropdownOpen(false);
@@ -392,27 +393,27 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                   }}
                 >
                   {selectedTeacherObj ? (
-                    <span className="font-semibold text-indigo-300">{selectedTeacherObj.name} ({selectedTeacherObj.email})</span>
+                    <span className="font-semibold text-purple-700">{selectedTeacherObj.name} ({selectedTeacherObj.email})</span>
                   ) : (
-                    <span className="text-slate-500">Tìm & chọn Giáo viên...</span>
+                    <span className="text-neutral-600">Tìm & chọn Giáo viên...</span>
                   )}
-                  <svg className="w-4 h-4 text-slate-400 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-neutral-600 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
 
                 {isTeacherDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 max-h-52 overflow-y-auto">
+                  <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-neutral-200 rounded-xl shadow-xl p-2 max-h-52 overflow-y-auto">
                     <input
                       type="text"
                       placeholder="Tìm theo tên, email giáo viên..."
                       value={teacherSearch}
                       onChange={(e) => setTeacherSearch(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-1.5 text-xs mb-2 focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-lg px-3 py-1.5 text-xs mb-2 focus:outline-none focus:border-primary"
                       autoFocus
                     />
                     {filteredTeachers.length === 0 ? (
-                      <div className="text-center py-3 text-xs text-slate-500">Không tìm thấy giáo viên.</div>
+                      <div className="text-center py-3 text-xs text-neutral-600">Không tìm thấy giáo viên.</div>
                     ) : (
                       filteredTeachers.map((t) => (
                         <div
@@ -421,15 +422,15 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                             setForm({ ...form, teacher: t._id });
                             setIsTeacherDropdownOpen(false);
                           }}
-                          className={`p-2 rounded-lg text-xs cursor-pointer flex items-center justify-between ${
-                            form.teacher === t._id ? "bg-indigo-600/30 text-indigo-300 font-semibold" : "hover:bg-slate-800 text-slate-200"
+                          className={`p-2 rounded-lg text-xs cursor-pointer flex items-center justify-between transition-colors ${
+                            form.teacher === t._id ? "bg-primary-light text-primary font-semibold" : "hover:bg-neutral-100 text-neutral-900"
                           }`}
                         >
                           <div>
                             <p className="font-medium">{t.name}</p>
-                            <p className="text-[11px] text-slate-400">{t.email}</p>
+                            <p className="text-xs text-neutral-600">{t.email}</p>
                           </div>
-                          {form.teacher === t._id && <span className="text-indigo-400 font-bold">✓</span>}
+                          {form.teacher === t._id && <span className="text-primary font-bold">✓</span>}
                         </div>
                       ))
                     )}
@@ -439,12 +440,12 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
 
               {/* 2. Chọn Lớp Học (Autocomplete Dropdown) */}
               <div className="relative">
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  2. Chọn Lớp Học<span className="text-red-400">*</span>
+                <label className="block text-xs font-semibold text-neutral-900 mb-1">
+                  2. Chọn Lớp Học<span className="text-danger">*</span>
                 </label>
 
                 <div
-                  className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3.5 py-2.5 text-sm flex items-center justify-between cursor-pointer focus-within:border-indigo-500"
+                  className="w-full bg-white border border-neutral-200 text-neutral-900 rounded-lg px-3.5 py-2 text-sm flex items-center justify-between cursor-pointer focus-within:border-primary"
                   onClick={() => {
                     setIsClassDropdownOpen(!isClassDropdownOpen);
                     setIsTeacherDropdownOpen(false);
@@ -452,27 +453,27 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                   }}
                 >
                   {selectedClassObj ? (
-                    <span className="font-semibold text-indigo-300">Lớp {selectedClassObj.name} - NH: {selectedClassObj.schoolYear}</span>
+                    <span className="font-semibold text-primary">Lớp {selectedClassObj.name} - NH: {selectedClassObj.schoolYear}</span>
                   ) : (
-                    <span className="text-slate-500">Tìm & chọn Lớp học...</span>
+                    <span className="text-neutral-600">Tìm & chọn Lớp học...</span>
                   )}
-                  <svg className="w-4 h-4 text-slate-400 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-neutral-600 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
 
                 {isClassDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 max-h-52 overflow-y-auto">
+                  <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-neutral-200 rounded-xl shadow-xl p-2 max-h-52 overflow-y-auto">
                     <input
                       type="text"
                       placeholder="Tìm tên lớp, khối..."
                       value={classSearch}
                       onChange={(e) => setClassSearch(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-1.5 text-xs mb-2 focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-lg px-3 py-1.5 text-xs mb-2 focus:outline-none focus:border-primary"
                       autoFocus
                     />
                     {filteredClasses.length === 0 ? (
-                      <div className="text-center py-3 text-xs text-slate-500">Không tìm thấy lớp học.</div>
+                      <div className="text-center py-3 text-xs text-neutral-600">Không tìm thấy lớp học.</div>
                     ) : (
                       filteredClasses.map((c) => (
                         <div
@@ -481,15 +482,15 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                             setForm({ ...form, class: c._id });
                             setIsClassDropdownOpen(false);
                           }}
-                          className={`p-2 rounded-lg text-xs cursor-pointer flex items-center justify-between ${
-                            form.class === c._id ? "bg-indigo-600/30 text-indigo-300 font-semibold" : "hover:bg-slate-800 text-slate-200"
+                          className={`p-2 rounded-lg text-xs cursor-pointer flex items-center justify-between transition-colors ${
+                            form.class === c._id ? "bg-primary-light text-primary font-semibold" : "hover:bg-neutral-100 text-neutral-900"
                           }`}
                         >
                           <div>
                             <p className="font-medium">Lớp {c.name}</p>
-                            <p className="text-[11px] text-slate-400">Năm học: {c.schoolYear}</p>
+                            <p className="text-xs text-neutral-600">Năm học: {c.schoolYear}</p>
                           </div>
-                          {form.class === c._id && <span className="text-indigo-400 font-bold">✓</span>}
+                          {form.class === c._id && <span className="text-primary font-bold">✓</span>}
                         </div>
                       ))
                     )}
@@ -499,12 +500,12 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
 
               {/* 3. Chọn Môn Học (Autocomplete Dropdown) */}
               <div className="relative">
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  3. Chọn Môn Học<span className="text-red-400">*</span>
+                <label className="block text-xs font-semibold text-neutral-900 mb-1">
+                  3. Chọn Môn Học<span className="text-danger">*</span>
                 </label>
 
                 <div
-                  className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3.5 py-2.5 text-sm flex items-center justify-between cursor-pointer focus-within:border-indigo-500"
+                  className="w-full bg-white border border-neutral-200 text-neutral-900 rounded-lg px-3.5 py-2 text-sm flex items-center justify-between cursor-pointer focus-within:border-primary"
                   onClick={() => {
                     setIsSubjectDropdownOpen(!isSubjectDropdownOpen);
                     setIsTeacherDropdownOpen(false);
@@ -512,27 +513,27 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                   }}
                 >
                   {selectedSubjectObj ? (
-                    <span className="font-semibold text-indigo-300">{selectedSubjectObj.name} ({selectedSubjectObj.code || "N/A"})</span>
+                    <span className="font-semibold text-primary">{selectedSubjectObj.name} ({selectedSubjectObj.code || "N/A"})</span>
                   ) : (
-                    <span className="text-slate-500">Tìm & chọn Môn học...</span>
+                    <span className="text-neutral-600">Tìm & chọn Môn học...</span>
                   )}
-                  <svg className="w-4 h-4 text-slate-400 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-neutral-600 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
 
                 {isSubjectDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 max-h-52 overflow-y-auto">
+                  <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-neutral-200 rounded-xl shadow-xl p-2 max-h-52 overflow-y-auto">
                     <input
                       type="text"
                       placeholder="Tìm tên hoặc mã môn học..."
                       value={subjectSearch}
                       onChange={(e) => setSubjectSearch(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-1.5 text-xs mb-2 focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-lg px-3 py-1.5 text-xs mb-2 focus:outline-none focus:border-primary"
                       autoFocus
                     />
                     {filteredSubjects.length === 0 ? (
-                      <div className="text-center py-3 text-xs text-slate-500">Không tìm thấy môn học.</div>
+                      <div className="text-center py-3 text-xs text-neutral-600">Không tìm thấy môn học.</div>
                     ) : (
                       filteredSubjects.map((s) => (
                         <div
@@ -541,15 +542,15 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                             setForm({ ...form, subject: s._id });
                             setIsSubjectDropdownOpen(false);
                           }}
-                          className={`p-2 rounded-lg text-xs cursor-pointer flex items-center justify-between ${
-                            form.subject === s._id ? "bg-indigo-600/30 text-indigo-300 font-semibold" : "hover:bg-slate-800 text-slate-200"
+                          className={`p-2 rounded-lg text-xs cursor-pointer flex items-center justify-between transition-colors ${
+                            form.subject === s._id ? "bg-primary-light text-primary font-semibold" : "hover:bg-neutral-100 text-neutral-900"
                           }`}
                         >
                           <div>
                             <p className="font-medium">{s.name}</p>
-                            <p className="text-[11px] font-mono text-slate-400">{s.code || "Mã môn N/A"}</p>
+                            <p className="text-xs font-mono text-neutral-600">{s.code || "Mã môn N/A"}</p>
                           </div>
-                          {form.subject === s._id && <span className="text-indigo-400 font-bold">✓</span>}
+                          {form.subject === s._id && <span className="text-primary font-bold">✓</span>}
                         </div>
                       ))
                     )}
@@ -557,13 +558,20 @@ export default function TeachingAssignmentManager({ onRefreshData }) {
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-                <Button type="button" variant="secondary" onClick={() => setShowModal(false)} className="text-xs">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="text-sm font-medium px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                >
                   Hủy bỏ
-                </Button>
-                <Button type="submit" variant="primary" className="text-xs">
+                </button>
+                <button
+                  type="submit"
+                  className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover"
+                >
                   {editingAssignment ? "Cập nhật Phân công" : "Xác nhận Phân công"}
-                </Button>
+                </button>
               </div>
             </form>
           </div>
