@@ -3,10 +3,12 @@ import academicService from "../../../services/academicService";
 import GradeClassTree from "../components/GradeClassTree";
 import SubjectTable from "../components/SubjectTable";
 import TeachingAssignmentManager from "../components/TeachingAssignmentManager";
+import ClassRosterManager from "../components/ClassRosterManager";
 
 export default function AcademicStructure() {
-  const [activeTab, setActiveTab] = useState("tree"); // "tree" | "subjects" | "assignments"
-  
+  const [activeTab, setActiveTab] = useState("tree"); // "tree" | "subjects" | "assignments" | "roster"
+  const [selectedRosterClassId, setSelectedRosterClassId] = useState(null);
+
   // Dashboard statistics state
   const [stats, setStats] = useState({
     gradesCount: 0,
@@ -14,6 +16,11 @@ export default function AcademicStructure() {
     subjectsCount: 0,
     assignmentsCount: 0
   });
+
+  const handleSelectClassForRoster = (classId) => {
+    setSelectedRosterClassId(classId);
+    setActiveTab("roster");
+  };
 
   const loadStats = async () => {
     try {
@@ -55,7 +62,7 @@ export default function AcademicStructure() {
               Quản lý Cấu trúc Học thuật
             </h1>
             <p className="text-[14px] text-neutral-600 mt-1.5 max-w-2xl leading-relaxed">
-              Tổ chức sơ đồ Khối - Lớp học, danh mục Môn học, phân công Giáo viên Chủ nhiệm và Giảng dạy bộ môn trong nhà trường.
+              Tổ chức sơ đồ Khối - Lớp học, danh mục Môn học, phân công Giáo viên và Quản lý danh sách học sinh theo lớp (Roster).
             </p>
           </div>
 
@@ -94,6 +101,17 @@ export default function AcademicStructure() {
           </button>
 
           <button
+            onClick={() => setActiveTab("roster")}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all border-b-2 whitespace-nowrap ${
+              activeTab === "roster"
+                ? "bg-primary-light text-primary border-primary font-semibold"
+                : "text-neutral-600 hover:text-neutral-900 border-transparent hover:bg-neutral-50"
+            }`}
+          >
+            <span>📋 Danh sách Lớp & Chuyển lớp (Roster)</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab("subjects")}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all border-b-2 whitespace-nowrap ${
               activeTab === "subjects"
@@ -119,7 +137,8 @@ export default function AcademicStructure() {
 
       {/* Tab Content Panels */}
       <div className="transition-all duration-300">
-        {activeTab === "tree" && <GradeClassTree onRefreshData={loadStats} />}
+        {activeTab === "tree" && <GradeClassTree onRefreshData={loadStats} onSelectClassForRoster={handleSelectClassForRoster} />}
+        {activeTab === "roster" && <ClassRosterManager selectedClassId={selectedRosterClassId} onRefreshData={loadStats} />}
         {activeTab === "subjects" && <SubjectTable onRefreshData={loadStats} />}
         {activeTab === "assignments" && <TeachingAssignmentManager onRefreshData={loadStats} />}
       </div>

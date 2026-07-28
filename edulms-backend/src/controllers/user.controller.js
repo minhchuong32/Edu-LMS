@@ -29,8 +29,8 @@ const importUsers = async (req, res, next) => {
  */
 const listUsers = async (req, res, next) => {
   try {
-    const { role, search } = req.query;
-    const users = await userService.getUsers({ role, search });
+    const { role, search, classRef } = req.query;
+    const users = await userService.getUsers({ role, search, classRef });
     res.status(200).json(
       new ApiResponse(200, users, "Lấy danh sách người dùng thành công")
     );
@@ -39,7 +39,25 @@ const listUsers = async (req, res, next) => {
   }
 };
 
+/**
+ * Controller to update student's classRef (assign or unassign class)
+ */
+const updateUserClass = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { classRef } = req.body;
+    const user = await userService.updateUserClass(id, classRef);
+    res.status(200).json(
+      new ApiResponse(200, user, "Cập nhật lớp học cho học sinh thành công")
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   importUsers,
-  listUsers
+  listUsers,
+  updateUserClass
 };
+

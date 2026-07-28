@@ -60,11 +60,30 @@ const academicService = {
     return await axiosClient.delete(`/academic/teaching-assignments/${id}`);
   },
 
-  // --- Users / Teachers List ---
+  // --- Users / Teachers & Students List ---
   getTeachers: async (search = "") => {
     const query = new URLSearchParams({ role: "teacher" });
     if (search) query.append("search", search);
     return await axiosClient.get(`/users?${query.toString()}`);
+  },
+  getStudents: async (params = {}) => {
+    const query = new URLSearchParams({ role: "student", ...params }).toString();
+    return await axiosClient.get(`/users?${query}`);
+  },
+  updateUserClass: async (studentId, classRef) => {
+    return await axiosClient.put(`/users/${studentId}/class`, { classRef });
+  },
+
+  // --- Class Transfer & History ---
+  transferStudentClass: async (transferData) => {
+    return await axiosClient.post("/academic/classes/transfer", transferData);
+  },
+  batchTransferClass: async (batchData) => {
+    return await axiosClient.post("/academic/classes/batch-transfer", batchData);
+  },
+  getTransferHistory: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return await axiosClient.get(`/academic/classes/transfer-history${query ? `?${query}` : ""}`);
   }
 };
 

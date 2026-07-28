@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import academicService from "../../../services/academicService";
 
-export default function GradeClassTree({ onRefreshData }) {
+export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }) {
   const [grades, setGrades] = useState([]);
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -391,6 +391,15 @@ export default function GradeClassTree({ onRefreshData }) {
                               </div>
 
                               <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-neutral-200">
+                                {onSelectClassForRoster && (
+                                  <button
+                                    onClick={() => onSelectClassForRoster(cls._id)}
+                                    className="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
+                                    title="Xem danh sách học sinh & Chuyển lớp"
+                                  >
+                                    📋 Xem Roster
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => handleOpenEditClass(cls)}
                                   className="text-xs font-medium text-primary hover:bg-primary-light px-2.5 py-1 rounded-lg transition-colors"
