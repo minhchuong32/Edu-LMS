@@ -192,6 +192,53 @@ const deleteTeachingAssignment = async (req, res, next) => {
   }
 };
 
+// --- Class Transfer Controllers ---
+const transferClass = async (req, res, next) => {
+  try {
+    const { studentRef, toClassRef, reason } = req.body;
+    const actorId = req.user._id;
+    const result = await academicService.transferStudentClass({
+      studentRef,
+      toClassRef,
+      reason,
+      actorId,
+    });
+    res.status(200).json(new ApiResponse(200, result, "Chuyển lớp cho học sinh thành công."));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const batchTransferClass = async (req, res, next) => {
+  try {
+    const { studentRefs, toClassRef, reason } = req.body;
+    const actorId = req.user._id;
+    const result = await academicService.batchTransferStudentClass({
+      studentRefs,
+      toClassRef,
+      reason,
+      actorId,
+    });
+    res.status(200).json(new ApiResponse(200, result, "Chuyển lớp hàng loạt cho học sinh hoàn tất."));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getTransferHistory = async (req, res, next) => {
+  try {
+    const { studentRef, fromClassRef, toClassRef } = req.query;
+    const history = await academicService.getClassTransferHistory({
+      studentRef,
+      fromClassRef,
+      toClassRef,
+    });
+    res.status(200).json(new ApiResponse(200, history, "Lấy lịch sử chuyển lớp thành công."));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createGrade,
   getGrades,
@@ -213,4 +260,7 @@ module.exports = {
   getTeachingAssignmentById,
   updateTeachingAssignment,
   deleteTeachingAssignment,
+  transferClass,
+  batchTransferClass,
+  getTransferHistory,
 };
