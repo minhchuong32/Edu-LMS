@@ -7,6 +7,7 @@ const Class = require("../src/models/Class");
 const Subject = require("../src/models/Subject");
 const TeachingAssignment = require("../src/models/TeachingAssignment");
 const GradeRecord = require("../src/models/GradeRecord");
+const ClassHistory = require("../src/models/ClassHistory");
 const supertest = require("supertest");
 const request = supertest(app);
 const { generateAccessToken } = require("../src/utils/jwt");
@@ -41,6 +42,7 @@ describe("Academic Structures API Integration Tests (Real Database)", () => {
     await Subject.deleteMany({});
     await TeachingAssignment.deleteMany({});
     await GradeRecord.deleteMany({});
+    await ClassHistory.deleteMany({});
 
     // Seed test users
     adminUser = await User.create({
@@ -92,6 +94,7 @@ describe("Academic Structures API Integration Tests (Real Database)", () => {
     await Subject.deleteMany({});
     await TeachingAssignment.deleteMany({});
     await GradeRecord.deleteMany({});
+    await ClassHistory.deleteMany({});
     
     // Close connection
     await mongoose.connection.close();
@@ -652,6 +655,141 @@ describe("Academic Structures API Integration Tests (Real Database)", () => {
 
       const findCheck = await TeachingAssignment.findById(createdAssignmentId);
       expect(findCheck).toBeNull();
+    });
+  });
+
+  describe("Student Class Transfer & ClassHistory API", () => {
+    let testClass1, testClass2, testStudent1, testStudent2;
+
+    beforeAll(async () => {
+      // Create 2 test classes
+      testClass1 = await Class.create({
+        name: "10A1_TRANSFER",
+        gradeRef: sampleGrade._id,
+        homeroomTeacherRef: sampleTeacher._id,
+        schoolYear: "2025-2026",
+      });
+
+      const teacher2 = await User.create({
+        name: "Homeroom Teacher 2",
+        email: "homeroom2@edulms.edu",
+        password: "password123",
+        role: "teacher",
+        teacherCode: "GV-0099",
+        isActivated: true,
+      });
+
+      testClass2 = await Class.create({
+        name: "10A2_TRANSFER",
+        gradeRef: sampleGrade._id,
+        homeroomTeacherRef: teacher2._id,
+        schoolYear: "2025-2026",
+      });
+
+      // Create test students
+      testStudent1 = await User.create({
+        name: "Transfer Student 1",
+        email: "student_transfer1@edulms.edu",
+        password: "password123",
+        role: "student",
+        studentCode: "HS-TR01",
+        classRef: testClass1._id,
+        isActivated: true,
+      });
+
+      testStudent2 = await User.create({
+        name: "Transfer Student 2",
+        email: "student_transfer2@edulms.edu",
+        password: "password123",
+        role: "student",
+        studentCode: "HS-TR02",
+        classRef: testClass1._id,
+        isActivated: true,
+      });
+    });
+
+    test("Admin can transfer a student from Class 1 to Class 2 and record ClassHistory", async () => {
+      const response = await request
+        .post("/api/v1/academic/classes/transfer")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          studentRef: testStudent1._id,
+          toClassRef: testClass2._id,
+          reason: "Chuyển lớp theo nguyện vọng",
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.studentRef._id).toBe(testStudent1._id.toString());
+      expect(response.body.data.fromClassRef._id).toBe(testClass1._id.toString());
+      expect(response.body.data.toClassRef._id).toBe(testClass2._id.toString());
+      expect(response.body.data.reason).toBe("Chuyển lớp theo nguyện vọng");
+
+      // Verify User record updated in DB
+      const updatedUser = await User.findById(testStudent1._id);
+      expect(updatedUser.classRef.toString()).toBe(testClass2._id.toString());
+
+      // Verify ClassHistory recorded
+      const history = await ClassHistory.findOne({ studentRef: testStudent1._id });
+      expect(history).not.toBeNull();
+      expect(history.fromClassRef.toString()).toBe(testClass1._id.toString());
+      expect(history.toClassRef.toString()).toBe(testClass2._id.toString());
+    });
+
+    test("Should reject transfer if transferring to the same class", async () => {
+      const response = await request
+        .post("/api/v1/academic/classes/transfer")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          studentRef: testStudent1._id,
+          toClassRef: testClass2._id,
+          reason: "Duplicate transfer test",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("đã thuộc lớp học này");
+    });
+
+    test("Non-admin user cannot transfer student", async () => {
+      const response = await request
+        .post("/api/v1/academic/classes/transfer")
+        .set("Authorization", `Bearer ${teacherToken}`)
+        .send({
+          studentRef: testStudent2._id,
+          toClassRef: testClass2._id,
+          reason: "Unauthorized transfer",
+        });
+
+      expect(response.status).toBe(403);
+    });
+
+    test("Admin can batch transfer students to new class", async () => {
+      const response = await request
+        .post("/api/v1/academic/classes/batch-transfer")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          studentRefs: [testStudent2._id.toString()],
+          toClassRef: testClass2._id.toString(),
+          reason: "Điều chuyển hàng loạt",
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.successCount).toBe(1);
+
+      const updatedUser2 = await User.findById(testStudent2._id);
+      expect(updatedUser2.classRef.toString()).toBe(testClass2._id.toString());
+    });
+
+    test("Can fetch transfer history", async () => {
+      const response = await request
+        .get("/api/v1/academic/classes/transfer-history")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThanOrEqual(2);
     });
   });
 });

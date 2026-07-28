@@ -17,6 +17,10 @@ router.route("/grades/:id")
   .delete(restrictTo("admin"), academicController.deleteGrade);
 
 // --- Classes Routes ---
+router.post("/classes/transfer", restrictTo("admin"), academicController.transferClass);
+router.post("/classes/batch-transfer", restrictTo("admin"), academicController.batchTransferClass);
+router.get("/classes/transfer-history", restrictTo("admin", "teacher"), academicController.getTransferHistory);
+
 router.route("/classes")
   .get(academicController.getClasses)
   .post(restrictTo("admin"), academicController.createClass);

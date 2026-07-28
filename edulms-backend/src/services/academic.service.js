@@ -4,6 +4,7 @@ const Subject = require("../models/Subject");
 const User = require("../models/User");
 const TeachingAssignment = require("../models/TeachingAssignment");
 const GradeRecord = require("../models/GradeRecord");
+const ClassHistory = require("../models/ClassHistory");
 const ApiError = require("../utils/ApiError");
 
 // Grade Services
@@ -483,6 +484,97 @@ const deleteTeachingAssignment = async (id) => {
   return { id };
 };
 
+// Class Transfer Services
+const transferStudentClass = async ({ studentRef, toClassRef, reason, actorId }) => {
+  if (!studentRef || !toClassRef) {
+    throw new ApiError(400, "Mã học sinh (studentRef) và lớp học mới (toClassRef) là bắt buộc.");
+  }
+
+  const student = await User.findById(studentRef);
+  if (!student) {
+    throw new ApiError(404, "Không tìm thấy học sinh này.");
+  }
+  if (student.role !== "student") {
+    throw new ApiError(400, "Người dùng được chuyển lớp phải có vai trò là học sinh.");
+  }
+
+  const targetClass = await Class.findById(toClassRef);
+  if (!targetClass) {
+    throw new ApiError(404, "Không tìm thấy lớp học mới.");
+  }
+
+  const fromClassRef = student.classRef ? student.classRef : null;
+
+  if (fromClassRef && String(fromClassRef) === String(toClassRef)) {
+    throw new ApiError(400, "Học sinh hiện tại đã thuộc lớp học này.");
+  }
+
+  // Update user's classRef
+  student.classRef = toClassRef;
+  await student.save();
+
+  // Record transfer history
+  const history = await ClassHistory.create({
+    studentRef: student._id,
+    fromClassRef,
+    toClassRef,
+    transferredBy: actorId,
+    reason: reason || "",
+    transferredAt: new Date(),
+  });
+
+  return await ClassHistory.findById(history._id)
+    .populate("studentRef", "name email studentCode role classRef")
+    .populate("fromClassRef", "name schoolYear")
+    .populate("toClassRef", "name schoolYear")
+    .populate("transferredBy", "name email role");
+};
+
+const batchTransferStudentClass = async ({ studentRefs, toClassRef, reason, actorId }) => {
+  if (!Array.isArray(studentRefs) || studentRefs.length === 0 || !toClassRef) {
+    throw new ApiError(400, "Danh sách học sinh (studentRefs) và lớp học mới (toClassRef) là bắt buộc.");
+  }
+
+  const targetClass = await Class.findById(toClassRef);
+  if (!targetClass) {
+    throw new ApiError(404, "Không tìm thấy lớp học mới.");
+  }
+
+  const results = [];
+  for (const studentRef of studentRefs) {
+    try {
+      const record = await transferStudentClass({ studentRef, toClassRef, reason, actorId });
+      results.push({ studentRef, status: "success", history: record });
+    } catch (error) {
+      results.push({ studentRef, status: "error", error: error.message });
+    }
+  }
+
+  return {
+    toClass: targetClass,
+    total: studentRefs.length,
+    successCount: results.filter((r) => r.status === "success").length,
+    errorCount: results.filter((r) => r.status === "error").length,
+    details: results,
+  };
+};
+
+const getClassTransferHistory = async (filters = {}) => {
+  const { studentRef, fromClassRef, toClassRef } = filters;
+  const query = {};
+
+  if (studentRef) query.studentRef = studentRef;
+  if (fromClassRef) query.fromClassRef = fromClassRef;
+  if (toClassRef) query.toClassRef = toClassRef;
+
+  return await ClassHistory.find(query)
+    .populate("studentRef", "name email studentCode role classRef")
+    .populate("fromClassRef", "name schoolYear")
+    .populate("toClassRef", "name schoolYear")
+    .populate("transferredBy", "name email role")
+    .sort({ transferredAt: -1, createdAt: -1 });
+};
+
 module.exports = {
   createGrade,
   getGrades,
@@ -504,4 +596,8 @@ module.exports = {
   getTeachingAssignmentById,
   updateTeachingAssignment,
   deleteTeachingAssignment,
+  transferStudentClass,
+  batchTransferStudentClass,
+  getClassTransferHistory,
 };
+
