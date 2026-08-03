@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import GuestLanding from "../features/auth/GuestLanding";
 import Activate from "../features/auth/Activate";
 import Login from "../features/auth/Login";
+import TermsPrivacyPage from "../pages/public/TermsPrivacyPage";
 
 import AdminLayout from "../layouts/AdminLayout";
 import TeacherLayout from "../layouts/TeacherLayout";
@@ -24,6 +25,7 @@ export default function AppRouter() {
         <Route path="/" element={<GuestLanding />} />
         <Route path="/login" element={<Login />} />
         <Route path="/activate" element={<Activate />} />
+        <Route path="/terms" element={<TermsPrivacyPage />} />
 
         {/* Protected Session Routes */}
         <Route element={<PrivateRoute />}>

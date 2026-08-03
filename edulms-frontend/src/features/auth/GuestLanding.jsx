@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
@@ -200,7 +200,9 @@ export default function GuestLanding() {
             <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-1.5">Liên kết nhanh</h4>
             <p className="hover:text-white transition-colors cursor-pointer">Cổng thông tin Sở GD&ĐT</p>
             <p className="hover:text-white transition-colors cursor-pointer">Hướng dẫn sử dụng hệ thống</p>
-            <p className="hover:text-white transition-colors cursor-pointer">Điều khoản dịch vụ bảo mật</p>
+            <Link to="/terms" className="hover:text-white transition-colors cursor-pointer block">
+              Điều khoản dịch vụ & bảo mật
+            </Link>
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-neutral-800 text-center text-xs text-neutral-500">
