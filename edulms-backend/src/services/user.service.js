@@ -276,14 +276,20 @@ const importUsersFromExcel = async (fileBuffer, defaultRole) => {
 };
 
 /**
- * Retrieve user list based on query criteria (search & role)
+ * Retrieve user list based on query criteria (search, role, & classRef)
  */
 const getUsers = async (filters = {}) => {
-  const { role, search } = filters;
+  const { role, search, classRef } = filters;
   const query = {};
 
   if (role && ["student", "teacher", "parent", "admin"].includes(role)) {
     query.role = role;
+  }
+
+  if (classRef === "unassigned" || classRef === "null") {
+    query.classRef = null;
+  } else if (classRef) {
+    query.classRef = classRef;
   }
 
   if (search) {
@@ -297,11 +303,39 @@ const getUsers = async (filters = {}) => {
   }
 
   return await User.find(query)
-    .populate("classRef", "name")
+    .populate("classRef", "name schoolYear")
     .sort({ createdAt: -1 });
+};
+
+/**
+ * Assign or Remove student from a class
+ */
+const updateUserClass = async (userId, classRef) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "Không tìm thấy người dùng này.");
+  }
+  if (user.role !== "student") {
+    throw new ApiError(400, "Chỉ có thể xếp lớp hoặc xóa khỏi lớp cho học sinh.");
+  }
+
+  if (classRef) {
+    const classExists = await Class.findById(classRef);
+    if (!classExists) {
+      throw new ApiError(404, "Không tìm thấy lớp học này.");
+    }
+    user.classRef = classRef;
+  } else {
+    user.classRef = null;
+  }
+
+  await user.save();
+  return await User.findById(userId).populate("classRef", "name schoolYear");
 };
 
 module.exports = {
   importUsersFromExcel,
-  getUsers
+  getUsers,
+  updateUserClass
 };
+

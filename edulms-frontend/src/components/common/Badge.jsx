@@ -11,18 +11,19 @@ export default function Badge({
 
   const variants = {
     primary: "bg-primary-light text-primary border-indigo-100",
-    success: "bg-emerald-50 text-success border-emerald-100",
-    warning: "bg-amber-50 text-warning border-amber-100",
-    danger: "bg-rose-50 text-danger border-rose-100",
+    success: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    warning: "bg-amber-50 text-amber-700 border-amber-200",
+    danger: "bg-rose-50 text-danger border-rose-200",
     neutral: "bg-neutral-50 text-neutral-600 border-neutral-200",
   };
 
-  // Specific role configurations as requested
+  // Specific role configurations matching Design System specifications:
+  // Student = xanh dương nhạt, Teacher = tím nhạt, Admin = cam nhạt, Parent = xanh lá nhạt.
   const roleStyles = {
-    student: "bg-blue-50 text-blue-600 border-blue-100",
-    teacher: "bg-purple-50 text-purple-600 border-purple-100",
-    admin: "bg-orange-50 text-orange-600 border-orange-100",
-    parent: "bg-green-50 text-green-600 border-green-100",
+    student: "bg-blue-50 text-blue-700 border-blue-200",
+    teacher: "bg-purple-50 text-purple-700 border-purple-200",
+    admin: "bg-amber-50 text-amber-700 border-amber-200",
+    parent: "bg-emerald-50 text-emerald-700 border-emerald-200",
   };
 
   const selectedStyle = role
@@ -31,7 +32,6 @@ export default function Badge({
 
   return (
     <span className={`${baseStyles} ${selectedStyle} ${className}`} {...props}>
-      {/* Optional dot decorator for status badges */}
       {!role && (
         <span className={`w-1.5 h-1.5 rounded-full ${
           variant === "success" ? "bg-success" :

@@ -7,6 +7,8 @@ const academicRoutes = require("./academicRoutes");
 const attendanceRoutes = require("./attendanceRoutes");
 const gradeRoutes = require("./gradeRoutes");
 const notificationRoutes = require("./notificationRoutes");
+const lessonContentRoutes = require("./lessonContentRoutes");
+const uploadRoutes = require("./uploadRoutes");
 
 // Mount sub-routers
 apiRouter.use("/auth", authRoutes);
@@ -15,5 +17,7 @@ apiRouter.use("/academic", academicRoutes);
 apiRouter.use("/attendance", attendanceRoutes);
 apiRouter.use("/grades", gradeRoutes);
 apiRouter.use("/notifications", notificationRoutes);
+apiRouter.use("/lesson-contents", lessonContentRoutes);
+apiRouter.use("/upload", uploadRoutes);
 
 module.exports = apiRouter;

@@ -6,16 +6,19 @@ const teachingAssignmentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      alias: "teacher",
     },
     classRef: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Class",
       required: true,
+      alias: "class",
     },
     subjectRef: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Subject",
       required: true,
+      alias: "subject",
     },
   },
   {
