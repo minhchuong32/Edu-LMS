@@ -12,6 +12,24 @@ const CONTENT_TYPES = [
   { value: "other", label: "Khác", icon: "📎", color: "bg-neutral-100 text-neutral-700 border-neutral-200" },
 ];
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+
+const getFileViewUrl = (url) => {
+  if (!url) return "#";
+  if (url.startsWith("http")) {
+    return `${API_BASE_URL}/upload/file?url=${encodeURIComponent(url)}&mode=view`;
+  }
+  return url;
+};
+
+const getFileDownloadUrl = (url) => {
+  if (!url) return "#";
+  if (url.startsWith("http")) {
+    return `${API_BASE_URL}/upload/file?url=${encodeURIComponent(url)}&mode=download`;
+  }
+  return url;
+};
+
 export default function Syllabus() {
   // State for teaching assignments & filter
   const [assignments, setAssignments] = useState([]);
@@ -53,6 +71,9 @@ export default function Syllabus() {
 
   // Delete modal state
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  // File preview modal state
+  const [previewTarget, setPreviewTarget] = useState(null);
 
   useEffect(() => {
     fetchAssignments();
@@ -333,6 +354,27 @@ export default function Syllabus() {
     }
   };
 
+  const handleDownloadFile = (e, url, title) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!url) return;
+
+    showToast("Đang mở tải tệp...", "success");
+
+    const cleanUrl = url.split("?")[0];
+    const parts = cleanUrl.split("/");
+    const filename = parts[parts.length - 1] || `${title || "tai_lieu"}`;
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   // Filtered lessons search/type
   const filteredLessons = lessons.filter((item) => {
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -537,18 +579,51 @@ export default function Syllabus() {
                       )}
 
                       {item.attachmentUrl && (
-                        <a
-                          href={item.attachmentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-semibold mt-0.5"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                          <span>Xem tệp / liên kết đính kèm</span>
-                        </a>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewTarget(item);
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs text-purple-700 font-bold bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-lg border border-purple-200 transition"
+                            title="Xem trước tệp trong trang"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>Xem trước tệp</span>
+                          </button>
+
+                          <a
+                            href={getFileDownloadUrl(item.attachmentUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:underline bg-primary/5 hover:bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 transition"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Tự động tải tệp về máy"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span>Tải về máy</span>
+                          </a>
+
+                          <a
+                            href={getFileViewUrl(item.attachmentUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 hover:underline font-semibold ml-1"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Mở trên tab mới"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            <span>Mở tab mới</span>
+                          </a>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -869,6 +944,116 @@ export default function Syllabus() {
               <Button variant="danger" className="flex-1 text-xs py-2" onClick={handleDeleteConfirm}>
                 Xóa ngay
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- FILE PREVIEW MODAL --- */}
+      {previewTarget && (
+        <div className="fixed inset-0 z-50 bg-neutral-900/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
+          <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xl w-full max-w-5xl h-[88vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-3.5 border-b border-neutral-200 bg-neutral-50/90">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <span className="text-2xl flex-shrink-0">
+                  {previewTarget.contentType === "video" ? "🎥" : previewTarget.contentType === "exercise" ? "📝" : "📄"}
+                </span>
+                <div className="overflow-hidden">
+                  <h3 className="text-sm font-bold font-outfit text-neutral-900 truncate">
+                    {previewTarget.title}
+                  </h3>
+                  <p className="text-xs text-neutral-500 truncate">
+                    Cửa sổ xem trước tệp bài giảng trong hệ thống EduLMS
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <a
+                  href={getFileDownloadUrl(previewTarget.attachmentUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-primary text-white hover:bg-primary-hover rounded-lg shadow-sm transition"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span>Tải về máy</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewTarget(null)}
+                  className="p-1.5 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-200 rounded-lg transition"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content Viewer */}
+            <div className="flex-1 bg-neutral-900 relative flex items-center justify-center overflow-hidden">
+              {(() => {
+                const url = previewTarget.attachmentUrl;
+                if (!url) return <div className="text-white text-xs">Không có tệp đính kèm</div>;
+                const cleanUrl = url.split("?")[0];
+                const ext = (cleanUrl.split(".").pop() || "").toLowerCase();
+                const isImage = ["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext);
+                const isVideo = ["mp4", "mov", "avi", "webm", "mkv"].includes(ext) || previewTarget.contentType === "video";
+                const isPdf = ext === "pdf";
+
+                if (isImage) {
+                  return (
+                    <div className="w-full h-full flex items-center justify-center p-4">
+                      <img src={getFileViewUrl(url)} alt={previewTarget.title} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                    </div>
+                  );
+                }
+
+                if (isVideo) {
+                  return (
+                    <div className="w-full h-full flex items-center justify-center p-4">
+                      <video controls autoPlay className="max-w-full max-h-full rounded-lg shadow-2xl">
+                        <source src={getFileViewUrl(url)} />
+                        Trình duyệt không hỗ trợ phát video này.
+                      </video>
+                    </div>
+                  );
+                }
+
+                if (isPdf) {
+                  return (
+                    <iframe
+                      src={getFileViewUrl(url)}
+                      title={previewTarget.title}
+                      className="w-full h-full border-0 bg-white"
+                    />
+                  );
+                }
+
+                // Office docs embedding
+                if (["doc", "docx", "ppt", "pptx", "xls", "xlsx"].includes(ext)) {
+                  const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+                  return (
+                    <iframe
+                      src={officeViewerUrl}
+                      title={previewTarget.title}
+                      className="w-full h-full border-0 bg-white"
+                    />
+                  );
+                }
+
+                return (
+                  <iframe
+                    src={getFileViewUrl(url)}
+                    title={previewTarget.title}
+                    className="w-full h-full border-0 bg-white"
+                  />
+                );
+              })()}
             </div>
           </div>
         </div>

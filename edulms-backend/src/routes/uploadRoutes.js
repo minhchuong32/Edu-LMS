@@ -8,6 +8,9 @@ const {
   handleMediaUpload,
 } = require("../middlewares/uploadCloudinary.middleware");
 
+// Public file view & download proxy route
+router.get("/file", uploadController.downloadOrViewFile);
+
 // Require authentication for upload operations
 router.use(authMiddleware);
 
