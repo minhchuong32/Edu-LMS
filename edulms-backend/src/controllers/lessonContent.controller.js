@@ -68,6 +68,16 @@ const deleteLessonContent = async (req, res, next) => {
   }
 };
 
+const reorderLessonContents = async (req, res, next) => {
+  try {
+    const items = req.body.items || req.body;
+    const result = await lessonContentService.reorderLessonContents(items, req.user);
+    res.status(200).json(new ApiResponse(200, result, "Cập nhật thứ tự bài học thành công."));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createLessonContent,
   getLessonContents,
@@ -75,5 +85,7 @@ module.exports = {
   getLessonContentById,
   updateLessonContent,
   deleteLessonContent,
+  reorderLessonContents,
 };
+
 

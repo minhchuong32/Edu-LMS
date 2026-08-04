@@ -336,4 +336,42 @@ describe("Lesson Content API Integration Tests", () => {
       expect(found).toBeNull();
     });
   });
+
+  describe("PUT /api/v1/lesson-contents/reorder (Bulk Reorder)", () => {
+    let item1, item2;
+
+    beforeEach(async () => {
+      item1 = await LessonContent.create({
+        teachingAssignmentRef: assignmentA._id,
+        title: "Bài 10",
+        order: 1,
+      });
+      item2 = await LessonContent.create({
+        teachingAssignmentRef: assignmentA._id,
+        title: "Bài 20",
+        order: 2,
+      });
+    });
+
+    test("Assigned teacher should reorder contents successfully", async () => {
+      const res = await request
+        .put("/api/v1/lesson-contents/reorder")
+        .set("Authorization", `Bearer ${assignedTeacherToken}`)
+        .send({
+          items: [
+            { id: item1._id, order: 2 },
+            { id: item2._id, order: 1 },
+          ],
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+
+      const updated1 = await LessonContent.findById(item1._id);
+      const updated2 = await LessonContent.findById(item2._id);
+      expect(updated1.order).toBe(2);
+      expect(updated2.order).toBe(1);
+    });
+  });
 });
+

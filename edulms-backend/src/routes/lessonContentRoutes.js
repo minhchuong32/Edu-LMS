@@ -9,6 +9,9 @@ router.use(authMiddleware);
 // Specific route for fetching content by class and subject (with student class validation)
 router.get("/class-subject", lessonContentController.getLessonContentsByClassAndSubject);
 
+// Bulk reorder route for teacher and admin
+router.put("/reorder", restrictTo("teacher", "admin"), lessonContentController.reorderLessonContents);
+
 router
   .route("/")
   .get(lessonContentController.getLessonContents)
