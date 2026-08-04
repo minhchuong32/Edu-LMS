@@ -201,6 +201,41 @@ const deleteLessonContent = async (id, user) => {
   return { id, deleted: true };
 };
 
+const reorderLessonContents = async (items, user) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new ApiError(400, "Danh sách sắp xếp không được để trống.");
+  }
+
+  const ids = items.map((item) => item.id || item._id).filter(Boolean);
+  const contents = await LessonContent.find({ _id: { $in: ids } });
+
+  if (contents.length === 0) {
+    throw new ApiError(404, "Không tìm thấy nội dung bài học nào.");
+  }
+
+  if (user.role !== "admin") {
+    const assignmentIds = [...new Set(contents.map((c) => c.teachingAssignmentRef.toString()))];
+    const assignments = await TeachingAssignment.find({ _id: { $in: assignmentIds } });
+    for (const assignment of assignments) {
+      checkTeacherAssignmentPermission(assignment, user);
+    }
+  }
+
+  const bulkOps = items.map((item, index) => {
+    const itemId = item.id || item._id;
+    const newOrder = typeof item.order === "number" ? item.order : index + 1;
+    return {
+      updateOne: {
+        filter: { _id: itemId },
+        update: { $set: { order: newOrder } },
+      },
+    };
+  });
+
+  await LessonContent.bulkWrite(bulkOps);
+  return { updatedCount: items.length };
+};
+
 module.exports = {
   createLessonContent,
   getLessonContents,
@@ -208,4 +243,6 @@ module.exports = {
   getLessonContentById,
   updateLessonContent,
   deleteLessonContent,
+  reorderLessonContents,
 };
+

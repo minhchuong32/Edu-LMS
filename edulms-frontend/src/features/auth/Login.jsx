@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/common/Card";
@@ -173,6 +173,12 @@ export default function Login() {
             <p>🔑 <span className="font-semibold text-neutral-900">parent@edulms.edu</span> (Phụ huynh)</p>
             <p className="text-neutral-400 text-[10px] italic pt-1 border-t border-neutral-200/40">Nhập bất kỳ mật khẩu nào dài từ 6 ký tự để đăng nhập.</p>
           </div>
+        </div>
+
+        <div className="text-center pt-1 border-t border-neutral-200/50 relative z-10">
+          <Link to="/terms" className="text-xs text-neutral-500 hover:text-primary transition-colors font-medium hover:underline">
+            Điều khoản dịch vụ & Chính sách bảo mật
+          </Link>
         </div>
       </Card>
     </div>

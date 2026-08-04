@@ -10,6 +10,8 @@ export const teacherRoutes = [
   { path: "attendance", element: Attendance },
   { path: "assignments", element: Assignments },
   { path: "grading", element: Grading },
-  { path: "syllabus", element: Syllabus }
+  { path: "syllabus", element: Syllabus },
+  { path: "lectures", element: Syllabus }
 ];
+
 
