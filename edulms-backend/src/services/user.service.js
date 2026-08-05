@@ -333,9 +333,220 @@ const updateUserClass = async (userId, classRef) => {
   return await User.findById(userId).populate("classRef", "name schoolYear");
 };
 
+/**
+ * Create a new user (admin/teacher/student/parent)
+ */
+const createUser = async (data) => {
+  const { name, email, password, role, studentCode, teacherCode, classRef, childrenRefs, isActivated } = data;
+
+  if (!name || !name.trim()) {
+    throw new ApiError(400, "Họ và tên không được để trống.");
+  }
+  if (!email || !email.trim()) {
+    throw new ApiError(400, "Email không được để trống.");
+  }
+
+  const emailLower = email.toLowerCase().trim();
+  const existingEmail = await User.findOne({ email: emailLower });
+  if (existingEmail) {
+    throw new ApiError(400, `Email '${email}' đã được sử dụng.`);
+  }
+
+  const validRoles = ["student", "teacher", "admin", "parent"];
+  const userRole = role && validRoles.includes(role) ? role : "student";
+
+  // Code uniqueness check
+  let finalStudentCode = undefined;
+  let finalTeacherCode = undefined;
+
+  if (userRole === "student" && studentCode && studentCode.trim()) {
+    const codeUpper = studentCode.trim().toUpperCase();
+    const existingCode = await User.findOne({ studentCode: codeUpper });
+    if (existingCode) {
+      throw new ApiError(400, `Mã học sinh '${studentCode}' đã tồn tại.`);
+    }
+    finalStudentCode = codeUpper;
+  }
+
+  if (userRole === "teacher" && teacherCode && teacherCode.trim()) {
+    const codeUpper = teacherCode.trim().toUpperCase();
+    const existingCode = await User.findOne({ teacherCode: codeUpper });
+    if (existingCode) {
+      throw new ApiError(400, `Mã giáo viên '${teacherCode}' đã tồn tại.`);
+    }
+    finalTeacherCode = codeUpper;
+  }
+
+  // Validate Class for student
+  let finalClassRef = undefined;
+  if (userRole === "student" && classRef) {
+    const classExists = await Class.findById(classRef);
+    if (!classExists) {
+      throw new ApiError(404, "Lớp học được chọn không tồn tại.");
+    }
+    finalClassRef = classRef;
+  }
+
+  // Handle password
+  let userPassword = password;
+  if (!userPassword || !userPassword.trim()) {
+    userPassword = generateTempPassword();
+  } else if (userPassword.trim().length < 6) {
+    throw new ApiError(400, "Mật khẩu phải có ít nhất 6 ký tự.");
+  }
+
+  const newUser = await User.create({
+    name: name.trim(),
+    email: emailLower,
+    password: userPassword,
+    role: userRole,
+    studentCode: finalStudentCode,
+    teacherCode: finalTeacherCode,
+    classRef: finalClassRef,
+    childrenRefs: Array.isArray(childrenRefs) ? childrenRefs : [],
+    isActivated: isActivated !== undefined ? Boolean(isActivated) : true,
+  });
+
+  return await User.findById(newUser._id)
+    .populate("classRef", "name schoolYear")
+    .populate("childrenRefs", "name email studentCode");
+};
+
+/**
+ * Get user by ID
+ */
+const getUserById = async (id) => {
+  const user = await User.findById(id)
+    .populate("classRef", "name schoolYear")
+    .populate("childrenRefs", "name email studentCode");
+  if (!user) {
+    throw new ApiError(404, "Không tìm thấy người dùng này.");
+  }
+  return user;
+};
+
+/**
+ * Update user profile / role / class / status
+ */
+const updateUser = async (id, data) => {
+  const user = await User.findById(id);
+  if (!user) {
+    throw new ApiError(404, "Không tìm thấy người dùng này.");
+  }
+
+  const { name, email, password, role, studentCode, teacherCode, classRef, childrenRefs, isActivated } = data;
+
+  if (name !== undefined) {
+    if (!name.trim()) throw new ApiError(400, "Họ và tên không được để trống.");
+    user.name = name.trim();
+  }
+
+  if (email !== undefined) {
+    const emailLower = email.toLowerCase().trim();
+    if (!emailLower) throw new ApiError(400, "Email không được để trống.");
+    if (emailLower !== user.email) {
+      const existingEmail = await User.findOne({ email: emailLower });
+      if (existingEmail) throw new ApiError(400, `Email '${email}' đã được sử dụng bởi người dùng khác.`);
+      user.email = emailLower;
+    }
+  }
+
+  if (role !== undefined) {
+    const validRoles = ["student", "teacher", "admin", "parent"];
+    if (validRoles.includes(role)) {
+      user.role = role;
+    }
+  }
+
+  // Update codes based on role
+  if (studentCode !== undefined) {
+    if (studentCode && studentCode.trim()) {
+      const codeUpper = studentCode.trim().toUpperCase();
+      if (codeUpper !== user.studentCode) {
+        const existingCode = await User.findOne({ studentCode: codeUpper });
+        if (existingCode && existingCode._id.toString() !== id) {
+          throw new ApiError(400, `Mã học sinh '${studentCode}' đã tồn tại.`);
+        }
+      }
+      user.studentCode = codeUpper;
+    } else {
+      user.studentCode = undefined;
+    }
+  }
+
+  if (teacherCode !== undefined) {
+    if (teacherCode && teacherCode.trim()) {
+      const codeUpper = teacherCode.trim().toUpperCase();
+      if (codeUpper !== user.teacherCode) {
+        const existingCode = await User.findOne({ teacherCode: codeUpper });
+        if (existingCode && existingCode._id.toString() !== id) {
+          throw new ApiError(400, `Mã giáo viên '${teacherCode}' đã tồn tại.`);
+        }
+      }
+      user.teacherCode = codeUpper;
+    } else {
+      user.teacherCode = undefined;
+    }
+  }
+
+  if (classRef !== undefined) {
+    if (classRef) {
+      const classExists = await Class.findById(classRef);
+      if (!classExists) throw new ApiError(404, "Lớp học được chọn không tồn tại.");
+      user.classRef = classRef;
+    } else {
+      user.classRef = null;
+    }
+  }
+
+  if (childrenRefs !== undefined) {
+    user.childrenRefs = Array.isArray(childrenRefs) ? childrenRefs : [];
+  }
+
+  if (isActivated !== undefined) {
+    user.isActivated = Boolean(isActivated);
+  }
+
+  // Password reset if provided
+  if (password && password.trim()) {
+    if (password.trim().length < 6) {
+      throw new ApiError(400, "Mật khẩu mới phải có ít nhất 6 ký tự.");
+    }
+    user.password = password.trim();
+  }
+
+  await user.save();
+
+  return await User.findById(id)
+    .populate("classRef", "name schoolYear")
+    .populate("childrenRefs", "name email studentCode");
+};
+
+/**
+ * Delete user
+ */
+const deleteUser = async (id, currentUser) => {
+  if (currentUser && currentUser._id.toString() === id.toString()) {
+    throw new ApiError(400, "Bạn không thể tự xóa tài khoản quản trị viên của chính mình.");
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    throw new ApiError(404, "Không tìm thấy người dùng này.");
+  }
+
+  await User.findByIdAndDelete(id);
+  return { id, deleted: true };
+};
+
 module.exports = {
   importUsersFromExcel,
   getUsers,
-  updateUserClass
+  updateUserClass,
+  createUser,
+  getUserById,
+  updateUser,
+  deleteUser,
 };
+
 

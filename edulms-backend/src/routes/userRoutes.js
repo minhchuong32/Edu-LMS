@@ -11,7 +11,14 @@ router.post("/import", upload.single("file"), userController.importUsers);
 // GET /api/v1/users - List users with filters
 router.get("/", userController.listUsers);
 
+// Admin-only user management endpoints
+router.post("/", authMiddleware, restrictTo("admin"), userController.createUser);
+router.get("/:id", authMiddleware, restrictTo("admin"), userController.getUserById);
+router.put("/:id", authMiddleware, restrictTo("admin"), userController.updateUser);
+router.delete("/:id", authMiddleware, restrictTo("admin"), userController.deleteUser);
+
 // PUT /api/v1/users/:id/class - Update student's class
 router.put("/:id/class", authMiddleware, restrictTo("admin"), userController.updateUserClass);
 
 module.exports = router;
+
