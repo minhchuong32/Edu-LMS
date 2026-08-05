@@ -7,21 +7,31 @@ const MAX_VIDEO_SIZE = 30 * 1024 * 1024; // 30MB
 const storage = multer.memoryStorage();
 
 const allowedVideoExtensions = [".mp4", ".mov", ".avi", ".mkv", ".webm"];
+const allowedDocExtensions = [
+  ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt",
+  ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg",
+  ".mp3", ".wav", ".m4a", ".ogg",
+  ".zip", ".rar", ".7z"
+];
 
 const fileFilter = (req, file, cb) => {
   const originalNameLower = file.originalname.toLowerCase();
-  const isPdf = file.mimetype === "application/pdf" || originalNameLower.endsWith(".pdf");
+  const isPdfOrDoc =
+    file.mimetype.startsWith("image/") ||
+    file.mimetype.startsWith("audio/") ||
+    file.mimetype === "application/pdf" ||
+    allowedDocExtensions.some((ext) => originalNameLower.endsWith(ext));
   const isVideo =
     file.mimetype.startsWith("video/") ||
     allowedVideoExtensions.some((ext) => originalNameLower.endsWith(ext));
 
-  if (isPdf || isVideo) {
+  if (isPdfOrDoc || isVideo) {
     cb(null, true);
   } else {
     cb(
       new ApiError(
         400,
-        "Định dạng tệp không được hỗ trợ. Chỉ chấp nhận tệp PDF (.pdf) hoặc Video (.mp4, .mov, .avi, .mkv, .webm)."
+        "Định dạng tệp không được hỗ trợ. Vui lòng chọn tệp PDF, Word/Excel/PPT, hình ảnh hoặc Video."
       ),
       false
     );
