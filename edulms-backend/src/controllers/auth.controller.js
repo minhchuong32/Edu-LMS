@@ -45,18 +45,19 @@ const login = async (req, res, next) => {
       throw new ApiError(400, "Vui lòng nhập đầy đủ email và mật khẩu.");
     }
 
-    const user = await User.findOne({ email });
+    const emailLower = email.toLowerCase().trim();
+    const user = await User.findOne({ email: emailLower });
     if (!user) {
-      throw new ApiError(401, "Email hoặc mật khẩu không chính xác.");
+      throw new ApiError(400, "Email này chưa được đăng ký trên hệ thống. Vui lòng kiểm tra lại.");
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      throw new ApiError(401, "Email hoặc mật khẩu không chính xác.");
+      throw new ApiError(400, "Mật khẩu không chính xác. Vui lòng kiểm tra lại.");
     }
 
     if (!user.isActivated) {
-      throw new ApiError(403, "Tài khoản chưa được kích hoạt. Vui lòng kích hoạt trước.");
+      throw new ApiError(400, "Tài khoản chưa được kích hoạt. Vui lòng kích hoạt tài khoản trước khi đăng nhập.");
     }
 
     // Generate tokens
@@ -228,29 +229,35 @@ const activate = async (req, res, next) => {
       throw new ApiError(400, "Mật khẩu phải chứa ít nhất 6 ký tự.");
     }
 
-    // Escape special regex characters in the code
-    const escapedCode = code.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-    const codeRegex = new RegExp(`^${escapedCode}$`, "i");
+    const emailLower = email.toLowerCase().trim();
+    const cleanCode = code.trim();
+    const codeNoDash = cleanCode.replace(/-/g, "");
+    const escaped1 = cleanCode.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const escaped2 = codeNoDash.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const codeRegex = new RegExp(`^(${escaped1}|${escaped2})$`, "i");
 
-    // Find user by email and either studentCode or teacherCode matching code case-insensitively
-    const user = await User.findOne({
-      email: email.toLowerCase().trim(),
-      $or: [
-        { studentCode: codeRegex },
-        { teacherCode: codeRegex },
-      ],
-    });
+    const userByEmail = await User.findOne({ email: emailLower });
 
-    if (!user) {
-      throw new ApiError(
-        404,
-        "Không tìm thấy tài khoản tương ứng với Email và Mã định danh đã cung cấp."
-      );
+    if (!userByEmail) {
+      throw new ApiError(400, "Không tìm thấy tài khoản với Email này.");
     }
 
-    if (user.isActivated) {
+    if (userByEmail.isActivated) {
       throw new ApiError(400, "Tài khoản đã được kích hoạt trước đó.");
     }
+
+    const userCode = (userByEmail.studentCode || userByEmail.teacherCode || "").trim();
+    const userCodeNoDash = userCode.replace(/-/g, "");
+    const isCodeMatch =
+      codeRegex.test(userCode) ||
+      cleanCode.toLowerCase() === userCode.toLowerCase() ||
+      codeNoDash.toLowerCase() === userCodeNoDash.toLowerCase();
+
+    if (!isCodeMatch) {
+      throw new ApiError(400, "Mã định danh không đúng với Email này.");
+    }
+
+    const user = userByEmail;
 
     // Update password (hashed in pre-save hook) and activate
     user.password = password;
@@ -276,29 +283,35 @@ const verifyActivation = async (req, res, next) => {
       throw new ApiError(400, "Vui lòng nhập đầy đủ mã định danh và email.");
     }
 
-    // Escape special regex characters in the code
-    const escapedCode = code.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-    const codeRegex = new RegExp(`^${escapedCode}$`, "i");
+    const emailLower = email.toLowerCase().trim();
+    const cleanCode = code.trim();
+    const codeNoDash = cleanCode.replace(/-/g, "");
+    const escaped1 = cleanCode.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const escaped2 = codeNoDash.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const codeRegex = new RegExp(`^(${escaped1}|${escaped2})$`, "i");
 
-    // Find user by email and either studentCode or teacherCode matching code case-insensitively
-    const user = await User.findOne({
-      email: email.toLowerCase().trim(),
-      $or: [
-        { studentCode: codeRegex },
-        { teacherCode: codeRegex },
-      ],
-    });
+    const userByEmail = await User.findOne({ email: emailLower });
 
-    if (!user) {
-      throw new ApiError(
-        404,
-        "Không tìm thấy tài khoản tương ứng với Email và Mã định danh đã cung cấp."
-      );
+    if (!userByEmail) {
+      throw new ApiError(400, "Không tìm thấy tài khoản với Email này.");
     }
 
-    if (user.isActivated) {
+    if (userByEmail.isActivated) {
       throw new ApiError(400, "Tài khoản đã được kích hoạt trước đó.");
     }
+
+    const userCode = (userByEmail.studentCode || userByEmail.teacherCode || "").trim();
+    const userCodeNoDash = userCode.replace(/-/g, "");
+    const isCodeMatch =
+      codeRegex.test(userCode) ||
+      cleanCode.toLowerCase() === userCode.toLowerCase() ||
+      codeNoDash.toLowerCase() === userCodeNoDash.toLowerCase();
+
+    if (!isCodeMatch) {
+      throw new ApiError(400, "Mã định danh không đúng với Email này.");
+    }
+
+    const user = userByEmail;
 
     res.status(200).json(
       new ApiResponse(200, { name: user.name }, "Xác thực thông tin kích hoạt thành công.")

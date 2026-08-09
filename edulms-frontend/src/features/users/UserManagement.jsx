@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import userService from "../../services/userService";
 import academicService from "../../services/academicService";
 import Card from "../../components/common/Card";
@@ -7,6 +8,7 @@ import Button from "../../components/common/Button";
 import UserImport from "./UserImport";
 
 export default function UserManagement() {
+  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("list"); // "list" | "import"
   const [users, setUsers] = useState([]);
   const [classList, setClassList] = useState([]);
@@ -22,6 +24,7 @@ export default function UserManagement() {
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [editingUser, setEditingUser] = useState(null); // null if creating, user object if editing
   const [targetUser, setTargetUser] = useState(null); // target user for delete / detail view
@@ -108,6 +111,7 @@ export default function UserManagement() {
       isActivated: true,
     });
     setFormErrors({});
+    setShowPassword(false);
     setShowFormModal(true);
   };
 
@@ -124,10 +128,15 @@ export default function UserManagement() {
       isActivated: user.isActivated !== undefined ? user.isActivated : true,
     });
     setFormErrors({});
+    setShowPassword(false);
     setShowFormModal(true);
   };
 
   const handleOpenDeleteModal = (user) => {
+    if (currentUser && (currentUser._id === user._id || currentUser.id === user._id)) {
+      showToast("Bạn không thể tự xóa tài khoản quản trị viên của chính mình!", "error");
+      return;
+    }
     setTargetUser(user);
     setShowDeleteModal(true);
   };
@@ -210,6 +219,12 @@ export default function UserManagement() {
   // Delete User Handler
   const handleDeleteConfirm = async () => {
     if (!targetUser) return;
+    if (currentUser && (currentUser._id === targetUser._id || currentUser.id === targetUser._id)) {
+      showToast("Bạn không thể tự xóa tài khoản quản trị viên của chính mình!", "error");
+      setShowDeleteModal(false);
+      setTargetUser(null);
+      return;
+    }
     try {
       await userService.deleteUser(targetUser._id);
       showToast("Đã xóa tài khoản người dùng thành công!", "success");
@@ -380,9 +395,18 @@ export default function UserManagement() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-200">
-                    {users.map((u) => (
+                    {users.map((u) => {
+                      const isSelf = currentUser && (currentUser._id === u._id || currentUser.id === u._id);
+                      return (
                       <tr key={u._id} className="hover:bg-neutral-50/50 transition">
-                        <td className="px-4 py-3 font-semibold text-neutral-900">{u.name}</td>
+                        <td className="px-4 py-3 font-semibold text-neutral-900 flex items-center gap-2">
+                          <span>{u.name}</span>
+                          {isSelf && (
+                            <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                              Chính bạn
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-neutral-600 font-mono text-xs">{u.email}</td>
                         <td className="px-4 py-3">
                           <Badge role={u.role}>{u.role}</Badge>
@@ -438,20 +462,34 @@ export default function UserManagement() {
                             </button>
 
                             {/* DELETE BUTTON */}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenDeleteModal(u)}
-                              className="p-1.5 text-neutral-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                              title="Xóa người dùng"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                            {isSelf ? (
+                              <button
+                                type="button"
+                                disabled
+                                className="p-1.5 text-neutral-300 cursor-not-allowed rounded-lg opacity-40"
+                                title="Không thể tự xóa tài khoản của chính mình"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenDeleteModal(u)}
+                                className="p-1.5 text-neutral-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                title="Xóa người dùng"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -521,13 +559,32 @@ export default function UserManagement() {
                 <label className="text-xs font-bold text-neutral-800">
                   {editingUser ? "Đặt lại Mật khẩu (để trống nếu không đổi)" : "Mật khẩu (để trống sẽ tự động tạo)"}
                 </label>
-                <input
-                  type="password"
-                  placeholder={editingUser ? "Nhập mật khẩu mới..." : "Nhập từ 6 ký tự trở lên..."}
-                  value={formData.password}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
-                  className="w-full px-3.5 py-2 text-sm bg-white border border-neutral-200 rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder={editingUser ? "Nhập mật khẩu mới..." : "Nhập từ 6 ký tự trở lên..."}
+                    value={formData.password}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                    className="w-full pl-3.5 pr-10 py-2 text-sm bg-white border border-neutral-200 rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600 transition focus:outline-none"
+                    title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.858A9.954 9.954 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m-4.592-4.592a3 3 0 11-4.243-4.243m4.242 4.242L3 3l18 18" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 {formErrors.password && <p className="text-xs text-rose-600 font-semibold">{formErrors.password}</p>}
               </div>
 
