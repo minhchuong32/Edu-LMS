@@ -2,23 +2,125 @@ import React, { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import Badge from "../components/common/Badge";
 import Button from "../components/common/Button";
+import Avatar from "../components/common/Avatar";
 import { useAuth } from "../context/AuthContext";
 
 export default function RoleSidebarLayout({ role, navItems = [], user: propUser }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const { user: authUser, logout } = useAuth();
 
   const currentUser = propUser || authUser || {
     name: "Người dùng",
     email: "user@edulms.edu",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+    role: role || "User"
   };
 
   const activeRole = role || currentUser?.role || "User";
+  const userCode = currentUser?.studentCode || currentUser?.teacherCode || null;
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans flex text-neutral-600 antialiased">
+      {/* USER PROFILE MODAL */}
+      {showProfileModal && (
+        <div
+          className="fixed inset-0 bg-neutral-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity"
+          onClick={() => setShowProfileModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-neutral-200 transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Profile Header Banner */}
+            <div className="relative bg-gradient-to-r from-primary to-indigo-700 h-28 p-6 flex items-end justify-between">
+              <button
+                onClick={() => setShowProfileModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
+                aria-label="Đóng modal"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Avatar & Core Profile Info */}
+            <div className="px-6 pb-6 pt-0 relative">
+              <div className="-mt-12 mb-3 flex items-end justify-between">
+                <Avatar
+                  src={currentUser.avatar}
+                  name={currentUser.name}
+                  email={currentUser.email}
+                  size="2xl"
+                  className="ring-4 ring-white shadow-lg"
+                />
+                <Badge role={activeRole} className="text-xs py-1 px-3">
+                  {activeRole}
+                </Badge>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold font-outfit text-neutral-900 leading-tight">
+                  {currentUser.name}
+                </h3>
+                <p className="text-xs font-medium text-neutral-600 mt-0.5">
+                  {currentUser.email}
+                </p>
+              </div>
+
+              {/* Detail fields */}
+              <div className="mt-5 space-y-3 bg-neutral-50 p-4 rounded-xl border border-neutral-200/80">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-600 font-medium">Vai trò hệ thống</span>
+                  <span className="font-bold text-neutral-900 capitalize">{activeRole}</span>
+                </div>
+
+                {userCode && (
+                  <div className="flex items-center justify-between text-xs pt-2 border-t border-neutral-200/60">
+                    <span className="text-neutral-600 font-medium">
+                      {activeRole.toLowerCase() === "teacher" ? "Mã giảng viên" : "Mã sinh viên"}
+                    </span>
+                    <span className="font-mono font-bold text-primary bg-primary-light px-2 py-0.5 rounded">
+                      {userCode}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-neutral-200/60">
+                  <span className="text-neutral-600 font-medium">Trạng thái tài khoản</span>
+                  <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Đang hoạt động
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 text-xs font-semibold py-2.5 rounded-xl"
+                  onClick={() => setShowProfileModal(false)}
+                >
+                  Đóng
+                </Button>
+                <Button
+                  variant="danger"
+                  className="flex-1 text-xs font-semibold py-2.5 rounded-xl"
+                  onClick={() => {
+                    setShowProfileModal(false);
+                    setShowLogoutConfirm(true);
+                  }}
+                >
+                  Đăng xuất
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* LOGOUT CONFIRMATION MODAL */}
       {showLogoutConfirm && (
         <div
@@ -120,19 +222,23 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
 
         {/* Sidebar Footer mobile */}
         <div className="p-4 border-t border-neutral-200 bg-neutral-50/50">
-          <div className="flex items-center gap-3">
-            <img
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="flex items-center gap-3 w-full text-left p-1.5 rounded-xl hover:bg-neutral-100/80 transition"
+          >
+            <Avatar
               src={currentUser.avatar}
-              alt={currentUser.name}
-              className="w-9 h-9 rounded-full object-cover border border-neutral-200"
+              name={currentUser.name}
+              email={currentUser.email}
+              size="md"
             />
-            <div className="overflow-hidden">
+            <div className="overflow-hidden flex-1">
               <p className="text-xs font-bold text-neutral-900 truncate">{currentUser.name}</p>
               <Badge role={activeRole} className="mt-0.5 text-[10px] py-0.5 px-2">
                 {activeRole}
               </Badge>
             </div>
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -172,19 +278,25 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
 
         {/* Sidebar Footer desktop */}
         <div className="p-4 border-t border-neutral-200 bg-neutral-50/50">
-          <div className="flex items-center gap-3">
-            <img
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="flex items-center gap-3 w-full text-left p-1.5 rounded-xl hover:bg-neutral-100/80 transition group"
+          >
+            <Avatar
               src={currentUser.avatar}
-              alt={currentUser.name}
-              className="w-9 h-9 rounded-full object-cover border border-neutral-200"
+              name={currentUser.name}
+              email={currentUser.email}
+              size="md"
             />
-            <div className="overflow-hidden">
-              <p className="text-xs font-bold text-neutral-900 truncate">{currentUser.name}</p>
+            <div className="overflow-hidden flex-1">
+              <p className="text-xs font-bold text-neutral-900 truncate group-hover:text-primary transition">
+                {currentUser.name}
+              </p>
               <Badge role={activeRole} className="mt-0.5 text-[10px] py-0.5 px-2">
                 {activeRole}
               </Badge>
             </div>
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -221,17 +333,23 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full ring-2 ring-white"></span>
             </button>
 
-            <div className="flex items-center gap-3 pl-3 border-l border-neutral-200">
-              <img
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="flex items-center gap-3 pl-3 border-l border-neutral-200 hover:opacity-80 transition group text-left"
+            >
+              <Avatar
                 src={currentUser.avatar}
-                alt={currentUser.name}
-                className="w-8 h-8 rounded-full object-cover border border-neutral-200 shadow-sm"
+                name={currentUser.name}
+                email={currentUser.email}
+                size="sm"
               />
-              <div className="hidden md:block text-left leading-tight">
-                <p className="text-xs font-bold text-neutral-900 truncate max-w-[120px]">{currentUser.name}</p>
+              <div className="hidden md:block leading-tight">
+                <p className="text-xs font-bold text-neutral-900 truncate max-w-[120px] group-hover:text-primary transition">
+                  {currentUser.name}
+                </p>
                 <span className="text-[10px] font-semibold text-neutral-600 capitalize">{activeRole}</span>
               </div>
-            </div>
+            </button>
 
             <Button
               variant="outline"

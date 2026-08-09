@@ -51,12 +51,6 @@ export default function TeacherLayout() {
     }
   ];
 
-  const teacherUser = {
-    name: "Tran Minh Thach",
-    email: "thach.teacher@edulms.edu",
-    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-  };
-
-  return <RoleSidebarLayout role="Teacher" navItems={teacherNavItems} user={teacherUser} />;
+  return <RoleSidebarLayout role="Teacher" navItems={teacherNavItems} />;
 }
 
