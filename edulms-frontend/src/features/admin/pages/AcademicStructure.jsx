@@ -4,6 +4,7 @@ import GradeClassTree from "../components/GradeClassTree";
 import SubjectTable from "../components/SubjectTable";
 import TeachingAssignmentManager from "../components/TeachingAssignmentManager";
 import ClassRosterManager from "../components/ClassRosterManager";
+import { FolderTree, Users, BookOpen, GraduationCap, Building2 } from "lucide-react";
 
 export default function AcademicStructure() {
   const [activeTab, setActiveTab] = useState("tree"); // "tree" | "subjects" | "assignments" | "roster"
@@ -53,10 +54,8 @@ export default function AcademicStructure() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-primary-light text-primary text-xs font-semibold tracking-wide mb-3">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a2 2 0 012-2h2a2 2 0 012 2v5m-4 0h4" />
-              </svg>
-              Quản trị Học thuật (Academic Administration)
+              <Building2 className="w-4 h-4" />
+              <span>Quản trị Học thuật (Academic Administration)</span>
             </div>
             <h1 className="text-[28px] md:text-[32px] font-semibold text-neutral-900 tracking-tight">
               Quản lý Cấu trúc Học thuật
@@ -97,7 +96,8 @@ export default function AcademicStructure() {
                 : "text-neutral-600 hover:text-neutral-900 border-transparent hover:bg-neutral-50"
             }`}
           >
-            <span>🌳 Cấu trúc Khối & Lớp học</span>
+            <FolderTree className="w-4 h-4" />
+            <span>Cấu trúc Khối & Lớp học</span>
           </button>
 
           <button
@@ -108,7 +108,8 @@ export default function AcademicStructure() {
                 : "text-neutral-600 hover:text-neutral-900 border-transparent hover:bg-neutral-50"
             }`}
           >
-            <span>📋 Danh sách Lớp & Chuyển lớp (Roster)</span>
+            <Users className="w-4 h-4" />
+            <span>Danh sách Lớp & Chuyển lớp (Roster)</span>
           </button>
 
           <button
@@ -119,7 +120,8 @@ export default function AcademicStructure() {
                 : "text-neutral-600 hover:text-neutral-900 border-transparent hover:bg-neutral-50"
             }`}
           >
-            <span>📚 Danh mục Môn học</span>
+            <BookOpen className="w-4 h-4" />
+            <span>Danh mục Môn học</span>
           </button>
 
           <button
@@ -130,7 +132,8 @@ export default function AcademicStructure() {
                 : "text-neutral-600 hover:text-neutral-900 border-transparent hover:bg-neutral-50"
             }`}
           >
-            <span>👨‍🏫 Phân công Giảng dạy</span>
+            <GraduationCap className="w-4 h-4" />
+            <span>Phân công Giảng dạy</span>
           </button>
         </div>
       </div>
