@@ -321,7 +321,7 @@ docker compose up --build -d
 
 # 👨‍💻 Author
 
-**Phạm Hán Minh Chương**
+**Phạm Hàn Minh Chương**
 
 - **GitHub**: [minhchuong32](https://github.com/minhchuong32)
 - **Email**: chuongminh3225@gmail.com
