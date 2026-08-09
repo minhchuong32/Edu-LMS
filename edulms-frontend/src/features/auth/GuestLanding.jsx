@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import Footer from "../../components/common/Footer";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Button from "../../components/common/Button";
@@ -139,9 +140,14 @@ export default function GuestLanding() {
     }
   }, [isAuthenticated, user, navigate]);
 
+  const isClickingNavRef = useRef(false);
+
   // Theo dõi vị trí cuộn trang để cập nhật active tab tương tự TermsPrivacyPage
   useEffect(() => {
     const handleScroll = () => {
+      // Nếu đang trong quá trình cuộn tự động do click tab, bỏ qua cập nhật activeSection
+      if (isClickingNavRef.current) return;
+
       const scrollPosition = window.pageYOffset + 120;
       const sections = [
         { id: "top" },
@@ -175,7 +181,7 @@ export default function GuestLanding() {
   }, []);
 
   // Hàm cuộn trang từ từ mượt mà sử dụng requestAnimationFrame và easeInOutCubic
-  const animateScrollTo = (targetPosition, duration = 850) => {
+  const animateScrollTo = (targetPosition, duration = 850, onComplete) => {
     const startPosition = window.pageYOffset;
     const distance = targetPosition - startPosition;
     let startTime = null;
@@ -194,6 +200,8 @@ export default function GuestLanding() {
 
       if (timeElapsed < duration) {
         requestAnimationFrame(animationStep);
+      } else {
+        if (onComplete) onComplete();
       }
     };
 
@@ -204,6 +212,7 @@ export default function GuestLanding() {
   const scrollToSection = (e, id) => {
     if (e && e.preventDefault) e.preventDefault();
     setActiveSection(id);
+    isClickingNavRef.current = true;
     if (id === "top") {
       scrollToTop(e);
       return;
@@ -212,7 +221,11 @@ export default function GuestLanding() {
     if (element) {
       const yOffset = -90;
       const targetY = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      animateScrollTo(targetY, 850);
+      animateScrollTo(targetY, 850, () => {
+        isClickingNavRef.current = false;
+      });
+    } else {
+      isClickingNavRef.current = false;
     }
   };
 
@@ -220,7 +233,10 @@ export default function GuestLanding() {
   const scrollToTop = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setActiveSection("top");
-    animateScrollTo(0, 850);
+    isClickingNavRef.current = true;
+    animateScrollTo(0, 850, () => {
+      isClickingNavRef.current = false;
+    });
   };
 
   return (
@@ -366,7 +382,6 @@ export default function GuestLanding() {
                       <p className="text-[10.5px] text-neutral-300">Tính toán hệ số 1 - 2 - 3 chính xác</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Auto</span>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
@@ -381,7 +396,6 @@ export default function GuestLanding() {
                       <p className="text-[10.5px] text-neutral-300">Quản lý chuyên cần tiết 1 đến tiết 10</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Realtime</span>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
@@ -396,7 +410,6 @@ export default function GuestLanding() {
                       <p className="text-[10.5px] text-neutral-300">Trắc nghiệm bấm giờ & nộp bài tự luận</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Online</span>
                 </div>
               </div>
 
@@ -527,42 +540,7 @@ export default function GuestLanding() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-neutral-950 text-neutral-400 py-12 px-6 border-t border-neutral-800 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-8 text-xs sm:text-sm">
-          <div className="space-y-3 max-w-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary text-white font-extrabold flex items-center justify-center text-xl shadow-sm">
-                E
-              </div>
-              <h2 className="text-white font-extrabold font-outfit text-lg">EduLMS</h2>
-            </div>
-            <p className="text-xs leading-relaxed text-neutral-500">
-              Hệ thống quản lý học tập thông minh THPT. Tối ưu hóa quản lý rèn luyện, rèn luyện số và kết nối nhà trường - phụ huynh.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-2">Thông tin liên hệ</h4>
-            <p> Địa chỉ: 01 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh</p>
-            <p> Điện thoại: 1900 12xx | Fax: (028) 3896-xxxx</p>
-            <p> Email hỗ trợ: edulms@gmail.com</p>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-2">Liên kết nhanh</h4>
-            <p className="hover:text-white transition-colors cursor-pointer">Cổng thông tin Sở GD&ĐT</p>
-            <Link to="/guide" className="hover:text-white transition-colors cursor-pointer block">
-              Hướng dẫn sử dụng hệ thống
-            </Link>
-            <Link to="/terms" className="hover:text-white transition-colors cursor-pointer block">
-              Điều khoản dịch vụ & bảo mật
-            </Link>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-neutral-800 text-center text-xs text-neutral-500">
-          <p>© {new Date().getFullYear()} EduLMS. Bảo lưu mọi quyền.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

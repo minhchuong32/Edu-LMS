@@ -1,9 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import GuestLanding from "../features/auth/GuestLanding";
 import Activate from "../features/auth/Activate";
 import Login from "../features/auth/Login";
 import TermsPrivacyPage from "../pages/public/TermsPrivacyPage";
 import SystemGuidePage from "../pages/public/SystemGuidePage";
+import EduPortalPage from "../pages/public/EduPortalPage";
 
 import AdminLayout from "../layouts/AdminLayout";
 import TeacherLayout from "../layouts/TeacherLayout";
@@ -18,9 +20,25 @@ import { teacherRoutes } from "./teacherRoutes";
 import { studentRoutes } from "./studentRoutes";
 import { parentRoutes } from "./parentRoutes";
 
+// Component tự động cuộn lên đầu trang khi chuyển tuyến đường (route)
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant"
+    });
+  }, [pathname]);
+
+  return null;
+}
+
 export default function AppRouter() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         {/* Public Landing & Authentication Routes */}
         <Route path="/" element={<GuestLanding />} />
@@ -28,6 +46,7 @@ export default function AppRouter() {
         <Route path="/activate" element={<Activate />} />
         <Route path="/terms" element={<TermsPrivacyPage />} />
         <Route path="/guide" element={<SystemGuidePage />} />
+        <Route path="/portal" element={<EduPortalPage />} />
 
         {/* Protected Session Routes */}
         <Route element={<PrivateRoute />}>

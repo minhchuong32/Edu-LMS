@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/common/Button";
+import Footer from "../../components/common/Footer";
 import {
   BookOpen,
   GraduationCap,
@@ -20,13 +21,57 @@ import {
   Sparkles,
   Layers,
   Check,
-  ExternalLink
+  ExternalLink,
+  ArrowUp
 } from "lucide-react";
+import { useEffect } from "react";
 
 export default function SystemGuidePage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.pageYOffset > 300) {
+        setShowBackToTop(true);
+      } else {
+        setShowBackToTop(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const animateScrollTo = (targetPosition, duration = 850) => {
+    const startPosition = window.pageYOffset;
+    const distance = targetPosition - startPosition;
+    let startTime = null;
+
+    const easeInOutCubic = (t) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    const animationStep = (currentTime) => {
+      if (!startTime) startTime = currentTime;
+      const timeElapsed = currentTime - startTime;
+      const progress = Math.min(timeElapsed / duration, 1);
+      const easeProgress = easeInOutCubic(progress);
+
+      window.scrollTo(0, startPosition + distance * easeProgress);
+
+      if (timeElapsed < duration) {
+        requestAnimationFrame(animationStep);
+      }
+    };
+
+    requestAnimationFrame(animationStep);
+  };
+
+  const scrollToTop = () => {
+    animateScrollTo(0, 850);
+  };
 
   const GUIDE_STEPS = [
     {
@@ -252,8 +297,8 @@ export default function SystemGuidePage() {
           <button
             onClick={() => setSelectedRole("all")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition ${selectedRole === "all"
-                ? "bg-primary text-white shadow-md shadow-primary/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              ? "bg-primary text-white shadow-md shadow-primary/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
               }`}
           >
             Tất cả quy trình ({GUIDE_STEPS.length})
@@ -261,8 +306,8 @@ export default function SystemGuidePage() {
           <button
             onClick={() => setSelectedRole("student")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${selectedRole === "student"
-                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
               }`}
           >
             <GraduationCap className="w-4 h-4" />
@@ -271,8 +316,8 @@ export default function SystemGuidePage() {
           <button
             onClick={() => setSelectedRole("teacher")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${selectedRole === "teacher"
-                ? "bg-purple-600 text-white shadow-md shadow-purple-500/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              ? "bg-purple-600 text-white shadow-md shadow-purple-500/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
               }`}
           >
             <School className="w-4 h-4" />
@@ -281,8 +326,8 @@ export default function SystemGuidePage() {
           <button
             onClick={() => setSelectedRole("admin")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${selectedRole === "admin"
-                ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
               }`}
           >
             <ShieldCheck className="w-4 h-4" />
@@ -291,8 +336,8 @@ export default function SystemGuidePage() {
           <button
             onClick={() => setSelectedRole("parent")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${selectedRole === "parent"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
               }`}
           >
             <UserCheck className="w-4 h-4" />
@@ -393,42 +438,18 @@ export default function SystemGuidePage() {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-neutral-950 text-neutral-400 py-12 px-6 border-t border-neutral-800 mt-auto">
-              <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-8 text-xs sm:text-sm">
-                <div className="space-y-3 max-w-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-primary text-white font-extrabold flex items-center justify-center text-xl shadow-sm">
-                      E
-                    </div>
-                    <h2 className="text-white font-extrabold font-outfit text-lg">EduLMS</h2>
-                  </div>
-                  <p className="text-xs leading-relaxed text-neutral-500">
-                    Hệ thống quản lý học tập thông minh THPT. Tối ưu hóa quản lý rèn luyện, rèn luyện số và kết nối nhà trường - phụ huynh.
-                  </p>
-                </div>
-      
-                <div className="space-y-2">
-                  <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-2">Thông tin liên hệ</h4>
-                  <p> Địa chỉ: 01 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh</p>
-                  <p> Điện thoại: 1900 12xx | Fax: (028) 3896-xxxx</p>
-                  <p> Email hỗ trợ: edulms@gmail.com</p>
-                </div>
-      
-                <div className="space-y-2">
-                  <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-2">Liên kết nhanh</h4>
-                  <p className="hover:text-white transition-colors cursor-pointer">Cổng thông tin Sở GD&ĐT</p>
-                  <Link to="/guide" className="hover:text-white transition-colors cursor-pointer block">
-                    Hướng dẫn sử dụng hệ thống
-                  </Link>
-                  <Link to="/terms" className="hover:text-white transition-colors cursor-pointer block">
-                    Điều khoản dịch vụ & bảo mật
-                  </Link>
-                </div>
-              </div>
-              <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-neutral-800 text-center text-xs text-neutral-500">
-                <p>© {new Date().getFullYear()} EduLMS. Bảo lưu mọi quyền.</p>
-              </div>
-            </footer>
+      <Footer />
+
+      {/* FLOATING BACK TO TOP BUTTON */}
+      {showBackToTop && (
+        <button
+          onClick={scrollToTop}
+          aria-label="Cuộn lên đầu trang"
+          className="fixed bottom-8 right-8 z-50 p-3 rounded-2xl bg-primary text-white shadow-xl shadow-primary/30 hover:bg-primary-hover hover:scale-110 active:scale-95 transition-all"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
     </div>
   );
 }

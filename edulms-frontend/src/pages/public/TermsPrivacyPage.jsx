@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/common/Button";
+import Footer from "../../components/common/Footer";
 import {
   Shield,
   ShieldCheck,
@@ -235,14 +236,16 @@ export default function TermsPrivacyPage() {
           </p>
           <div className="p-4 rounded-xl bg-neutral-900 text-white space-y-2">
             <h5 className="font-bold text-sm font-outfit">Bộ Phận An Toàn Dữ Liệu EduLMS</h5>
-            <p className="text-xs text-neutral-300">📍 Địa chỉ: 123 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh</p>
-            <p className="text-xs text-neutral-300">✉️ Email pháp lý & bảo mật: <strong className="text-white">hotro@edulms.edu.vn</strong></p>
-            <p className="text-xs text-neutral-300">📞 Tổng đài kỹ thuật: <strong className="text-white">1900 12xx (8:00 - 17:30)</strong></p>
+            <p className="text-xs text-neutral-300">- Địa chỉ: 01 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh</p>
+            <p className="text-xs text-neutral-300">- Email pháp lý & bảo mật: <strong className="text-white">hotro@edulms.edu.vn</strong></p>
+            <p className="text-xs text-neutral-300">- Tổng đài kỹ thuật: <strong className="text-white">1900 12xx (8:00 - 17:30)</strong></p>
           </div>
         </div>
       )
     }
   ];
+
+  const isClickingNavRef = useRef(false);
 
   // Lắng nghe cuộn chuột để làm sáng mục lục bên trái (Scroll Spy)
   useEffect(() => {
@@ -252,6 +255,9 @@ export default function TermsPrivacyPage() {
       } else {
         setShowBackToTop(false);
       }
+
+      // Nếu đang trong quá trình cuộn tự động do click tab, bỏ qua cập nhật activeSection theo vị trí cuộn
+      if (isClickingNavRef.current) return;
 
       const scrollPosition = window.pageYOffset + 140;
       for (let i = SECTIONS.length - 1; i >= 0; i--) {
@@ -273,7 +279,7 @@ export default function TermsPrivacyPage() {
   }, [SECTIONS]);
 
   // Hàm cuộn mượt bằng requestAnimationFrame (easeInOutCubic)
-  const animateScrollTo = (targetPosition, duration = 850) => {
+  const animateScrollTo = (targetPosition, duration = 850, onComplete) => {
     const startPosition = window.pageYOffset;
     const distance = targetPosition - startPosition;
     let startTime = null;
@@ -291,6 +297,8 @@ export default function TermsPrivacyPage() {
 
       if (timeElapsed < duration) {
         requestAnimationFrame(animationStep);
+      } else {
+        if (onComplete) onComplete();
       }
     };
 
@@ -299,17 +307,25 @@ export default function TermsPrivacyPage() {
 
   const scrollToSection = (id) => {
     setActiveSection(id);
+    isClickingNavRef.current = true;
     const element = document.getElementById(id);
     if (element) {
       const yOffset = -90;
       const targetY = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      animateScrollTo(Math.max(0, targetY), 850);
+      animateScrollTo(Math.max(0, targetY), 850, () => {
+        isClickingNavRef.current = false;
+      });
+    } else {
+      isClickingNavRef.current = false;
     }
   };
 
   const scrollToTop = () => {
     setActiveSection(SECTIONS[0].id);
-    animateScrollTo(0, 850);
+    isClickingNavRef.current = true;
+    animateScrollTo(0, 850, () => {
+      isClickingNavRef.current = false;
+    });
   };
 
   // Filter sections by tab and search query
@@ -491,16 +507,14 @@ export default function TermsPrivacyPage() {
                         <button
                           key={sec.id}
                           onClick={() => scrollToSection(sec.id)}
-                          className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition text-left ${
-                            isActive
+                          className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition text-left ${isActive
                               ? "bg-primary text-white shadow-sm shadow-primary/20"
                               : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                            <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                              isActive ? "bg-white/20 text-white" : "bg-neutral-100 text-neutral-500"
-                            }`}>
+                            <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 ${isActive ? "bg-white/20 text-white" : "bg-neutral-100 text-neutral-500"
+                              }`}>
                               {sec.number}
                             </span>
                             <span className="truncate">{sec.title}</span>
@@ -591,42 +605,7 @@ export default function TermsPrivacyPage() {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-neutral-950 text-neutral-400 py-12 px-6 border-t border-neutral-800 mt-auto">
-              <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-8 text-xs sm:text-sm">
-                <div className="space-y-3 max-w-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-primary text-white font-extrabold flex items-center justify-center text-xl shadow-sm">
-                      E
-                    </div>
-                    <h2 className="text-white font-extrabold font-outfit text-lg">EduLMS</h2>
-                  </div>
-                  <p className="text-xs leading-relaxed text-neutral-500">
-                    Hệ thống quản lý học tập thông minh THPT. Tối ưu hóa quản lý rèn luyện, rèn luyện số và kết nối nhà trường - phụ huynh.
-                  </p>
-                </div>
-      
-                <div className="space-y-2">
-                  <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-2">Thông tin liên hệ</h4>
-                  <p> Địa chỉ: 01 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh</p>
-                  <p> Điện thoại: 1900 12xx | Fax: (028) 3896-xxxx</p>
-                  <p> Email hỗ trợ: edulms@gmail.com</p>
-                </div>
-      
-                <div className="space-y-2">
-                  <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-2">Liên kết nhanh</h4>
-                  <p className="hover:text-white transition-colors cursor-pointer">Cổng thông tin Sở GD&ĐT</p>
-                  <Link to="/guide" className="hover:text-white transition-colors cursor-pointer block">
-                    Hướng dẫn sử dụng hệ thống
-                  </Link>
-                  <Link to="/terms" className="hover:text-white transition-colors cursor-pointer block">
-                    Điều khoản dịch vụ & bảo mật
-                  </Link>
-                </div>
-              </div>
-              <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-neutral-800 text-center text-xs text-neutral-500">
-                <p>© {new Date().getFullYear()} EduLMS. Bảo lưu mọi quyền.</p>
-              </div>
-            </footer>
+      <Footer />
 
       {/* FLOATING BACK TO TOP BUTTON */}
       {showBackToTop && (
