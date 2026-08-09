@@ -61,7 +61,7 @@ export default function AcademicStructure() {
               Quản lý Cấu trúc Học thuật
             </h1>
             <p className="text-[14px] text-neutral-600 mt-1.5 max-w-2xl leading-relaxed">
-              Tổ chức sơ đồ Khối - Lớp học, danh mục Môn học, phân công Giáo viên và Quản lý danh sách học sinh theo lớp (Roster).
+              Tổ chức sơ đồ Khối - Lớp học, danh mục Môn học, phân công Giáo viên và Quản lý danh sách học sinh theo lớp.
             </p>
           </div>
 
@@ -109,7 +109,7 @@ export default function AcademicStructure() {
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Danh sách Lớp & Chuyển lớp (Roster)</span>
+            <span>Danh sách Lớp & Chuyển lớp</span>
           </button>
 
           <button

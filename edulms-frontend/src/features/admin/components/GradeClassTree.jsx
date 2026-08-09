@@ -424,7 +424,7 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
                                     title="Xem danh sách học sinh & Chuyển lớp"
                                   >
                                     <Users className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                    <span>Xem Roster</span>
+                                    <span>Xem HS</span>
                                   </button>
                                 )}
                                 <button
