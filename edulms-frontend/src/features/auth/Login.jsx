@@ -95,11 +95,24 @@ export default function Login() {
         </div>
 
         {apiError && (
-          <div className="p-3.5 bg-rose-50 border border-danger/20 text-danger text-xs font-semibold rounded-xl flex items-start gap-2.5 animate-fadeIn">
-            <svg className="w-4.5 h-4.5 flex-shrink-0 mt-0.5 text-danger" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <span>{apiError}</span>
+          <div className="p-3.5 bg-rose-50 border border-rose-200/80 text-rose-700 text-xs font-semibold rounded-xl flex items-center gap-3 animate-fadeIn relative z-10 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-rose-100/80 flex items-center justify-center flex-shrink-0 text-rose-600">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1 space-y-1">
+              <span className="block leading-relaxed text-rose-800">{apiError}</span>
+              {apiError.includes("chưa được kích hoạt") && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/activate")}
+                  className="text-xs font-bold text-primary hover:underline block pt-0.5"
+                >
+                  👉 Bấm vào đây để Kích hoạt tài khoản ngay
+                </button>
+              )}
+            </div>
           </div>
         )}
 
