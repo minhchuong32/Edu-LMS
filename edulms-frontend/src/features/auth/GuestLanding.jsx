@@ -248,8 +248,8 @@ export default function GuestLanding() {
               href="#top"
               onClick={(e) => scrollToSection(e, "top")}
               className={`transition-colors hidden md:block ${activeSection === "top"
-                  ? "text-primary font-bold border-b-2 border-primary pb-0.5"
-                  : "text-neutral-600 hover:text-primary"
+                ? "text-primary font-bold border-b-2 border-primary pb-0.5"
+                : "text-neutral-600 hover:text-primary"
                 }`}
             >
               Giới thiệu
@@ -258,8 +258,8 @@ export default function GuestLanding() {
               href="#features"
               onClick={(e) => scrollToSection(e, "features")}
               className={`transition-colors hidden md:block ${activeSection === "features"
-                  ? "text-primary font-bold border-b-2 border-primary pb-0.5"
-                  : "text-neutral-600 hover:text-primary"
+                ? "text-primary font-bold border-b-2 border-primary pb-0.5"
+                : "text-neutral-600 hover:text-primary"
                 }`}
             >
               Tính năng
@@ -268,8 +268,8 @@ export default function GuestLanding() {
               href="#roles"
               onClick={(e) => scrollToSection(e, "roles")}
               className={`transition-colors hidden md:block ${activeSection === "roles"
-                  ? "text-primary font-bold border-b-2 border-primary pb-0.5"
-                  : "text-neutral-600 hover:text-primary"
+                ? "text-primary font-bold border-b-2 border-primary pb-0.5"
+                : "text-neutral-600 hover:text-primary"
                 }`}
             >
               Phân hệ vai trò
@@ -543,15 +543,17 @@ export default function GuestLanding() {
 
           <div className="space-y-2">
             <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-2">Thông tin liên hệ</h4>
-            <p>📍 Địa chỉ: 123 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh</p>
-            <p>📞 Điện thoại: 1900 12xx | Fax: (028) 3896-xxxx</p>
-            <p>✉️ Email hỗ trợ: hotro@edulms.edu</p>
+            <p> Địa chỉ: 01 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh</p>
+            <p> Điện thoại: 1900 12xx | Fax: (028) 3896-xxxx</p>
+            <p> Email hỗ trợ: edulms@gmail.com</p>
           </div>
 
           <div className="space-y-2">
             <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-2">Liên kết nhanh</h4>
             <p className="hover:text-white transition-colors cursor-pointer">Cổng thông tin Sở GD&ĐT</p>
-            <p className="hover:text-white transition-colors cursor-pointer">Hướng dẫn sử dụng hệ thống</p>
+            <Link to="/guide" className="hover:text-white transition-colors cursor-pointer block">
+              Hướng dẫn sử dụng hệ thống
+            </Link>
             <Link to="/terms" className="hover:text-white transition-colors cursor-pointer block">
               Điều khoản dịch vụ & bảo mật
             </Link>

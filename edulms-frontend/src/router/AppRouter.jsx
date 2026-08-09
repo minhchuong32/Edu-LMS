@@ -3,6 +3,7 @@ import GuestLanding from "../features/auth/GuestLanding";
 import Activate from "../features/auth/Activate";
 import Login from "../features/auth/Login";
 import TermsPrivacyPage from "../pages/public/TermsPrivacyPage";
+import SystemGuidePage from "../pages/public/SystemGuidePage";
 
 import AdminLayout from "../layouts/AdminLayout";
 import TeacherLayout from "../layouts/TeacherLayout";
@@ -26,6 +27,7 @@ export default function AppRouter() {
         <Route path="/login" element={<Login />} />
         <Route path="/activate" element={<Activate />} />
         <Route path="/terms" element={<TermsPrivacyPage />} />
+        <Route path="/guide" element={<SystemGuidePage />} />
 
         {/* Protected Session Routes */}
         <Route element={<PrivateRoute />}>
