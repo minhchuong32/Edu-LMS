@@ -81,8 +81,12 @@ export default function Login() {
 
         {/* Brand identity */}
         <div className="text-center space-y-3 relative z-10">
-          <div className="w-14 h-14 bg-gradient-to-tr from-primary to-indigo-600 text-white font-extrabold font-outfit rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-lg shadow-primary/25 transform hover:scale-105 transition-transform duration-300">
-            E
+          <div className="flex justify-center">
+            <Link to="/" className="inline-flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-xl bg-primary text-white font-extrabold font-outfit flex items-center justify-center text-2xl shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
+                E
+              </div>
+            </Link>
           </div>
           <div className="space-y-1">
             <h2 className="text-2xl font-black text-neutral-900 tracking-tight font-sans">
@@ -95,11 +99,24 @@ export default function Login() {
         </div>
 
         {apiError && (
-          <div className="p-3.5 bg-rose-50 border border-danger/20 text-danger text-xs font-semibold rounded-xl flex items-start gap-2.5 animate-fadeIn">
-            <svg className="w-4.5 h-4.5 flex-shrink-0 mt-0.5 text-danger" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <span>{apiError}</span>
+          <div className="p-3.5 bg-rose-50 border border-rose-200/80 text-rose-700 text-xs font-semibold rounded-xl flex items-center gap-3 animate-fadeIn relative z-10 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-rose-100/80 flex items-center justify-center flex-shrink-0 text-rose-600">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1 space-y-1">
+              <span className="block leading-relaxed text-rose-800">{apiError}</span>
+              {apiError.includes("chưa được kích hoạt") && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/activate")}
+                  className="text-xs font-bold text-primary hover:underline block pt-0.5"
+                >
+                  Bấm vào đây để Kích hoạt tài khoản ngay
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -167,10 +184,10 @@ export default function Login() {
         <div className="p-4 bg-neutral-50/80 border border-neutral-200/50 rounded-2xl space-y-2 relative z-10">
           <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Tài khoản chạy thử (Dev Preview):</p>
           <div className="text-[11px] text-neutral-600 font-medium space-y-1.5 leading-normal">
-            <p>🔑 <span className="font-semibold text-neutral-900">admin@edulms.edu</span> (Quản trị viên)</p>
-            <p>🔑 <span className="font-semibold text-neutral-900">teacher@edulms.edu</span> (Giáo viên)</p>
-            <p>🔑 <span className="font-semibold text-neutral-900">student@edulms.edu</span> (Học sinh)</p>
-            <p>🔑 <span className="font-semibold text-neutral-900">parent@edulms.edu</span> (Phụ huynh)</p>
+            <p> <span className="font-semibold text-neutral-900">admin@edulms.edu</span> (Quản trị viên)</p>
+            <p> <span className="font-semibold text-neutral-900">teacher@edulms.edu</span> (Giáo viên)</p>
+            <p> <span className="font-semibold text-neutral-900">student@edulms.edu</span> (Học sinh)</p>
+            <p> <span className="font-semibold text-neutral-900">parent@edulms.edu</span> (Phụ huynh)</p>
             <p className="text-neutral-400 text-[10px] italic pt-1 border-t border-neutral-200/40">Nhập bất kỳ mật khẩu nào dài từ 6 ký tự để đăng nhập.</p>
           </div>
         </div>

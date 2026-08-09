@@ -41,12 +41,6 @@ export default function StudentLayout() {
     }
   ];
 
-  const studentUser = {
-    name: "Le Hoang Nam",
-    email: "nam.student@edulms.edu",
-    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-  };
-
-  return <RoleSidebarLayout role="Student" navItems={studentNavItems} user={studentUser} />;
+  return <RoleSidebarLayout role="Student" navItems={studentNavItems} />;
 }
 

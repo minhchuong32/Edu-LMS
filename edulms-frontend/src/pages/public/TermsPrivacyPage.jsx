@@ -1,477 +1,273 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Button from "../../components/common/Button";
+import Footer from "../../components/common/Footer";
 import {
   Shield,
-  FileText,
+  ShieldCheck,
   Lock,
-  User,
-  BookOpen,
-  Cookie,
+  Ban,
+  FileCheck,
+  Calendar,
+  Tag,
+  CheckCircle2,
+  Info,
+  XCircle,
   Mail,
-  Database,
-  CheckCircle,
-  AlertCircle,
+  Search,
   ArrowUp,
   ChevronRight,
-  Search,
-  Moon,
-  Sun,
-  GraduationCap,
-  Clock,
-  ExternalLink,
-  HelpCircle,
-  Layers,
-  Sparkles,
-  Server,
+  ArrowLeft,
+  FileText,
   UserCheck,
-  Ban,
-  Scale,
-  Bell,
-  Check,
+  BookOpen,
+  Server,
+  Users
 } from "lucide-react";
 
-// Dữ liệu 15 mục Điều khoản dịch vụ & Chính sách bảo mật bằng tiếng Việt
-const SECTIONS = [
-  {
-    id: "acceptance",
-    number: "1",
-    title: "Chấp nhận điều khoản",
-    category: "Điều khoản dịch vụ",
-    icon: FileText,
-    badge: "Thỏa thuận cốt lõi",
-    summary: "Bằng việc truy cập hoặc sử dụng EduLMS, bạn đồng ý tuân thủ các Điều khoản dịch vụ này.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Chào mừng bạn đến với <strong className="text-indigo-600 dark:text-indigo-400">EduLMS</strong> ("Nền tảng"), Hệ thống Quản lý Học tập hiện đại được thiết kế dành riêng cho nhà trường, giáo viên, học sinh và phụ huynh. Khi đăng ký, truy cập hoặc sử dụng bất kỳ tính năng nào của EduLMS, bạn đã chính thức đồng ý tuân thủ và chịu sự ràng buộc pháp lý bởi các Điều khoản dịch vụ và Chính sách bảo mật này.
-        </p>
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Các điều khoản này áp dụng chung cho tất cả đối tượng người dùng—bao gồm Quản trị viên nhà trường, Hội đồng sư phạm (Giáo viên), Học sinh phổ thông và Phụ huynh học sinh. Nếu bạn không đồng ý với bất kỳ phần nào trong các điều khoản này, vui lòng ngừng truy cập và sử dụng Nền tảng ngay lập tức.
-        </p>
-        <div className="p-4 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60">
-          <div className="flex items-start space-x-3">
-            <CheckCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
-            <span className="text-sm text-indigo-900 dark:text-indigo-200">
-              Người dùng Đại diện Tổ chức: Nếu bạn truy cập EduLMS thay mặt cho một trường học hoặc tổ chức giáo dục, bạn cam kết rằng mình có đầy đủ thẩm quyền ràng buộc tổ chức đó với các Điều khoản này.
-            </span>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "user-accounts",
-    number: "2",
-    title: "Tài khoản người dùng",
-    category: "Điều khoản dịch vụ",
-    icon: User,
-    badge: "Xác thực & Bảo mật",
-    summary: "Quy định về khởi tạo tài khoản, mã xác thực và trách nhiệm bảo vệ thông tin đăng nhập.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Tài khoản trên EduLMS được khởi tạo dựa trên danh tính chính thức do Ban Giám Hiệu nhà trường cung cấp. Các vai trò hệ thống bao gồm: <strong>Quản trị viên (Admin)</strong>, <strong>Giáo viên (Teacher)</strong>, <strong>Học sinh (Student)</strong> và <strong>Phụ huynh (Parent)</strong>.
-        </p>
-        <ul className="space-y-2 text-gray-700 dark:text-gray-300 list-disc list-inside pl-2">
-          <li><strong>Mã định danh duy nhất:</strong> Học sinh và Giáo viên được liên kết với Mã học sinh (VD: HS-XXXX) hoặc Mã giáo viên (VD: GV-XXXX) được cấp bởi nhà trường.</li>
-          <li><strong>Kích hoạt tài khoản:</strong> Người dùng mới phải sử dụng Mã kích hoạt được gửi qua email nhà trường để hoàn tất đăng ký mật khẩu trước khi đăng nhập.</li>
-          <li><strong>Bảo mật thông tin:</strong> Bạn chịu trách nhiệm duy nhất trong việc bảo mật mật khẩu và mã xác thực truy cập. Không chia sẻ tài khoản với bất kỳ ai khác.</li>
-        </ul>
-        <div className="p-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900/60 flex items-start space-x-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-amber-900 dark:text-amber-200">
-            Bạn phải thông báo ngay cho Quản trị viên EduLMS nếu phát hiện bất kỳ dấu hiệu truy cập trái phép hoặc sự cố bảo mật nào liên quan đến tài khoản của mình.
-          </p>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "acceptable-use",
-    number: "3",
-    title: "Quy định sử dụng hợp lệ",
-    category: "Điều khoản dịch vụ",
-    icon: Ban,
-    badge: "Chuẩn mực hành vi",
-    summary: "Các hành vi bị nghiêm cấm, tính trung thực trong học thuật và an toàn hệ thống.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          EduLMS cam kết duy trì một môi trường học tập lành mạnh, văn minh và an toàn. Bạn đồng ý sử dụng Nền tảng duy nhất cho mục đích học tập và giảng dạy hợp pháp.
-        </p>
-        <h4 className="font-semibold text-gray-900 dark:text-white">Các hành vi bị nghiêm cấm tuyệt đối:</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[
-            "Gian lận thi cử, đạo văn hoặc nộp bài làm của người khác",
-            "Quấy rầy, xúc phạm, bắt nạt hoặc phát ngôn thù thù địch",
-            "Tải lên tệp tin độc hại, chứa virus hoặc mã gian lận",
-            "Cố gắng xâm nhập trái phép vào cơ sở dữ liệu hệ thống",
-            "Sử dụng công cụ tự động cào/trích xuất nội dung bài học",
-            "Giả mạo danh tính của học sinh, giáo viên hoặc admin",
-          ].map((item, idx) => (
-            <div key={idx} className="flex items-center space-x-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/50">
-              <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0" />
-              <span className="text-sm text-gray-700 dark:text-gray-300">{item}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "learning-content",
-    number: "4",
-    title: "Nội dung bài học & Bài nộp",
-    category: "Điều khoản dịch vụ",
-    icon: BookOpen,
-    badge: "Tài liệu học thuật",
-    summary: "Quyền hạn và trách nhiệm đối với bài giảng, tài liệu đính kèm và bài kiểm tra.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          EduLMS hỗ trợ truyền tải bài giảng điện tử, bài giảng video, tài liệu tham khảo PDF, bài thi trắc nghiệm và bài tập tự luận.
-        </p>
-        <div className="space-y-3">
-          <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700">
-            <h5 className="font-medium text-gray-900 dark:text-white mb-1">Trách nhiệm của Giáo viên</h5>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Giáo viên đảm bảo các tài liệu bài học dạng PDF và bài giảng video (tối đa 30MB) được tải lên phù hợp với chương trình giảng dạy của Bộ GD&ĐT và không vi phạm bản quyền.
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700">
-            <h5 className="font-medium text-gray-900 dark:text-white mb-1">Trách nhiệm của Học sinh</h5>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Học sinh phải hoàn thành bài tập đúng hạn. Tệp tin bài nộp tự luận (định dạng PDF ≤10MB) là căn cứ chính thức để giáo viên chấm điểm và lưu vào sổ điểm điện tử.
-            </p>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "intellectual-property",
-    number: "5",
-    title: "Quyền sở hữu trí tuệ",
-    category: "Điều khoản dịch vụ",
-    icon: Scale,
-    badge: "Bản quyền & Sỡ hữu",
-    summary: "Quyền sở hữu phần mềm EduLMS và quyền tác giả của tài liệu giáo án.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Mã nguồn, giao diện người dùng, logo, hệ thống cơ sở dữ liệu và thương hiệu <strong className="text-indigo-600 dark:text-indigo-400">EduLMS</strong> thuộc quyền sở hữu trí tuệ độc quyền của EduLMS và các đối tác cấp phép.
-        </p>
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Tài liệu bài giảng do Giáo viên tải lên thuộc bản quyền của Giáo viên hoặc nhà trường tương ứng. Bằng việc đưa tài liệu lên EduLMS, Giáo viên cấp cho Nền tảng quyền lưu trữ, hiển thị và phân phối tài liệu đó trong phạm vi lớp học được phân công.
-        </p>
-      </div>
-    ),
-  },
-  {
-    id: "privacy-policy",
-    number: "6",
-    title: "Tổng quan chính sách bảo mật",
-    category: "Chính sách bảo mật",
-    icon: Shield,
-    badge: "Bảo vệ dữ liệu",
-    summary: "Cam kết tối thượng của chúng tôi trong việc bảo vệ dữ liệu cá nhân của học sinh.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Quyền riêng tư của bạn là ưu tiên hàng đầu của EduLMS. Chính sách này giải thích chi tiết cách EduLMS thu thập, xử lý, lưu trữ và bảo vệ dữ liệu cá nhân của học sinh, giáo viên và phụ huynh.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-          <div className="p-4 text-center rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40">
-            <Lock className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
-            <h5 className="font-semibold text-gray-900 dark:text-white text-sm">Mã hóa TLS 256-bit</h5>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Bảo vệ dữ liệu truyền qua mạng</p>
-          </div>
-          <div className="p-4 text-center rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40">
-            <UserCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400 mx-auto mb-2" />
-            <h5 className="font-semibold text-gray-900 dark:text-white text-sm">Không Quảng cáo</h5>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Dữ liệu học sinh không bị thương mại hóa</p>
-          </div>
-          <div className="p-4 text-center rounded-xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40">
-            <Database className="w-6 h-6 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
-            <h5 className="font-semibold text-gray-900 dark:text-white text-sm">Kiểm soát Phân quyền</h5>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cơ chế bảo vệ Scope từng Lớp học (RBAC)</p>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "information-collected",
-    number: "7",
-    title: "Thông tin chúng tôi thu thập",
-    category: "Chính sách bảo mật",
-    icon: Database,
-    badge: "Thu thập dữ liệu",
-    summary: "Các loại dữ liệu cá nhân, nhật ký đăng nhập và hồ sơ học tập được hệ thống ghi nhận.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Để cung cấp đầy đủ các tính năng quản lý học tập, EduLMS thu thập các danh mục thông tin sau:
-        </p>
-        <div className="space-y-2">
-          {[
-            { label: "Thông tin Tài khoản", detail: "Họ và tên, Email, Mật khẩu đã mã hóa, Mã học sinh/giáo viên, Lớp học và Vai trò." },
-            { label: "Kết quả Học tập", detail: "Tiến độ học bài, Điểm kiểm tra (hệ số 1, 2, 3), Điểm trung bình, Lịch sử điểm danh và Lịch sử chuyển lớp." },
-            { label: "Tệp tin & Bài nộp", detail: "Bài làm tự luận PDF (≤10MB), Bài giảng video giáo viên (≤30MB) và tệp tin đính kèm." },
-            { label: "Nhật ký Kỹ thuật", detail: "Địa chỉ IP, loại trình duyệt, thiết bị đăng nhập, thời gian truy cập và Refresh Token." },
-            { label: "Thông tin Giao tiếp", detail: "Thông báo hệ thống, tin nhắn thông báo lớp học và phản hồi hỗ trợ." },
-          ].map((item, idx) => (
-            <div key={idx} className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/50">
-              <span className="font-semibold text-gray-900 dark:text-white text-sm">{item.label}: </span>
-              <span className="text-sm text-gray-600 dark:text-gray-300">{item.detail}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "data-usage",
-    number: "8",
-    title: "Mục đích sử dụng dữ liệu",
-    category: "Chính sách bảo mật",
-    icon: Sparkles,
-    badge: "Xử lý dữ liệu",
-    summary: "Dữ liệu học tập được sử dụng để quản lý sổ điểm, điểm danh và báo cáo phụ huynh.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          EduLMS xử lý dữ liệu thu thập duy nhất cho các hoạt động giáo dục và quản lý nhà trường:
-        </p>
-        <ul className="space-y-2 text-gray-700 dark:text-gray-300 list-disc list-inside pl-2">
-          <li>Quản lý danh sách lớp học và phân công giảng dạy môn học cho giáo viên.</li>
-          <li>Hỗ trợ giáo viên nhập điểm, theo dõi chuyên cần và cập nhật tiến độ bài học.</li>
-          <li>Cho phép phụ huynh theo dõi tình hình học tập và điểm danh của con em thời gian thực.</li>
-          <li>Tính toán điểm trung bình môn, điểm tổng kết và chuyển lớp theo năm học.</li>
-          <li>Bảo đảm an ninh hệ thống, phát hiện truy cập bất thường và xử lý lỗi kỹ thuật.</li>
-        </ul>
-      </div>
-    ),
-  },
-  {
-    id: "cookies",
-    number: "9",
-    title: "Cookie & Công nghệ theo dõi",
-    category: "Chính sách bảo mật",
-    icon: Cookie,
-    badge: "Lưu trữ phiên",
-    summary: "Sử dụng Cookie cần thiết, JWT Token và bộ nhớ cục bộ để duy trì đăng nhập.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          EduLMS sử dụng công nghệ lưu trữ phiên an toàn để duy trì trạng thái đăng nhập của người dùng.
-        </p>
-        <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 space-y-2">
-          <div className="flex items-center space-x-2">
-            <Check className="w-4 h-4 text-emerald-500" />
-            <span className="text-sm font-medium text-gray-900 dark:text-white">JWT Access Token & Refresh Token</span>
-          </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400 pl-6">
-            Mã thông báo JWT ngắn hạn đảm bảo giao tiếp API bảo mật giữa trình duyệt và máy chủ.
-          </p>
-          <div className="flex items-center space-x-2 pt-2">
-            <Check className="w-4 h-4 text-emerald-500" />
-            <span className="text-sm font-medium text-gray-900 dark:text-white">Giao diện Sáng/Tối (Dark Mode)</span>
-          </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400 pl-6">
-            Local Storage lưu trữ cài đặt giao diện ưa thích của người dùng.
-          </p>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "data-security",
-    number: "10",
-    title: "Bảo mật & Mã hóa dữ liệu",
-    category: "Chính sách bảo mật",
-    icon: Lock,
-    badge: "An ninh hạ tầng",
-    summary: "Các biện pháp mã hóa dữ liệu học sinh tuân thủ tiêu chuẩn an toàn thông tin.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Chúng tôi áp dụng các biện pháp bảo mật kỹ thuật và tổ chức chặt chẽ nhằm bảo vệ dữ liệu chống lại sự truy cập, thay đổi hoặc phá hoại trái phép:
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700">
-            <h5 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">Mã hóa Mật khẩu Bcrypt</h5>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Mật khẩu được băm và thêm muối mã hóa bằng thuật toán Bcrypt trước khi lưu trữ.</p>
-          </div>
-          <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700">
-            <h5 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">Lưu trữ Đám mây Cloudinary</h5>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Các tệp PDF và Video được bảo vệ an toàn trên Cloudinary thông qua kênh kết nối HTTPS.</p>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "third-party",
-    number: "11",
-    title: "Dịch vụ bên thứ ba",
-    category: "Chính sách bảo mật",
-    icon: Server,
-    badge: "Tích hợp hệ thống",
-    summary: "Các đối tác cung cấp hạ tầng cơ sở dữ liệu và lưu trữ phương tiện đám mây.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          EduLMS hợp tác với các nhà cung cấp dịch vụ hạ tầng đám mây hàng đầu đạt chuẩn quốc tế:
-        </p>
-        <ul className="space-y-2 text-gray-700 dark:text-gray-300 list-disc list-inside pl-2 text-sm">
-          <li><strong>MongoDB Atlas:</strong> Hạ tầng cơ sở dữ liệu đám mây bảo mật với cơ chế mã hóa dữ liệu tại chỗ.</li>
-          <li><strong>Cloudinary API:</strong> Dịch vụ lưu trữ và phân phối tệp bài giảng PDF và Video bài học tốc độ cao.</li>
-        </ul>
-      </div>
-    ),
-  },
-  {
-    id: "user-rights",
-    number: "12",
-    title: "Quyền của người dùng & GDPR",
-    category: "Chính sách bảo mật",
-    icon: UserCheck,
-    badge: "Quyền riêng tư",
-    summary: "Quyền truy cập, chỉnh sửa, trích xuất hoặc yêu cầu xóa dữ liệu cá nhân.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Tuân thủ các nguyên tắc bảo vệ dữ liệu hiện đại, người dùng EduLMS có đầy đủ các quyền sau đối với dữ liệu của mình:
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[
-            { title: "Quyền Xem Dữ Liệu", desc: "Xem đầy đủ lịch sử học tập, bảng điểm và chuyên cần bất kỳ lúc nào." },
-            { title: "Quyền Điều Chỉnh", desc: "Yêu cầu Quản trị viên cập nhật thông tin cá nhân bị sai lệch." },
-            { title: "Quyền Trích Xuất", desc: "Xuất dữ liệu học tập và bảng điểm cá nhân ra định dạng Excel." },
-            { title: "Quyền Xóa Tài Khoản", desc: "Yêu cầu vô hiệu hóa tài khoản và ẩn hồ sơ sau khi ra trường." },
-          ].map((right, idx) => (
-            <div key={idx} className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/50">
-              <h5 className="font-semibold text-gray-900 dark:text-white text-sm">{right.title}</h5>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{right.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "account-termination",
-    number: "13",
-    title: "Chấm dứt & Tạm khóa tài khoản",
-    category: "Điều khoản dịch vụ",
-    icon: Ban,
-    badge: "Thực thi quy định",
-    summary: "Các trường hợp tài khoản bị tạm khóa hoặc ngừng hoạt động trên hệ thống.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Ban Giám Hiệu hoặc Quản trị viên EduLMS có quyền tạm ngưng hoặc vô hiệu hóa quyền truy cập tài khoản trong các trường hợp:
-        </p>
-        <ul className="space-y-2 text-gray-700 dark:text-gray-300 list-disc list-inside pl-2 text-sm">
-          <li>Học sinh đã tốt nghiệp, chuyển trường hoặc thôi học theo quyết định của nhà trường.</li>
-          <li>Vi phạm nghiêm trọng Quy định sử dụng hợp lệ hoặc gian lận học thuật nhiều lần.</li>
-          <li>Có yêu cầu bằng văn bản từ Phụ huynh hoặc Cơ quan quản lý giáo dục.</li>
-        </ul>
-      </div>
-    ),
-  },
-  {
-    id: "changes-to-terms",
-    number: "14",
-    title: "Thay đổi điều khoản & Thông báo",
-    category: "Điều khoản dịch vụ",
-    icon: Bell,
-    badge: "Cập nhật",
-    summary: "Quy trình cập nhật các điều khoản dịch vụ và thông báo cho người dùng.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          EduLMS có thể cập nhật các Điều khoản dịch vụ và Chính sách bảo mật này theo thời gian để đáp ứng sự thay đổi của công nghệ hoặc quy định pháp luật. Những thay đổi quan trọng sẽ được thông báo công khai trên bảng tin chung của bảng điều khiển EduLMS.
-        </p>
-      </div>
-    ),
-  },
-  {
-    id: "contact-info",
-    number: "15",
-    title: "Thông tin liên hệ & Hỗ trợ",
-    category: "Liên hệ pháp lý",
-    icon: Mail,
-    badge: "Bộ phận hỗ trợ",
-    summary: "Địa chỉ liên hệ giải đáp thắc mắc về điều khoản dịch vụ và an toàn dữ liệu.",
-    content: (
-      <div className="space-y-4">
-        <p className="leading-relaxed text-gray-700 dark:text-gray-300">
-          Nếu bạn có bất kỳ thắc mắc, góp ý hoặc yêu cầu hỗ trợ nào liên quan đến Điều khoản dịch vụ và Bảo mật thông tin, vui lòng liên hệ với chúng tôi:
-        </p>
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md">
-          <div className="space-y-2 text-sm">
-            <p className="font-semibold text-base">Bộ phận Hỗ trợ Kỹ thuật & Bảo mật EduLMS</p>
-            <p className="flex items-center space-x-2">
-              <Mail className="w-4 h-4 flex-shrink-0" />
-              <span>Email: <strong>hotro@edulms.edu.vn</strong> / <strong>baomat@edulms.edu.vn</strong></span>
-            </p>
-            <p className="flex items-center space-x-2">
-              <GraduationCap className="w-4 h-4 flex-shrink-0" />
-              <span>Trường Đại học Sư phạm Kỹ thuật TP. Hồ Chí Minh (HCMUTE)</span>
-            </p>
-            <p className="text-xs text-indigo-100 pt-2 border-t border-indigo-400/40">
-              Thời gian làm việc: Thứ Hai – Thứ Sáu (8:00 AM – 5:00 PM)
-            </p>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-];
-
 export default function TermsPrivacyPage() {
-  const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [showBackToTop, setShowBackToTop] = useState(false);
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState("collection");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTab, setSelectedTab] = useState("all"); // "all", "privacy", "terms"
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
-  // Lọc danh sách mục theo từ khóa tìm kiếm
-  const filteredSections = SECTIONS.filter(
-    (sec) =>
-      sec.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sec.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sec.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Chuyển đổi giao diện Sáng / Tối (Dark Mode)
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    if (!isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
+  // Danh sách các mục Quy định & Chính sách Bảo mật EduLMS
+  const SECTIONS = [
+    {
+      id: "collection",
+      number: "1",
+      title: "Thu thập thông tin & Phạm vi sử dụng",
+      type: "privacy",
+      badge: "Chính sách bảo mật",
+      summary: "Các loại dữ liệu học tập, chuyên cần và thông tin cá nhân mà EduLMS thu thập để phục vụ công tác rèn luyện THPT.",
+      icon: <Shield className="w-5 h-5 text-primary" />,
+      content: (
+        <div className="space-y-4 text-neutral-700 leading-relaxed text-sm">
+          <p>
+            Hệ thống Quản lý Học tập <strong className="text-neutral-900 font-bold">EduLMS</strong> thu thập và xử lý các thông tin cần thiết phục vụ cho việc quản lý rèn luyện, giảng dạy và liên lạc giữa Nhà trường - Giáo viên - Học sinh - Phụ huynh.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3 pt-1">
+            <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200/80 space-y-1">
+              <h5 className="font-bold text-neutral-900 text-xs uppercase tracking-wider text-primary">Thông tin định danh</h5>
+              <p className="text-xs text-neutral-600">Họ và tên, Email, Mã học sinh (HS-XXXX), Mã giáo viên (GV-XXXX), Lớp học và Trường THPT trực thuộc.</p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200/80 space-y-1">
+              <h5 className="font-bold text-neutral-900 text-xs uppercase tracking-wider text-primary">Dữ liệu học tập & Chuyên cần</h5>
+              <p className="text-xs text-neutral-600">Bảng điểm số (hệ số 1, hệ số 2, hệ số 3), nhật ký điểm danh theo tiết học (tiết 1-10) và tệp bài tập nộp.</p>
+            </div>
+          </div>
+          <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 flex items-start gap-3">
+            <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <p className="text-xs text-indigo-950 font-medium leading-relaxed">
+              <strong>Cam kết sử dụng đúng mục đích:</strong> Mọi thông tin thu thập được chỉ sử dụng duy nhất cho mục đích quản lý chuyên môn giáo dục, rèn luyện rèn luyện và hỗ trợ phụ huynh theo dõi tiến độ rèn luyện của học sinh.
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "rbac",
+      number: "2",
+      title: "Phân quyền truy cập theo vai trò (RBAC)",
+      type: "terms",
+      badge: "Phân quyền vai trò",
+      summary: "Quy định phân quyền dữ liệu nghiêm ngặt giữa Ban Giám Hiệu, Giáo viên, Học sinh và Phụ huynh.",
+      icon: <Lock className="w-5 h-5 text-primary" />,
+      content: (
+        <div className="space-y-4 text-neutral-700 leading-relaxed text-sm">
+          <p>
+            EduLMS áp dụng mô hình phân quyền bảo mật 4 lớp <strong className="text-neutral-900 font-bold">(Role-Based Access Control)</strong> để đảm bảo thông tin được bảo vệ tối đa:
+          </p>
+          <div className="space-y-2.5">
+            <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80 flex items-center justify-between text-xs">
+              <span className="font-bold text-neutral-900">Ban Giám Hiệu (Admin)</span>
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Quyền quản trị hệ thống & cơ cấu học vụ</span>
+            </div>
+            <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80 flex items-center justify-between text-xs">
+              <span className="font-bold text-neutral-900">Hội Đồng Sư Phạm (Teacher)</span>
+              <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">Quyền nhập điểm, điểm danh & giao bài kiểm tra</span>
+            </div>
+            <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80 flex items-center justify-between text-xs">
+              <span className="font-bold text-neutral-900">Học Sinh (Student)</span>
+              <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Quyền học tập, làm trắc nghiệm & xem rèn luyện cá nhân</span>
+            </div>
+            <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80 flex items-center justify-between text-xs">
+              <span className="font-bold text-neutral-900">Phụ Huynh (Parent)</span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Quyền xem điểm danh, sổ điểm & thông báo của con</span>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "security",
+      number: "3",
+      title: "Lưu trữ & Bảo mật dữ liệu",
+      type: "privacy",
+      badge: "Hạ tầng & Bảo mật",
+      summary: "Mã hóa SSL/TLS 256-bit, JWT Token và sao lưu cơ sở dữ liệu định kỳ an toàn.",
+      icon: <Server className="w-5 h-5 text-primary" />,
+      content: (
+        <div className="space-y-4 text-neutral-700 leading-relaxed text-sm">
+          <p>
+            EduLMS áp dụng tiêu chuẩn bảo mật dữ liệu hàng đầu dành cho nền tảng giáo dục số:
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-xs text-neutral-600 pl-1">
+            <li><strong>Mã hóa kết nối:</strong> Toàn bộ dữ liệu truyền tải giữa máy tính người dùng và máy chủ được mã hóa qua giao thức HTTPS SSL/TLS 256-bit.</li>
+            <li><strong>Xác thực phiên làm việc:</strong> Sử dụng JWT Token kết hợp Refresh Token lưu trữ dạng HTTP-Only Cookie ngăn ngừa tấn công XSS/CSRF.</li>
+            <li><strong>Mật khẩu người dùng:</strong> Được mã hóa một chiều bằng thuật toán BCrypt trước khi lưu trữ vào cơ sở dữ liệu MongoDB.</li>
+            <li><strong>Sao lưu an toàn:</strong> Dữ liệu điểm số và danh mục rèn luyện được sao lưu tự động định kỳ hàng ngày.</li>
+          </ul>
+        </div>
+      )
+    },
+    {
+      id: "submissions",
+      number: "4",
+      title: "Quy định bài tập & Ngân hàng đề thi",
+      type: "terms",
+      badge: "Quy định học thuật",
+      summary: "Quy chuẩn nộp tệp bài tập tự luận (PDF ≤10MB), làm trắc nghiệm bấm giờ và bảo mật đề thi.",
+      icon: <FileText className="w-5 h-5 text-primary" />,
+      content: (
+        <div className="space-y-4 text-neutral-700 leading-relaxed text-sm">
+          <p>
+            Hệ thống hỗ trợ quản lý quy trình nộp bài tập và tổ chức thi trực tuyến theo đúng quy định:
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200 space-y-1">
+              <h5 className="font-bold text-neutral-900">Bài tập tự luận</h5>
+              <p className="text-neutral-600">Học sinh phải nộp tệp tin định dạng PDF có dung lượng không quá 10MB trước thời hạn quy định.</p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200 space-y-1">
+              <h5 className="font-bold text-neutral-900">Bài thi trắc nghiệm</h5>
+              <p className="text-neutral-600">Được chấm điểm tự động. Đề thi và đáp án được niêm phong bảo mật cho tới thời điểm mở đề.</p>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "student-rights",
+      number: "5",
+      title: "Quyền hạn của Học sinh & Phụ huynh",
+      type: "privacy",
+      badge: "Quyền lợi người dùng",
+      summary: "Quyền tra cứu điểm số, phản hồi kết quả rèn luyện và yêu cầu hỗ trợ kỹ thuật.",
+      icon: <UserCheck className="w-5 h-5 text-primary" />,
+      content: (
+        <div className="space-y-3 text-neutral-700 leading-relaxed text-sm">
+          <p>
+            Người dùng Học sinh và Phụ huynh trên hệ thống EduLMS được đảm bảo đầy đủ các quyền hạn:
+          </p>
+          <ul className="list-disc list-inside space-y-1.5 text-xs text-neutral-600 pl-1">
+            <li>Xem điểm số chi tiết từng môn học và lịch sử điểm danh từng tiết học.</li>
+            <li>Gửi yêu cầu phúc khảo hoặc phản hồi sai sót điểm số đến Giáo viên bộ môn.</li>
+            <li>Yêu cầu xuất báo cáo rèn luyện học kỳ dưới định dạng bản in hoặc tệp tin số.</li>
+            <li>Được hỗ trợ kỹ thuật và khôi phục tài khoản trong trường hợp quên mật khẩu.</li>
+          </ul>
+        </div>
+      )
+    },
+    {
+      id: "copyright",
+      number: "6",
+      title: "Sở hữu trí tuệ & Bản quyền tài liệu",
+      type: "terms",
+      badge: "Bản quyền & Pháp lý",
+      summary: "Bản quyền các bài giảng điện tử (PDF/Video ≤30MB) thuộc về Giáo viên và Nhà trường THPT.",
+      icon: <BookOpen className="w-5 h-5 text-primary" />,
+      content: (
+        <div className="space-y-4 text-neutral-700 leading-relaxed text-sm">
+          <p>
+            Tất cả bài giảng điện tử, video hướng dẫn (tối đa 30MB) và ngân hàng câu hỏi do Giáo viên đăng tải lên EduLMS thuộc bản quyền của Giáo viên và Nhà trường THPT quản lý.
+          </p>
+          <p className="text-xs text-neutral-600">
+            Nghiêm cấm hành vi sao chép, mua bán hoặc phát tán tài liệu bài học của trường ra bên ngoài hệ thống khi chưa có sự đồng ý của hội đồng giáo viên.
+          </p>
+        </div>
+      )
+    },
+    {
+      id: "acceptable-behavior",
+      number: "7",
+      title: "Chuẩn mực hành vi & Trung thực học thuật",
+      type: "terms",
+      badge: "An toàn học thuật",
+      summary: "Nghiêm cấm gian lận thi cử, phát tán nội dung độc hại hoặc can thiệp trái phép hệ thống.",
+      icon: <Ban className="w-5 h-5 text-primary" />,
+      content: (
+        <div className="space-y-3 text-neutral-700 leading-relaxed text-sm">
+          <p>Để xây dựng môi trường giáo dục văn minh, người dùng cam kết không thực hiện các hành vi:</p>
+          <div className="grid sm:grid-cols-2 gap-2.5 text-xs">
+            <div className="p-2.5 rounded-lg bg-rose-50/70 border border-rose-100 text-rose-900 flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Gian lận thi cử hoặc nộp bài thay người khác</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-rose-50/70 border border-rose-100 text-rose-900 flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Tải lên tệp chứa virus hay mã độc</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-rose-50/70 border border-rose-100 text-rose-900 flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Giả mạo danh tính học sinh, giáo viên hay admin</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-rose-50/70 border border-rose-100 text-rose-900 flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Tấn công rà quét hoặc can thiệp dữ liệu điểm số</span>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "contact",
+      number: "8",
+      title: "Cập nhật chính sách & Liên hệ pháp lý",
+      type: "privacy",
+      badge: "Hỗ trợ pháp lý",
+      summary: "Quy trình điều chỉnh điều khoản và kênh hỗ trợ kỹ thuật bảo mật EduLMS.",
+      icon: <Mail className="w-5 h-5 text-primary" />,
+      content: (
+        <div className="space-y-4 text-neutral-700 leading-relaxed text-sm">
+          <p>
+            Chính sách bảo mật này có thể được điều chỉnh định kỳ để phù hợp với các quy định mới của Bộ Giáo dục & Đào tạo. Mọi thay đổi lớn sẽ được thông báo trực tiếp trên hệ thống trước 14 ngày.
+          </p>
+          <div className="p-4 rounded-xl bg-neutral-900 text-white space-y-2">
+            <h5 className="font-bold text-sm font-outfit">Bộ Phận An Toàn Dữ Liệu EduLMS</h5>
+            <p className="text-xs text-neutral-300">- Địa chỉ: 01 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh</p>
+            <p className="text-xs text-neutral-300">- Email pháp lý & bảo mật: <strong className="text-white">hotro@edulms.edu.vn</strong></p>
+            <p className="text-xs text-neutral-300">- Tổng đài kỹ thuật: <strong className="text-white">1900 12xx (8:00 - 17:30)</strong></p>
+          </div>
+        </div>
+      )
     }
-  };
+  ];
 
-  // Theo dõi cuộn trang (Scroll Spy) & nút Quay lại đầu trang
+  const isClickingNavRef = useRef(false);
+
+  // Lắng nghe cuộn chuột để làm sáng mục lục bên trái (Scroll Spy)
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 400) {
+      if (window.pageYOffset > 300) {
         setShowBackToTop(true);
       } else {
         setShowBackToTop(false);
       }
 
-      const scrollPosition = window.scrollY + 200;
-      for (const section of SECTIONS) {
-        const element = document.getElementById(section.id);
-        if (element) {
-          const top = element.offsetTop;
-          const height = element.offsetHeight;
+      // Nếu đang trong quá trình cuộn tự động do click tab, bỏ qua cập nhật activeSection theo vị trí cuộn
+      if (isClickingNavRef.current) return;
+
+      const scrollPosition = window.pageYOffset + 140;
+      for (let i = SECTIONS.length - 1; i >= 0; i--) {
+        const sec = SECTIONS[i];
+        const el = document.getElementById(sec.id);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
           if (scrollPosition >= top && scrollPosition < top + height) {
-            setActiveSection(section.id);
+            setActiveSection(sec.id);
             break;
           }
         }
@@ -480,17 +276,16 @@ export default function TermsPrivacyPage() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [SECTIONS]);
 
-  // Hàm cuộn trang từ từ mượt mà sử dụng requestAnimationFrame và easeInOutCubic
-  const animateScrollTo = (targetPosition, duration = 850) => {
+  // Hàm cuộn mượt bằng requestAnimationFrame (easeInOutCubic)
+  const animateScrollTo = (targetPosition, duration = 850, onComplete) => {
     const startPosition = window.pageYOffset;
     const distance = targetPosition - startPosition;
     let startTime = null;
 
-    const easeInOutCubic = (t) => {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    };
+    const easeInOutCubic = (t) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
     const animationStep = (currentTime) => {
       if (!startTime) startTime = currentTime;
@@ -502,137 +297,209 @@ export default function TermsPrivacyPage() {
 
       if (timeElapsed < duration) {
         requestAnimationFrame(animationStep);
+      } else {
+        if (onComplete) onComplete();
       }
     };
 
     requestAnimationFrame(animationStep);
   };
 
-  // Xử lý cuộn từ từ đến mục được chọn
   const scrollToSection = (id) => {
     setActiveSection(id);
+    isClickingNavRef.current = true;
     const element = document.getElementById(id);
     if (element) {
       const yOffset = -90;
       const targetY = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      animateScrollTo(targetY, 850);
+      animateScrollTo(Math.max(0, targetY), 850, () => {
+        isClickingNavRef.current = false;
+      });
+    } else {
+      isClickingNavRef.current = false;
     }
   };
 
-  // Cuộn từ từ lên đầu trang
   const scrollToTop = () => {
-    animateScrollTo(0, 850);
+    setActiveSection(SECTIONS[0].id);
+    isClickingNavRef.current = true;
+    animateScrollTo(0, 850, () => {
+      isClickingNavRef.current = false;
+    });
   };
 
+  // Filter sections by tab and search query
+  const filteredSections = SECTIONS.filter((sec) => {
+    const matchesTab = selectedTab === "all" || sec.type === selectedTab;
+    const matchesQuery =
+      searchQuery.trim() === "" ||
+      sec.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sec.summary.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTab && matchesQuery;
+  });
+
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "dark bg-gray-950 text-gray-100" : "bg-slate-50 text-gray-900"}`}>
-      {/* Thanh điều hướng trên cùng */}
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border-b border-gray-200/80 dark:border-gray-800 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-neutral-50 text-neutral-800 font-sans flex flex-col selection:bg-primary selection:text-white">
+      {/* HEADER NAVIGATION */}
+      <header className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-neutral-200/80 z-50 px-6 py-3.5 shadow-sm transition-all">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white font-extrabold font-outfit flex items-center justify-center text-xl shadow-sm shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-primary text-white font-extrabold font-outfit flex items-center justify-center text-2xl shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
               E
             </div>
             <div>
-              <h1 className="font-outfit font-extrabold text-base tracking-wide text-gray-900 dark:text-white leading-none">
+              <h1 className="font-outfit font-extrabold text-lg tracking-wide text-neutral-900 leading-none group-hover:text-primary transition-colors">
                 EduLMS
               </h1>
-              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block mt-0.5">
-                Hệ thống Quản lý Học tập
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mt-0.5">
+                Cổng Giáo Dục & An Toàn Dữ Liệu
               </span>
             </div>
           </Link>
 
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={toggleDarkMode}
-              aria-label="Chuyển đổi giao diện sáng tối"
-              className="p-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/80 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-            >
-              {isDarkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}
-            </button>
-
+          <div className="flex items-center gap-4">
             <Link
-              to="/login"
-              className="hidden sm:flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md shadow-indigo-500/20 transition-all hover:shadow-indigo-500/30"
+              to="/"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 hover:text-primary transition"
             >
-              <span>Quay lại Đăng nhập</span>
-              <ChevronRight className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" />
+              <span>Trang chủ</span>
             </Link>
+
+            <Button
+              variant="primary"
+              className="text-xs px-4 py-2 font-bold rounded-xl shadow-sm shadow-primary/10"
+              onClick={() => navigate("/login")}
+            >
+              Đăng nhập ngay
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* Hero Banner Section */}
-      <section className="relative overflow-hidden pt-12 pb-16 bg-gradient-to-b from-indigo-50/70 via-slate-50 to-slate-50 dark:from-indigo-950/20 dark:via-gray-950 dark:to-gray-950 border-b border-gray-200/60 dark:border-gray-800/80">
-        <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20">
-          <div className="absolute -top-24 -left-20 w-96 h-96 rounded-full bg-indigo-400/30 blur-3xl" />
-          <div className="absolute top-10 -right-20 w-96 h-96 rounded-full bg-purple-400/30 blur-3xl" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-4">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-100/80 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-semibold">
-            <Shield className="w-3.5 h-3.5" />
-            <span>Văn bản Quy định & Bảo mật Chính thức</span>
+      {/* HERO SECTION */}
+      <section className="bg-gradient-to-b from-neutral-100 via-neutral-50 to-neutral-50 border-b border-neutral-200/80 py-12 px-6">
+        <div className="max-w-7xl mx-auto text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary-light text-primary border border-primary/15 text-xs font-semibold shadow-sm">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <span>EduLMS Trust Center • Quyền Riêng Tư & An Toàn Dữ Liệu</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Điều khoản dịch vụ & Chính sách bảo mật
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-outfit text-neutral-900 tracking-tight">
+            Chính Sách Bảo Mật & Điều Khoản Dịch Vụ
           </h1>
 
-          <p className="max-w-2xl mx-auto text-base sm:text-lg text-gray-600 dark:text-gray-400">
-            Vui lòng đọc kỹ các điều khoản dưới đây trước khi sử dụng EduLMS. Sự minh bạch, an toàn dữ liệu và quyền riêng tư của học sinh là cam kết hàng đầu của chúng tôi.
+          <p className="max-w-2xl mx-auto text-xs sm:text-sm text-neutral-600 leading-relaxed">
+            Cam kết minh bạch về cách thức thu thập, bảo vệ dữ liệu rèn luyện học tập của học sinh và tuân thủ các quy chuẩn an toàn thông tin trường THPT.
           </p>
 
-          <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 dark:text-gray-400 pt-2">
-            <span className="flex items-center space-x-1.5">
-              <Clock className="w-4 h-4 text-indigo-500" />
-              <span>Cập nhật lần cuối: <strong>03 tháng 08, 2026</strong></span>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-neutral-500 pt-2 font-medium">
+            <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-neutral-200 shadow-sm">
+              <Calendar className="w-3.5 h-3.5 text-primary" />
+              <span><strong>Cập nhật lần cuối:</strong> 03/08/2026</span>
             </span>
-            <span>•</span>
-            <span className="flex items-center space-x-1.5">
-              <Layers className="w-4 h-4 text-purple-500" />
-              <span>Phiên bản 2.4</span>
+            <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-neutral-200 shadow-sm">
+              <Tag className="w-3.5 h-3.5 text-primary" />
+              <span><strong>Phiên bản:</strong> v2.4 Standard</span>
+            </span>
+            <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-neutral-200 shadow-sm">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span><strong>Tiêu chuẩn:</strong> Quy định Bộ GD&ĐT</span>
             </span>
           </div>
         </div>
       </section>
 
-      {/* Thân trang & Bố cục Grid */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* CORE TRUST PILLARS STRIP */}
+      <section className="bg-white border-b border-neutral-200 py-8 px-6">
+        <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-1.5">
+            <div className="w-9 h-9 rounded-xl bg-primary-light text-primary flex items-center justify-center">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <h4 className="text-xs font-bold text-neutral-900">Bảo vệ Dữ liệu Học sinh</h4>
+            <p className="text-[11px] text-neutral-600 leading-relaxed">Mã hóa kết nối SSL 256-bit bảo vệ tuyệt đối bảng điểm và nhật ký rèn luyện.</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-1.5">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Lock className="w-5 h-5 text-indigo-600" />
+            </div>
+            <h4 className="text-xs font-bold text-neutral-900">Kiểm soát Phân quyền (RBAC)</h4>
+            <p className="text-[11px] text-neutral-600 leading-relaxed">Phân quyền riêng biệt 4 vai trò Admin, Giáo viên, Học sinh và Phụ huynh.</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-1.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Ban className="w-5 h-5 text-emerald-600" />
+            </div>
+            <h4 className="text-xs font-bold text-neutral-900">Không Bán Dữ liệu</h4>
+            <p className="text-[11px] text-neutral-600 leading-relaxed">Tuyệt đối không chia sẻ hay kinh doanh thông tin học sinh cho bên thứ ba.</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-1.5">
+            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+              <FileCheck className="w-5 h-5 text-purple-600" />
+            </div>
+            <h4 className="text-xs font-bold text-neutral-900">Minh bạch & Quyền Hạn</h4>
+            <p className="text-[11px] text-neutral-600 leading-relaxed">Phụ huynh và học sinh có quyền tra cứu, xuất báo cáo và yêu cầu hỗ trợ.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* MAIN CONTENT SPLIT GRID */}
+      <main className="max-w-7xl mx-auto px-6 py-12 w-full flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Thanh Mục lục Cố định (Sticky Sidebar) */}
-          <aside className="lg:col-span-4">
+
+          {/* LEFT STICKY NAVIGATION SIDEBAR */}
+          <aside className="lg:col-span-4 space-y-5">
             <div className="lg:sticky lg:top-24 space-y-4">
-              
-              {/* Ô tìm kiếm mục */}
+              {/* Search input */}
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Tìm kiếm 15 mục quy định..."
+                  placeholder="Tìm kiếm quy định & bảo mật..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-gray-900 dark:text-white shadow-sm"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white border border-neutral-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary shadow-sm text-neutral-900"
                 />
+                <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
               </div>
 
-              {/* Card Danh sách Mục lục */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 p-5 shadow-lg shadow-gray-200/50 dark:shadow-none space-y-3">
-                <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                    <h2 className="font-bold text-gray-900 dark:text-white text-base">Mục lục Nội dung</h2>
-                  </div>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                    15 Mục
+              {/* Filter tabs */}
+              <div className="flex bg-neutral-200/60 p-1 rounded-xl gap-1 text-xs font-semibold">
+                <button
+                  onClick={() => setSelectedTab("all")}
+                  className={`flex-1 py-1.5 rounded-lg transition ${selectedTab === "all" ? "bg-white text-primary shadow-sm font-bold" : "text-neutral-600 hover:text-neutral-900"}`}
+                >
+                  Tất cả ({SECTIONS.length})
+                </button>
+                <button
+                  onClick={() => setSelectedTab("privacy")}
+                  className={`flex-1 py-1.5 rounded-lg transition ${selectedTab === "privacy" ? "bg-white text-primary shadow-sm font-bold" : "text-neutral-600 hover:text-neutral-900"}`}
+                >
+                  Bảo mật
+                </button>
+                <button
+                  onClick={() => setSelectedTab("terms")}
+                  className={`flex-1 py-1.5 rounded-lg transition ${selectedTab === "terms" ? "bg-white text-primary shadow-sm font-bold" : "text-neutral-600 hover:text-neutral-900"}`}
+                >
+                  Điều khoản
+                </button>
+              </div>
+
+              {/* TOC card */}
+              <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                  <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider">Mục lục nội dung</h3>
+                  <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-md">
+                    {filteredSections.length} Mục
                   </span>
                 </div>
 
-                <nav aria-label="Mục lục" className="max-h-[calc(100vh-280px)] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                <nav aria-label="Mục lục" className="space-y-1 max-h-[calc(100vh-340px)] overflow-y-auto pr-1">
                   {filteredSections.length === 0 ? (
-                    <p className="text-xs text-gray-500 py-4 text-center">Không tìm thấy mục nào khớp với "{searchQuery}"</p>
+                    <p className="text-xs text-neutral-400 py-3 text-center">Không tìm thấy nội dung phù hợp</p>
                   ) : (
                     filteredSections.map((sec) => {
                       const isActive = activeSection === sec.id;
@@ -640,21 +507,19 @@ export default function TermsPrivacyPage() {
                         <button
                           key={sec.id}
                           onClick={() => scrollToSection(sec.id)}
-                          className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-medium transition-all text-left group ${
-                            isActive
-                              ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                              : "text-gray-600 dark:text-gray-400 hover:bg-indigo-50/70 dark:hover:bg-gray-800 hover:text-indigo-600 dark:hover:text-indigo-300"
-                          }`}
+                          className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition text-left ${isActive
+                              ? "bg-primary text-white shadow-sm shadow-primary/20"
+                              : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                            }`}
                         >
-                          <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                            <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
-                              isActive ? "bg-white/20 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-950"
-                            }`}>
+                          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                            <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 ${isActive ? "bg-white/20 text-white" : "bg-neutral-100 text-neutral-500"
+                              }`}>
                               {sec.number}
                             </span>
                             <span className="truncate">{sec.title}</span>
                           </div>
-                          <ChevronRight className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${isActive ? "text-white translate-x-0.5" : "text-gray-400 group-hover:translate-x-0.5"}`} />
+                          <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-transform ${isActive ? "text-white translate-x-0.5" : "text-neutral-400"}`} />
                         </button>
                       );
                     })
@@ -662,78 +527,75 @@ export default function TermsPrivacyPage() {
                 </nav>
               </div>
 
-              {/* Card Hỗ trợ Pháp lý */}
-              <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-950/40 dark:to-purple-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/60 p-4 space-y-2 text-xs">
-                <div className="flex items-center space-x-2 text-indigo-700 dark:text-indigo-300 font-semibold">
-                  <HelpCircle className="w-4 h-4" />
-                  <span>Bạn có thắc mắc về điều khoản?</span>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Gửi email trực tiếp đến Bộ phận Pháp lý & Bảo mật tại <strong className="text-gray-900 dark:text-white">hotro@edulms.edu.vn</strong>
+              {/* Support Card */}
+              <div className="bg-gradient-to-br from-primary-light to-indigo-50 p-4 rounded-2xl border border-primary/15 space-y-2 text-xs">
+                <h4 className="font-bold text-neutral-900 flex items-center gap-1.5">
+                  <Mail className="w-4 h-4 text-primary shrink-0" />
+                  <span>Thắc mắc về bảo mật & điều khoản?</span>
+                </h4>
+                <p className="text-neutral-600 text-[11px] leading-relaxed">
+                  Liên hệ Bộ phận An toàn Dữ liệu EduLMS tại <strong className="text-neutral-900 font-semibold">hotro@edulms.edu.vn</strong>
                 </p>
               </div>
-
             </div>
           </aside>
 
-          {/* Các Card Nội dung Chi tiết */}
-          <section className="lg:col-span-8 space-y-8">
-            {SECTIONS.map((sec) => {
-              const IconComponent = sec.icon;
-              return (
-                <article
-                  key={sec.id}
-                  id={sec.id}
-                  className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 p-6 sm:p-8 shadow-lg shadow-gray-200/40 dark:shadow-none transition-all hover:border-indigo-200 dark:hover:border-indigo-900/80 scroll-mt-24"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-gray-100 dark:border-gray-800 gap-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0 shadow-sm">
-                        <IconComponent className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-wider uppercase">
-                            Mục {sec.number}
-                          </span>
-                          <span className="text-gray-300 dark:text-gray-700">•</span>
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {sec.category}
-                          </span>
-                        </div>
-                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-0.5">
-                          {sec.title}
-                        </h3>
-                      </div>
+          {/* RIGHT DETAILED POLICY SECTIONS */}
+          <section className="lg:col-span-8 space-y-6">
+            {filteredSections.map((sec) => (
+              <article
+                key={sec.id}
+                id={sec.id}
+                className="bg-white rounded-2xl border border-neutral-200 p-6 sm:p-8 shadow-sm space-y-4 scroll-mt-24 hover:border-primary/40 transition"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-neutral-100 gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center shrink-0">
+                      {sec.icon}
                     </div>
-
-                    <span className="self-start sm:self-auto px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
-                      {sec.badge}
-                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
+                          Mục {sec.number}
+                        </span>
+                        <span className="text-neutral-300">•</span>
+                        <span className="text-[10px] font-semibold text-neutral-600">
+                          {sec.badge}
+                        </span>
+                      </div>
+                      <h2 className="text-lg sm:text-xl font-bold font-outfit text-neutral-900">
+                        {sec.title}
+                      </h2>
+                    </div>
                   </div>
+                </div>
 
-                  <p className="text-sm font-medium text-indigo-900 dark:text-indigo-300 bg-indigo-50/50 dark:bg-indigo-950/30 p-3 rounded-xl border border-indigo-100/60 dark:border-indigo-900/40 mb-5">
-                    💡 <strong>Tóm tắt cốt lõi:</strong> {sec.summary}
-                  </p>
+                {/* Summary bar */}
+                <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80 text-xs text-neutral-700 font-medium flex items-center gap-2">
+                  <Info className="w-4 h-4 text-primary shrink-0" />
+                  <span><strong>Tóm tắt nội dung:</strong> {sec.summary}</span>
+                </div>
 
-                  <div className="prose prose-indigo dark:prose-invert max-w-none text-sm leading-relaxed">
-                    {sec.content}
-                  </div>
-                </article>
-              );
-            })}
+                {/* Dynamic Content */}
+                <div className="pt-1">
+                  {sec.content}
+                </div>
+              </article>
+            ))}
 
-            {/* Thông báo cam kết chân trang */}
-            <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-center space-y-3">
-              <Shield className="w-8 h-8 text-indigo-600 dark:text-indigo-400 mx-auto" />
-              <h4 className="font-bold text-gray-900 dark:text-white text-base">Cam kết Pháp lý EduLMS</h4>
-              <p className="text-xs text-gray-600 dark:text-gray-400 max-w-lg mx-auto">
-                Cảm ơn bạn đã lựa chọn EduLMS làm nền tảng Quản lý Học tập đồng hành. Chúng tôi nỗ lực thúc đẩy hiệu quả giảng dạy đi đôi với việc bảo vệ an toàn thông tin của người dùng.
+            {/* Commitment Box Footer */}
+            <div className="bg-white rounded-2xl border border-neutral-200 p-6 text-center space-y-3 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg mx-auto font-bold">
+                <ShieldCheck className="w-6 h-6 text-emerald-600" />
+              </div>
+              <h3 className="font-bold font-outfit text-neutral-900 text-base">Cam Kết Đồng Hành Giáo Dục THPT</h3>
+              <p className="text-xs text-neutral-600 max-w-md mx-auto leading-relaxed">
+                EduLMS luôn nỗ lực không ngừng nâng cao chất lượng quản lý rèn luyện đi đôi với việc bảo đảm tuyệt đối quyền riêng tư và an toàn thông tin của học sinh.
               </p>
-              <div className="pt-2 flex justify-center space-x-4 text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                <Link to="/login" className="hover:underline flex items-center space-x-1">
-                  <span>Đăng nhập hệ thống EduLMS</span>
-                  <ExternalLink className="w-3 h-3" />
+              <div className="pt-2 flex justify-center gap-4 text-xs font-bold text-primary">
+                <Link to="/" className="hover:underline flex items-center gap-1">
+                  <span>Trở về Trang chủ EduLMS</span>
+                  <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
@@ -742,12 +604,15 @@ export default function TermsPrivacyPage() {
         </div>
       </main>
 
-      {/* Nút Nổi Cuộn lên Đầu trang */}
+      {/* FOOTER */}
+      <Footer />
+
+      {/* FLOATING BACK TO TOP BUTTON */}
       {showBackToTop && (
         <button
           onClick={scrollToTop}
           aria-label="Cuộn lên đầu trang"
-          className="fixed bottom-8 right-8 z-50 p-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-600/30 transition-all hover:scale-110 active:scale-95"
+          className="fixed bottom-8 right-8 z-50 p-3 rounded-2xl bg-primary text-white shadow-xl shadow-primary/30 hover:bg-primary-hover hover:scale-110 active:scale-95 transition-all"
         >
           <ArrowUp className="w-5 h-5" />
         </button>

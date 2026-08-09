@@ -9,8 +9,7 @@ export const login = async (email, password) => {
     email: email,
     role: email.includes("admin") ? "admin" :
           email.includes("teacher") ? "teacher" :
-          email.includes("parent") ? "parent" : "student",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+          email.includes("parent") ? "parent" : "student"
   };
 
   return { token, user };

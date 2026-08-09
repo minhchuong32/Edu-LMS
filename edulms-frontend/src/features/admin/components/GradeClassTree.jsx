@@ -1,5 +1,22 @@
 import React, { useState, useEffect } from "react";
 import academicService from "../../../services/academicService";
+import {
+  FolderTree,
+  Plus,
+  Pencil,
+  Trash2,
+  UserCheck,
+  Users,
+  UserPlus,
+  Mail,
+  Check,
+  X,
+  ChevronRight,
+  ChevronDown,
+  AlertCircle,
+  CheckCircle2,
+  Loader2
+} from "lucide-react";
 
 export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }) {
   const [grades, setGrades] = useState([]);
@@ -101,19 +118,21 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
       }
 
       if (res.success) {
-        showNotification(editingGrade ? "Cập nhật khối thành công!" : "Tạo khối mới thành công!");
+        showNotification(editingGrade ? "Cập nhật khối học thành công!" : "Tạo khối học mới thành công!");
         setShowGradeModal(false);
         fetchData();
         if (onRefreshData) onRefreshData();
+      } else {
+        setError(res.message || "Thao tác không thành công.");
       }
     } catch (err) {
-      setError(err.message || "Lỗi lưu thông tin khối học.");
+      setError(err.message || "Lỗi xử lý khối học.");
     }
   };
 
   const handleDeleteGrade = async (gradeId, e) => {
     e.stopPropagation();
-    if (!window.confirm("Bạn có chắc chắn muốn xóa khối này?")) return;
+    if (!window.confirm("Bạn có chắc chắn muốn xóa khối học này? Tất cả các lớp thuộc khối có thể bị ảnh hưởng.")) return;
     setError("");
     try {
       const res = await academicService.deleteGrade(gradeId);
@@ -121,9 +140,11 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
         showNotification("Xóa khối học thành công!");
         fetchData();
         if (onRefreshData) onRefreshData();
+      } else {
+        setError(res.message || "Không thể xóa khối học.");
       }
     } catch (err) {
-      setError(err.message || "Không thể xóa khối học này.");
+      setError(err.message || "Lỗi khi xóa khối học.");
     }
   };
 
@@ -137,44 +158,52 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
       schoolYear: "2025-2026"
     });
     setTeacherSearch("");
+    setIsTeacherDropdownOpen(false);
     setShowClassModal(true);
   };
 
   const handleOpenEditClass = (cls) => {
     setEditingClass(cls);
-    const teacherId = cls.homeroomTeacherRef?._id || cls.homeroomTeacherRef || "";
-    const teacherObj = teachers.find((t) => t._id === teacherId);
-
     setClassForm({
       name: cls.name || "",
       gradeRef: cls.gradeRef?._id || cls.gradeRef || "",
-      homeroomTeacherRef: teacherId,
+      homeroomTeacherRef: cls.homeroomTeacherRef?._id || cls.homeroomTeacherRef || "",
       schoolYear: cls.schoolYear || "2025-2026"
     });
-    setTeacherSearch(teacherObj ? teacherObj.name : "");
+    setTeacherSearch("");
+    setIsTeacherDropdownOpen(false);
     setShowClassModal(true);
   };
 
   const handleSaveClass = async (e) => {
     e.preventDefault();
-    if (!classForm.name || !classForm.gradeRef || !classForm.homeroomTeacherRef || !classForm.schoolYear) {
-      setError("Vui lòng nhập đầy đủ thông tin lớp học, khối, năm học và GVCN.");
+    if (!classForm.name.trim() || !classForm.gradeRef) {
+      setError("Vui lòng nhập tên lớp và chọn Khối học.");
       return;
     }
     setError("");
     try {
       let res;
+      const payload = {
+        name: classForm.name.trim(),
+        gradeRef: classForm.gradeRef,
+        homeroomTeacherRef: classForm.homeroomTeacherRef || null,
+        schoolYear: classForm.schoolYear.trim()
+      };
+
       if (editingClass) {
-        res = await academicService.updateClass(editingClass._id, classForm);
+        res = await academicService.updateClass(editingClass._id, payload);
       } else {
-        res = await academicService.createClass(classForm);
+        res = await academicService.createClass(payload);
       }
 
       if (res.success) {
-        showNotification(editingClass ? "Cập nhật lớp học thành công!" : "Tạo lớp học mới thành công!");
+        showNotification(editingClass ? "Cập nhật thông tin lớp thành công!" : "Tạo lớp học mới thành công!");
         setShowClassModal(false);
         fetchData();
         if (onRefreshData) onRefreshData();
+      } else {
+        setError(res.message || "Thao tác lớp học thất bại.");
       }
     } catch (err) {
       setError(err.message || "Lỗi lưu thông tin lớp học.");
@@ -190,13 +219,15 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
         showNotification("Xóa lớp học thành công!");
         fetchData();
         if (onRefreshData) onRefreshData();
+      } else {
+        setError(res.message || "Không thể xóa lớp học.");
       }
     } catch (err) {
-      setError(err.message || "Không thể xóa lớp học.");
+      setError(err.message || "Lỗi xóa lớp học.");
     }
   };
 
-  // Filter teachers for Homeroom teacher autocomplete search
+  // Filter teachers by search input inside Modal
   const filteredTeachers = teachers.filter((t) => {
     const term = teacherSearch.toLowerCase();
     return (
@@ -214,24 +245,24 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
       {error && (
         <div className="bg-rose-50 border border-rose-200 text-danger p-4 rounded-xl flex items-center justify-between animate-fadeIn">
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-danger flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <AlertCircle className="w-5 h-5 text-danger shrink-0" />
             <span className="text-sm font-medium">{error}</span>
           </div>
-          <button onClick={() => setError("")} className="text-danger hover:opacity-80 text-sm font-bold">✕</button>
+          <button onClick={() => setError("")} className="text-danger hover:opacity-80 p-1 rounded-lg">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {successMsg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-xl flex items-center justify-between animate-fadeIn">
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-success flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span className="text-sm font-medium">{successMsg}</span>
           </div>
-          <button onClick={() => setSuccessMsg("")} className="text-emerald-700 hover:opacity-80 text-sm font-bold">✕</button>
+          <button onClick={() => setSuccessMsg("")} className="text-emerald-700 hover:opacity-80 p-1 rounded-lg">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -239,22 +270,25 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-5 rounded-xl border border-neutral-200 shadow-sm">
         <div>
           <h3 className="text-xl font-semibold text-neutral-900 flex items-center gap-2">
-            <span>🌳 Cây Cấu trúc Khối & Lớp học</span>
+            <FolderTree className="w-6 h-6 text-primary shrink-0" />
+            <span>Cây Cấu trúc Khối & Lớp học</span>
           </h3>
           <p className="text-xs text-neutral-600 mt-1">Quản lý phân cấp khối lớp, năm học và phân công giáo viên chủ nhiệm.</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={handleOpenCreateGrade}
-            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary-light text-primary hover:bg-indigo-100 transition-colors border border-primary-light"
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary-light text-primary hover:bg-indigo-100 transition-colors border border-primary-light inline-flex items-center gap-1.5"
           >
-            + Thêm Khối mới
+            <Plus className="w-4 h-4" />
+            <span>Thêm Khối mới</span>
           </button>
           <button
             onClick={() => handleOpenCreateClass()}
-            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors shadow-sm"
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors shadow-sm inline-flex items-center gap-1.5"
           >
-            + Thêm Lớp học mới
+            <Plus className="w-4 h-4" />
+            <span>Thêm Lớp học mới</span>
           </button>
         </div>
       </div>
@@ -262,10 +296,7 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
       {/* Tree Content */}
       {loading ? (
         <div className="flex justify-center items-center py-16 text-neutral-600">
-          <svg className="animate-spin h-7 w-7 text-primary mr-3" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
+          <Loader2 className="animate-spin h-7 w-7 text-primary mr-3" />
           <span className="text-sm font-medium">Đang tải cây cấu trúc học vụ...</span>
         </div>
       ) : grades.length === 0 ? (
@@ -273,9 +304,10 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
           <p className="text-neutral-600 text-sm mb-3">Chưa có khối học nào được tạo.</p>
           <button
             onClick={handleOpenCreateGrade}
-            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover"
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover inline-flex items-center gap-1.5"
           >
-            Tạo Khối đầu tiên
+            <Plus className="w-4 h-4" />
+            <span>Tạo Khối đầu tiên</span>
           </button>
         </div>
       ) : (
@@ -299,14 +331,9 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
                 >
                   <div className="flex items-center gap-3">
                     <button className="text-neutral-600 hover:text-neutral-900 transition-transform duration-200">
-                      <svg
+                      <ChevronRight
                         className={`w-5 h-5 transform transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                      />
                     </button>
                     <div className="w-8 h-8 rounded-lg bg-primary-light text-primary border border-indigo-100 flex items-center justify-center font-semibold text-sm">
                       {grade.name}
@@ -320,28 +347,25 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => handleOpenCreateClass(grade._id)}
-                      className="text-xs bg-primary-light text-primary hover:bg-indigo-100 border border-primary-light px-3 py-1.5 rounded-lg transition-colors font-medium flex items-center gap-1"
+                      className="text-xs bg-primary-light text-primary hover:bg-indigo-100 border border-primary-light px-3 py-1.5 rounded-lg transition-colors font-medium inline-flex items-center gap-1"
                       title="Thêm lớp mới vào khối này"
                     >
-                      <span>+ Thêm Lớp</span>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm Lớp</span>
                     </button>
                     <button
                       onClick={(e) => handleOpenEditGrade(grade, e)}
                       className="p-1.5 text-neutral-600 hover:text-warning hover:bg-amber-50 rounded-lg transition-colors"
                       title="Chỉnh sửa Khối"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
+                      <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => handleDeleteGrade(grade._id, e)}
                       className="p-1.5 text-neutral-600 hover:text-danger hover:bg-rose-50 rounded-lg transition-colors"
                       title="Xóa Khối"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -376,15 +400,17 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
 
                                 <div className="space-y-1.5 text-xs text-neutral-600 mt-3">
                                   <div className="flex items-center gap-2">
-                                    {/* Role Badge Teacher: Light Purple */}
-                                    <span className="bg-purple-50 text-purple-700 border border-purple-200 rounded-lg px-2.5 py-1 text-xs font-medium inline-flex items-center gap-1">
-                                      👨‍🏫 GVCN: <strong className="font-semibold">{teacherName}</strong>
+                                    {/* Role Badge Teacher */}
+                                    <span className="bg-purple-50 text-purple-700 border border-purple-200 rounded-lg px-2.5 py-1 text-xs font-medium inline-flex items-center gap-1.5">
+                                      <UserCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                      <span>GVCN: <strong className="font-semibold">{teacherName}</strong></span>
                                     </span>
                                   </div>
 
                                   {teacher?.email && (
-                                    <div className="text-xs text-neutral-600 pl-1 truncate">
-                                      ✉ {teacher.email}
+                                    <div className="text-xs text-neutral-600 pl-1 truncate flex items-center gap-1.5 mt-1">
+                                      <Mail className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                                      <span className="truncate">{teacher.email}</span>
                                     </div>
                                   )}
                                 </div>
@@ -397,20 +423,23 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
                                     className="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                                     title="Xem danh sách học sinh & Chuyển lớp"
                                   >
-                                    📋 Xem Roster
+                                    <Users className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <span>Xem Roster</span>
                                   </button>
                                 )}
                                 <button
                                   onClick={() => handleOpenEditClass(cls)}
-                                  className="text-xs font-medium text-primary hover:bg-primary-light px-2.5 py-1 rounded-lg transition-colors"
+                                  className="text-xs font-medium text-primary hover:bg-primary-light px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                                 >
-                                  Phân công / Sửa
+                                  <UserPlus className="w-3.5 h-3.5" />
+                                  <span>Phân công / Sửa</span>
                                 </button>
                                 <button
                                   onClick={() => handleDeleteClass(cls._id)}
-                                  className="text-xs font-medium text-danger hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors"
+                                  className="text-xs font-medium text-danger hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                                 >
-                                  Xóa
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Xóa</span>
                                 </button>
                               </div>
                             </div>
@@ -430,9 +459,14 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
       {showGradeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white border border-neutral-200 w-full max-w-md rounded-xl shadow-xl p-6 relative">
-            <h3 className="text-xl font-semibold text-neutral-900 mb-4">
-              {editingGrade ? `Chỉnh sửa Khối ${editingGrade.name}` : "Tạo Khối Học Mới"}
-            </h3>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-200">
+              <h3 className="text-xl font-semibold text-neutral-900">
+                {editingGrade ? `Chỉnh sửa Khối ${editingGrade.name}` : "Tạo Khối Học Mới"}
+              </h3>
+              <button onClick={() => setShowGradeModal(false)} className="text-neutral-400 hover:text-neutral-900 p-1 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleSaveGrade} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-neutral-900 mb-1">
@@ -476,7 +510,9 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
               <h3 className="text-xl font-semibold text-neutral-900">
                 {editingClass ? `Cấu hình & GVCN - Lớp ${editingClass.name}` : "Tạo Lớp Học Mới"}
               </h3>
-              <button onClick={() => setShowClassModal(false)} className="text-neutral-600 hover:text-neutral-900 text-lg font-bold">✕</button>
+              <button onClick={() => setShowClassModal(false)} className="text-neutral-400 hover:text-neutral-900 p-1 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <form onSubmit={handleSaveClass} className="space-y-4">
@@ -532,9 +568,15 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
               {/* --- Giao diện phân công Giáo viên Chủ nhiệm (Searchable Dropdown) --- */}
               <div className="pt-2">
                 <label className="block text-xs font-semibold text-primary mb-1.5 flex items-center justify-between">
-                  <span>👨‍🏫 Phân công Giáo viên Chủ nhiệm (GVCN)</span>
+                  <span className="flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-primary shrink-0" />
+                    <span>Phân công Giáo viên Chủ nhiệm (GVCN)</span>
+                  </span>
                   {selectedTeacherObj && (
-                    <span className="text-xs text-success font-medium">✓ Đã chọn</span>
+                    <span className="text-xs text-success font-medium flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5 text-success shrink-0" />
+                      <span>Đã chọn</span>
+                    </span>
                   )}
                 </label>
 
@@ -551,9 +593,7 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
                     ) : (
                       <span className="text-neutral-600">Tìm & chọn Giáo viên Chủ nhiệm...</span>
                     )}
-                    <svg className="w-4 h-4 text-neutral-600 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <ChevronDown className="w-4 h-4 text-neutral-500 ml-2 shrink-0" />
                   </div>
 
                   {/* Dropdown popup */}
@@ -592,7 +632,7 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
                                 <p className="text-xs text-neutral-600">{t.email} {t.teacherCode ? `| MaGV: ${t.teacherCode}` : ""}</p>
                               </div>
                               {classForm.homeroomTeacherRef === t._id && (
-                                <span className="text-primary font-bold">✓</span>
+                                <Check className="w-4 h-4 text-primary font-bold shrink-0" />
                               )}
                             </div>
                           ))}

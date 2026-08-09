@@ -14,12 +14,6 @@ export default function ParentLayout() {
     }
   ];
 
-  const parentUser = {
-    name: "Le Dinh Hung",
-    email: "hung.parent@edulms.edu",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-  };
-
-  return <RoleSidebarLayout role="Parent" navItems={parentNavItems} user={parentUser} />;
+  return <RoleSidebarLayout role="Parent" navItems={parentNavItems} />;
 }
 
