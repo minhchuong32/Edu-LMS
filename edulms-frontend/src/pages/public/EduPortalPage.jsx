@@ -82,7 +82,7 @@ export default function EduPortalPage() {
       summary: "Sở Giáo dục & Đào tạo công bố định hướng chuẩn hóa sổ điểm điện tử, thời khóa biểu số và kết nối Phụ huynh trên hệ thống EduLMS.",
       author: "Ban Biên Tập Cổng Thông Tin",
       readTime: "5 phút đọc",
-      url: "https://moet.gov.vn/tintuc/Pages/tin-tong-hop.aspx"
+      url: "https://giaoduc.net.vn/bo-gddt-huong-dan-thuc-hien-nhiem-vu-giao-duc-pho-thong-nam-hoc-2026-2027-post261950.gd"
     },
     {
       id: 2,
@@ -93,7 +93,7 @@ export default function EduPortalPage() {
       summary: "Chi tiết quy chế tổ chức thi trắc nghiệm trực tuyến bấm giờ, bảo mật ngân hàng đề thi và quy trình tự động chấm điểm.",
       author: "Phòng Khảo Thí & Kiểm Định",
       readTime: "7 phút đọc",
-      url: "https://giaoducthoidai.vn/giao-duc/"
+      url: "https://thuvienphapluat.vn/lao-dong-tien-luong/so-gddt-huong-dan-to-chuc-thi-thu-ky-thi-tot-nghiep-thpt-nam-2026-59864.html"
     },
     {
       id: 3,
@@ -104,7 +104,7 @@ export default function EduPortalPage() {
       summary: "Tăng cường năng lực ứng dụng CNTT cho Giáo viên bộ môn trong việc thiết lập bài học PDF/Video và bài tập nộp tự luận.",
       author: "Phòng Giáo Dục Phổ Thông",
       readTime: "4 phút đọc",
-      url: "https://moet.gov.vn/tintuc/Pages/tin-truc-thuoc-bo.aspx"
+      url: "https://thptdoican.thainguyen.edu.vn/tin-tuc-su-kien/-tap-huan-cong-nghe-thong-tin-ung-dung-ai-trong-soan-giang-va-nang-cao-nang-luc-so-cho-giao-vien-truong-thpt-doi-can-.html"
     },
     {
       id: 4,
@@ -115,7 +115,7 @@ export default function EduPortalPage() {
       summary: "Quy định mã hóa dữ liệu rèn luyện, bảo vệ quyền riêng tư học sinh và kiểm soát phân quyền 4 vai trò nghiêm ngặt.",
       author: "Trung Tâm CNTT Giáo Dục",
       readTime: "6 phút đọc",
-      url: "https://vneconomy.vn/tech/"
+      url: "https://thuvienphapluat.vn/van-ban/Cong-nghe-thong-tin/Thong-tu-96-2023-TT-BQP-Quy-chuan-dac-tinh-ky-thuat-mat-ma-su-dung-trong-san-pham-bao-mat-du-lieu-luu-giu-588676.aspx"
     },
     {
       id: 5,
@@ -126,7 +126,7 @@ export default function EduPortalPage() {
       summary: "Ban hành các biểu mẫu điểm số (hệ số 1, hệ số 2, hệ số 3) và quy trình ký duyệt học kỳ trực tiếp trên EduLMS.",
       author: "Văn Phòng Sở GD&ĐT",
       readTime: "8 phút đọc",
-      url: "https://thuvienphapluat.vn/"
+      url: "https://thuvienphapluat.vn/cong-van/Giao-duc/Cong-van-1121-SGDDT-KTKD-2022-thi-tuyen-sinh-vao-lop-10-So-Giao-duc-Ho-Chi-Minh-510805.aspx"
     }
   ];
 
@@ -284,51 +284,46 @@ export default function EduPortalPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 flex-wrap">
           <button
             onClick={() => setSelectedCategory("all")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-              selectedCategory === "all"
-                ? "bg-primary text-white shadow-md shadow-primary/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${selectedCategory === "all"
+              ? "bg-primary text-white shadow-md shadow-primary/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              }`}
           >
             Tất cả tin tức ({NEWS_ARTICLES.length})
           </button>
           <button
             onClick={() => setSelectedCategory("Chỉ đạo")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-              selectedCategory === "Chỉ đạo"
-                ? "bg-primary text-white shadow-md shadow-primary/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${selectedCategory === "Chỉ đạo"
+              ? "bg-primary text-white shadow-md shadow-primary/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              }`}
           >
             Chỉ đạo & Định hướng
           </button>
           <button
             onClick={() => setSelectedCategory("Thi cử")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-              selectedCategory === "Thi cử"
-                ? "bg-primary text-white shadow-md shadow-primary/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${selectedCategory === "Thi cử"
+              ? "bg-primary text-white shadow-md shadow-primary/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              }`}
           >
             Thi cử & Kiểm định
           </button>
           <button
             onClick={() => setSelectedCategory("Chuyên môn")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-              selectedCategory === "Chuyên môn"
-                ? "bg-primary text-white shadow-md shadow-primary/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${selectedCategory === "Chuyên môn"
+              ? "bg-primary text-white shadow-md shadow-primary/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              }`}
           >
             Chuyên môn Giáo viên
           </button>
           <button
             onClick={() => setSelectedCategory("Công nghệ")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-              selectedCategory === "Công nghệ"
-                ? "bg-primary text-white shadow-md shadow-primary/20"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${selectedCategory === "Công nghệ"
+              ? "bg-primary text-white shadow-md shadow-primary/20"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              }`}
           >
             An toàn & Bảo mật
           </button>
