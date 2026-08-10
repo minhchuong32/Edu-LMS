@@ -117,11 +117,19 @@ const createClass = async (classData) => {
   return await Class.create({ name, gradeRef, homeroomTeacherRef, schoolYear });
 };
 
-const getClasses = async (filters = {}) => {
+const getClasses = async (filters = {}, user = null) => {
   const gradeRef = filters.gradeRef || filters.grade;
   const schoolYear = filters.schoolYear;
   const search = filters.search;
   const query = {};
+
+  if (user && user.role === "student") {
+    const studentClassId = user.classRef ? (user.classRef._id || user.classRef).toString() : null;
+    if (!studentClassId) {
+      return [];
+    }
+    query._id = studentClassId;
+  }
 
   if (gradeRef) {
     query.gradeRef = gradeRef;
@@ -139,7 +147,14 @@ const getClasses = async (filters = {}) => {
     .sort({ schoolYear: -1, name: 1 });
 };
 
-const getClassById = async (id) => {
+const getClassById = async (id, user = null) => {
+  if (user && user.role === "student") {
+    const studentClassId = user.classRef ? (user.classRef._id || user.classRef).toString() : null;
+    if (!studentClassId || studentClassId !== id.toString()) {
+      throw new ApiError(403, "Học sinh không có quyền truy cập lớp học này.");
+    }
+  }
+
   const classObj = await Class.findById(id)
     .populate("gradeRef")
     .populate("homeroomTeacherRef", "name email teacherCode role");
@@ -256,16 +271,43 @@ const createSubject = async (subjectData) => {
   return await Subject.create({ name, description });
 };
 
-const getSubjects = async (filters = {}) => {
+const getSubjects = async (filters = {}, user = null) => {
   const { search } = filters;
   const query = {};
+
+  if (user && user.role === "student") {
+    const studentClassId = user.classRef ? (user.classRef._id || user.classRef).toString() : null;
+    if (!studentClassId) {
+      return [];
+    }
+
+    const assignments = await TeachingAssignment.find({ classRef: studentClassId }).select("subjectRef");
+    const assignedSubjectIds = assignments.map((a) => a.subjectRef);
+    query._id = { $in: assignedSubjectIds };
+  }
+
   if (search) {
     query.name = { $regex: search, $options: "i" };
   }
   return await Subject.find(query).sort({ name: 1 });
 };
 
-const getSubjectById = async (id) => {
+const getSubjectById = async (id, user = null) => {
+  if (user && user.role === "student") {
+    const studentClassId = user.classRef ? (user.classRef._id || user.classRef).toString() : null;
+    if (!studentClassId) {
+      throw new ApiError(403, "Học sinh chưa được gán vào lớp học.");
+    }
+
+    const isAssigned = await TeachingAssignment.exists({
+      classRef: studentClassId,
+      subjectRef: id,
+    });
+    if (!isAssigned) {
+      throw new ApiError(403, "Môn học này không thuộc chương trình được phân công cho lớp của bạn.");
+    }
+  }
+
   const subject = await Subject.findById(id);
   if (!subject) {
     throw new ApiError(404, "Không tìm thấy môn học này.");
@@ -361,14 +403,24 @@ const createTeachingAssignment = async (assignmentData) => {
   return await TeachingAssignment.create({ teacherRef, classRef, subjectRef });
 };
 
-const getTeachingAssignments = async (filters = {}) => {
+const getTeachingAssignments = async (filters = {}, user = null) => {
   const teacherRef = filters.teacherRef || filters.teacher;
   const classRef = filters.classRef || filters.class;
   const subjectRef = filters.subjectRef || filters.subject;
 
   const query = {};
+
+  if (user && user.role === "student") {
+    const studentClassId = user.classRef ? (user.classRef._id || user.classRef).toString() : null;
+    if (!studentClassId) {
+      return [];
+    }
+    query.classRef = studentClassId;
+  } else if (classRef) {
+    query.classRef = classRef;
+  }
+
   if (teacherRef) query.teacherRef = teacherRef;
-  if (classRef) query.classRef = classRef;
   if (subjectRef) query.subjectRef = subjectRef;
 
   return await TeachingAssignment.find(query)

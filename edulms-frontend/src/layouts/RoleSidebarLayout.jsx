@@ -15,6 +15,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function RoleSidebarLayout({ role, navItems = [], user: propUser }) {
@@ -28,6 +30,11 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
     currentPassword: "",
     newPassword: "",
     confirmNewPassword: "",
+  });
+  const [showPwdMap, setShowPwdMap] = useState({
+    current: false,
+    new: false,
+    confirm: false,
   });
   const [pwdError, setPwdError] = useState("");
   const [pwdSuccess, setPwdSuccess] = useState("");
@@ -238,42 +245,75 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
                       <label className="block text-[11px] font-bold text-neutral-700 mb-1">
                         Current password
                       </label>
-                      <input
-                        type="password"
-                        placeholder="••••••••"
-                        value={pwdForm.currentPassword}
-                        onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })}
-                        className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
-                        required
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPwdMap.current ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={pwdForm.currentPassword}
+                          onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })}
+                          className="w-full px-3 py-2 pr-9 bg-neutral-50 border border-neutral-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPwdMap((prev) => ({ ...prev, current: !prev.current }))}
+                          tabIndex={-1}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition p-0.5"
+                          aria-label={showPwdMap.current ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                        >
+                          {showPwdMap.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-bold text-neutral-700 mb-1">
                         New password
                       </label>
-                      <input
-                        type="password"
-                        placeholder="••••••••"
-                        value={pwdForm.newPassword}
-                        onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
-                        className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
-                        required
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPwdMap.new ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={pwdForm.newPassword}
+                          onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
+                          className="w-full px-3 py-2 pr-9 bg-neutral-50 border border-neutral-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPwdMap((prev) => ({ ...prev, new: !prev.new }))}
+                          tabIndex={-1}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition p-0.5"
+                          aria-label={showPwdMap.new ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                        >
+                          {showPwdMap.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-bold text-neutral-700 mb-1">
                         Confirm new password
                       </label>
-                      <input
-                        type="password"
-                        placeholder="••••••••"
-                        value={pwdForm.confirmNewPassword}
-                        onChange={(e) => setPwdForm({ ...pwdForm, confirmNewPassword: e.target.value })}
-                        className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
-                        required
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPwdMap.confirm ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={pwdForm.confirmNewPassword}
+                          onChange={(e) => setPwdForm({ ...pwdForm, confirmNewPassword: e.target.value })}
+                          className="w-full px-3 py-2 pr-9 bg-neutral-50 border border-neutral-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPwdMap((prev) => ({ ...prev, confirm: !prev.confirm }))}
+                          tabIndex={-1}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition p-0.5"
+                          aria-label={showPwdMap.confirm ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                        >
+                          {showPwdMap.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 

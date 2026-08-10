@@ -60,7 +60,7 @@ const createClass = async (req, res, next) => {
 const getClasses = async (req, res, next) => {
   try {
     const { gradeRef, schoolYear, search } = req.query;
-    const classes = await academicService.getClasses({ gradeRef, schoolYear, search });
+    const classes = await academicService.getClasses({ gradeRef, schoolYear, search }, req.user);
     res.status(200).json(new ApiResponse(200, classes, "Lấy danh sách lớp học thành công."));
   } catch (error) {
     next(error);
@@ -69,7 +69,7 @@ const getClasses = async (req, res, next) => {
 
 const getClassById = async (req, res, next) => {
   try {
-    const classObj = await academicService.getClassById(req.params.id);
+    const classObj = await academicService.getClassById(req.params.id, req.user);
     res.status(200).json(new ApiResponse(200, classObj, "Lấy thông tin lớp học thành công."));
   } catch (error) {
     next(error);
@@ -107,7 +107,7 @@ const createSubject = async (req, res, next) => {
 const getSubjects = async (req, res, next) => {
   try {
     const { search } = req.query;
-    const subjects = await academicService.getSubjects({ search });
+    const subjects = await academicService.getSubjects({ search }, req.user);
     res.status(200).json(new ApiResponse(200, subjects, "Lấy danh sách môn học thành công."));
   } catch (error) {
     next(error);
@@ -116,7 +116,7 @@ const getSubjects = async (req, res, next) => {
 
 const getSubjectById = async (req, res, next) => {
   try {
-    const subject = await academicService.getSubjectById(req.params.id);
+    const subject = await academicService.getSubjectById(req.params.id, req.user);
     res.status(200).json(new ApiResponse(200, subject, "Lấy thông tin môn học thành công."));
   } catch (error) {
     next(error);
@@ -160,11 +160,14 @@ const getTeachingAssignments = async (req, res, next) => {
       filterTeacher = req.user._id.toString();
     }
 
-    const assignments = await academicService.getTeachingAssignments({
-      teacher: filterTeacher,
-      class: classVal,
-      subject
-    });
+    const assignments = await academicService.getTeachingAssignments(
+      {
+        teacher: filterTeacher,
+        class: classVal,
+        subject,
+      },
+      req.user
+    );
     res.status(200).json(new ApiResponse(200, assignments, "Lấy danh sách phân công giảng dạy thành công."));
   } catch (error) {
     next(error);
