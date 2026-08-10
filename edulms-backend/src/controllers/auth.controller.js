@@ -46,7 +46,7 @@ const login = async (req, res, next) => {
     }
 
     const emailLower = email.toLowerCase().trim();
-    const user = await User.findOne({ email: emailLower });
+    const user = await User.findOne({ email: emailLower }).populate("classRef");
     if (!user) {
       throw new ApiError(400, "Email này chưa được đăng ký trên hệ thống. Vui lòng kiểm tra lại.");
     }
@@ -86,6 +86,7 @@ const login = async (req, res, next) => {
             role: user.role,
             studentCode: user.studentCode,
             teacherCode: user.teacherCode,
+            classRef: user.classRef ? { _id: user.classRef._id || user.classRef, name: user.classRef.name } : null,
           },
         },
         "Đăng nhập thành công."
@@ -326,20 +327,25 @@ const verifyActivation = async (req, res, next) => {
  */
 const getMe = async (req, res, next) => {
   try {
+    const user = req.user.classRef && req.user.classRef.name
+      ? req.user
+      : await User.findById(req.user._id).populate("classRef");
+
     res.status(200).json(
       new ApiResponse(
         200,
         {
           user: {
-            _id: req.user._id,
-            name: req.user.name,
-            email: req.user.email,
-            role: req.user.role,
-            studentCode: req.user.studentCode,
-            teacherCode: req.user.teacherCode,
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            studentCode: user.studentCode,
+            teacherCode: user.teacherCode,
+            classRef: user.classRef ? { _id: user.classRef._id || user.classRef, name: user.classRef.name } : null,
           },
         },
-          "Lấy thông tin người dùng hiện tại thành công."
+        "Lấy thông tin người dùng hiện tại thành công."
       )
     );
   } catch (error) {

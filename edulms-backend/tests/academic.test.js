@@ -349,7 +349,7 @@ describe("Academic Structures API Integration Tests (Real Database)", () => {
     test("Get classes with query filters", async () => {
       const response = await request
         .get("/api/v1/academic/classes")
-        .set("Authorization", `Bearer ${studentToken}`)
+        .set("Authorization", `Bearer ${adminToken}`)
         .query({ schoolYear: "2025-2026" });
 
       expect(response.status).toBe(200);
@@ -423,7 +423,7 @@ describe("Academic Structures API Integration Tests (Real Database)", () => {
     test("Get all subjects lists created subjects", async () => {
       const response = await request
         .get("/api/v1/academic/subjects")
-        .set("Authorization", `Bearer ${studentToken}`);
+        .set("Authorization", `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.some(s => s.name === "Toán học")).toBe(true);
@@ -791,6 +791,84 @@ describe("Academic Structures API Integration Tests (Real Database)", () => {
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data)).toBe(true);
       expect(response.body.data.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe("Student Scoped Class & Subject Access Restrictions", () => {
+    let assignedClass, unassignedClass, assignedSubject, unassignedSubject, scopedStudent, scopedStudentToken;
+
+    beforeEach(async () => {
+      assignedClass = await Class.create({
+        name: "11A1",
+        gradeRef: sampleGrade._id,
+        homeroomTeacherRef: sampleTeacher._id,
+        schoolYear: "2025-2026",
+      });
+
+      unassignedClass = await Class.create({
+        name: "11A2",
+        gradeRef: sampleGrade._id,
+        homeroomTeacherRef: sampleTeacher._id,
+        schoolYear: "2025-2026",
+      });
+
+      assignedSubject = await Subject.create({ name: "Sinh học 11" });
+      unassignedSubject = await Subject.create({ name: "Hóa học 11" });
+
+      await TeachingAssignment.create({
+        teacherRef: sampleTeacher._id,
+        classRef: assignedClass._id,
+        subjectRef: assignedSubject._id,
+      });
+
+      scopedStudent = await User.create({
+        name: "Scoped Student",
+        email: "scopedstudent@edulms.edu",
+        password: "password123",
+        role: "student",
+        studentCode: "HS-8888",
+        classRef: assignedClass._id,
+        isActivated: true,
+      });
+      scopedStudentToken = generateAccessToken(scopedStudent);
+    });
+
+    test("Student can only see assigned class in GET /classes", async () => {
+      const response = await request
+        .get("/api/v1/academic/classes")
+        .set("Authorization", `Bearer ${scopedStudentToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0]._id.toString()).toBe(assignedClass._id.toString());
+    });
+
+    test("Student receives 403 when requesting an unassigned class ID in GET /classes/:id", async () => {
+      const response = await request
+        .get(`/api/v1/academic/classes/${unassignedClass._id}`)
+        .set("Authorization", `Bearer ${scopedStudentToken}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.message).toContain("Học sinh không có quyền truy cập lớp học này");
+    });
+
+    test("Student can only see assigned subjects in GET /subjects", async () => {
+      const response = await request
+        .get("/api/v1/academic/subjects")
+        .set("Authorization", `Bearer ${scopedStudentToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].name).toBe("Sinh học 11");
+    });
+
+    test("Student receives 403 when requesting an unassigned subject ID in GET /subjects/:id", async () => {
+      const response = await request
+        .get(`/api/v1/academic/subjects/${unassignedSubject._id}`)
+        .set("Authorization", `Bearer ${scopedStudentToken}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.message).toContain("không thuộc chương trình được phân công");
     });
   });
 });

@@ -16,7 +16,7 @@ const authMiddleware = async (req, res, next) => {
       throw new ApiError(401, "Access Token đã hết hạn hoặc không hợp lệ.");
     }
 
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(decoded.id).populate("classRef");
     if (!user) {
       throw new ApiError(401, "Người dùng liên kết với token này không tồn tại.");
     }
