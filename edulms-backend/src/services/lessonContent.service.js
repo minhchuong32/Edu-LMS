@@ -8,6 +8,9 @@ const ApiError = require("../utils/ApiError");
  * for a specific TeachingAssignment (Admin or assigned Teacher).
  */
 const checkTeacherAssignmentPermission = (assignment, user) => {
+  if (!user) {
+    throw new ApiError(401, "Yêu cầu đăng nhập để thực hiện thao tác.");
+  }
   if (user.role === "admin") {
     return true;
   }
@@ -21,7 +24,7 @@ const checkTeacherAssignmentPermission = (assignment, user) => {
   }
   throw new ApiError(
     403,
-    "Chỉ giáo viên được phân công mới có quyền thực hiện thao tác này."
+    "Chỉ giáo viên được Admin phân công giảng dạy mới có quyền quản lý các bài giảng này."
   );
 };
 
@@ -41,6 +44,7 @@ const createLessonContent = async (data, user) => {
     throw new ApiError(404, "Không tìm thấy phân công giảng dạy tương ứng.");
   }
 
+  // Enforce teacher assignment restriction
   checkTeacherAssignmentPermission(assignment, user);
 
   const newContent = await LessonContent.create({
@@ -55,13 +59,49 @@ const createLessonContent = async (data, user) => {
   return newContent;
 };
 
-const getLessonContents = async (query = {}) => {
+const getLessonContents = async (query = {}, user = null) => {
   const filter = {};
-  if (query.teachingAssignmentRef && mongoose.Types.ObjectId.isValid(query.teachingAssignmentRef)) {
-    filter.teachingAssignmentRef = query.teachingAssignmentRef;
-  }
+
   if (query.contentType) {
     filter.contentType = query.contentType;
+  }
+
+  // Teacher scope restriction: ONLY allow access to assigned teaching assignments
+  if (user && user.role === "teacher") {
+    const myAssignments = await TeachingAssignment.find({ teacherRef: user._id }).select("_id");
+    const myAssignmentIds = myAssignments.map((a) => a._id.toString());
+
+    if (query.teachingAssignmentRef && mongoose.Types.ObjectId.isValid(query.teachingAssignmentRef)) {
+      if (!myAssignmentIds.includes(query.teachingAssignmentRef.toString())) {
+        throw new ApiError(403, "Bạn không được phân công giảng dạy lớp/môn học này.");
+      }
+      filter.teachingAssignmentRef = query.teachingAssignmentRef;
+    } else {
+      filter.teachingAssignmentRef = { $in: myAssignments.map((a) => a._id) };
+    }
+  } else if (user && user.role === "student") {
+    // Student scope restriction
+    const studentClassId = user.classRef
+      ? (user.classRef._id || user.classRef).toString()
+      : null;
+
+    if (!studentClassId) {
+      return [];
+    }
+
+    const classAssignments = await TeachingAssignment.find({ classRef: studentClassId }).select("_id");
+    const classAssignmentIds = classAssignments.map((a) => a._id.toString());
+
+    if (query.teachingAssignmentRef && mongoose.Types.ObjectId.isValid(query.teachingAssignmentRef)) {
+      if (!classAssignmentIds.includes(query.teachingAssignmentRef.toString())) {
+        throw new ApiError(403, "Học sinh không thuộc lớp học của bài giảng này.");
+      }
+      filter.teachingAssignmentRef = query.teachingAssignmentRef;
+    } else {
+      filter.teachingAssignmentRef = { $in: classAssignments.map((a) => a._id) };
+    }
+  } else if (query.teachingAssignmentRef && mongoose.Types.ObjectId.isValid(query.teachingAssignmentRef)) {
+    filter.teachingAssignmentRef = query.teachingAssignmentRef;
   }
 
   return await LessonContent.find(filter)
@@ -84,8 +124,7 @@ const getLessonContentsByClassAndSubject = async (classId, subjectId, user) => {
     throw new ApiError(400, "Mã môn học không hợp lệ.");
   }
 
-  // Check if student belongs to the requested class
-  if (user.role === "student") {
+  if (user && user.role === "student") {
     const studentClassId = user.classRef
       ? (user.classRef._id || user.classRef).toString()
       : null;
@@ -95,12 +134,21 @@ const getLessonContentsByClassAndSubject = async (classId, subjectId, user) => {
     }
   }
 
-  const assignment = await TeachingAssignment.findOne({
+  const queryFilter = {
     classRef: classId,
     subjectRef: subjectId,
-  });
+  };
+
+  if (user && user.role === "teacher") {
+    queryFilter.teacherRef = user._id;
+  }
+
+  const assignment = await TeachingAssignment.findOne(queryFilter);
 
   if (!assignment) {
+    if (user && user.role === "teacher") {
+      throw new ApiError(403, "Bạn không được Admin phân công giảng dạy môn học này tại lớp học đã chọn.");
+    }
     return [];
   }
 
@@ -116,7 +164,7 @@ const getLessonContentsByClassAndSubject = async (classId, subjectId, user) => {
     });
 };
 
-const getLessonContentById = async (id) => {
+const getLessonContentById = async (id, user = null) => {
   if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError(400, "Mã nội dung bài học không hợp lệ.");
   }
@@ -132,6 +180,10 @@ const getLessonContentById = async (id) => {
 
   if (!lessonContent) {
     throw new ApiError(404, "Không tìm thấy nội dung bài học.");
+  }
+
+  if (user && user.role === "teacher" && lessonContent.teachingAssignmentRef) {
+    checkTeacherAssignmentPermission(lessonContent.teachingAssignmentRef, user);
   }
 
   return lessonContent;
@@ -245,4 +297,3 @@ module.exports = {
   deleteLessonContent,
   reorderLessonContents,
 };
-

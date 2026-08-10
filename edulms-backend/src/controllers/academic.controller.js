@@ -154,8 +154,14 @@ const createTeachingAssignment = async (req, res, next) => {
 const getTeachingAssignments = async (req, res, next) => {
   try {
     const { teacher, class: classVal, subject } = req.query;
+    // If the logged in user is a teacher, restrict results strictly to their assigned teaching assignments
+    let filterTeacher = teacher;
+    if (req.user && req.user.role === "teacher") {
+      filterTeacher = req.user._id.toString();
+    }
+
     const assignments = await academicService.getTeachingAssignments({
-      teacher,
+      teacher: filterTeacher,
       class: classVal,
       subject
     });

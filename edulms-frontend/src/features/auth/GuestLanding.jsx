@@ -9,6 +9,107 @@ export default function GuestLanding() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("top");
+  const [selectedGrade, setSelectedGrade] = useState("all");
+  const [searchCourseQuery, setSearchCourseQuery] = useState("");
+
+  const gradeTabs = [
+    { id: "all", label: "Tất cả các khối" },
+    { id: "k10", label: "Khối 10" },
+    { id: "k11", label: "Khối 11" },
+    { id: "k12", label: "Khối 12" },
+    { id: "vocational", label: "Chuyên ngành & Nghề" },
+  ];
+
+  const guestCourses = [
+    {
+      id: "course-auto-01",
+      title: "Thiet ke O to_ Nhom 01_Vua hoc vua lam",
+      teacher: "Dang Quy",
+      gradeLabel: "Chuyên ngành",
+      gradeCode: "vocational",
+      category: "Kỹ thuật Ô tô",
+      students: 38,
+      lessons: 48,
+      status: "Vừa học vừa làm",
+      badge: "Nhóm 01",
+      image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "course-math-12",
+      title: "Toán Học Nâng Cao 12 & Luyện Thi THPTQG",
+      teacher: "ThS. Nguyễn Văn Bình",
+      gradeLabel: "Khối 12",
+      gradeCode: "k12",
+      category: "Toán Học",
+      students: 142,
+      lessons: 64,
+      status: "Đang mở lớp",
+      badge: "Luyện thi THPTQG",
+      image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "course-phys-11",
+      title: "Vật Lý 11 - Điện Tích & Dòng Điện Không Đổi",
+      teacher: "Cô Lê Thị Mai",
+      gradeLabel: "Khối 11",
+      gradeCode: "k11",
+      category: "Vật Lý",
+      students: 98,
+      lessons: 42,
+      status: "Đang mở lớp",
+      badge: "Chuẩn Bộ GD",
+      image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "course-chem-10",
+      title: "Hóa Học 10 - Cấu Tạo Nguyên Tử & Liên Kết Hóa Học",
+      teacher: "ThS. Trần Hoàng Nam",
+      gradeLabel: "Khối 10",
+      gradeCode: "k10",
+      category: "Hóa Học",
+      students: 115,
+      lessons: 38,
+      status: "Đang mở lớp",
+      badge: "Nền tảng 10",
+      image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "course-it-web",
+      title: "Lập Trình Web Fullstack & Ứng Dụng AI Số",
+      teacher: "Dang Quy",
+      gradeLabel: "Chuyên ngành",
+      gradeCode: "vocational",
+      category: "Công Nghệ Thông Tin",
+      students: 76,
+      lessons: 56,
+      status: "Vừa học vừa làm",
+      badge: "Thực hành 100%",
+      image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "course-eng-ielts",
+      title: "Tiếng Anh Giao Tiếp & Luyện Thi IELTS 6.5+",
+      teacher: "Ms. Sarah Jenkins",
+      gradeLabel: "Khối 11",
+      gradeCode: "k11",
+      category: "Ngoại Ngữ",
+      students: 130,
+      lessons: 48,
+      status: "Đang mở lớp",
+      badge: "Chuẩn Quốc Tế",
+      image: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80",
+    },
+  ];
+
+  const filteredCourses = guestCourses.filter((course) => {
+    const matchesGrade = selectedGrade === "all" || course.gradeCode === selectedGrade;
+    const matchesSearch =
+      searchCourseQuery.trim() === "" ||
+      course.title.toLowerCase().includes(searchCourseQuery.toLowerCase()) ||
+      course.teacher.toLowerCase().includes(searchCourseQuery.toLowerCase()) ||
+      course.category.toLowerCase().includes(searchCourseQuery.toLowerCase());
+    return matchesGrade && matchesSearch;
+  });
 
   const platformMetrics = [
     {
@@ -151,6 +252,7 @@ export default function GuestLanding() {
       const scrollPosition = window.pageYOffset + 120;
       const sections = [
         { id: "top" },
+        { id: "courses" },
         { id: "features" },
         { id: "roles" },
       ];
@@ -271,6 +373,16 @@ export default function GuestLanding() {
               Giới thiệu
             </a>
             <a
+              href="#courses"
+              onClick={(e) => scrollToSection(e, "courses")}
+              className={`transition-colors hidden md:block ${activeSection === "courses"
+                ? "text-primary font-bold border-b-2 border-primary pb-0.5"
+                : "text-neutral-600 hover:text-primary"
+                }`}
+            >
+              Khóa học
+            </a>
+            <a
               href="#features"
               onClick={(e) => scrollToSection(e, "features")}
               className={`transition-colors hidden md:block ${activeSection === "features"
@@ -321,11 +433,6 @@ export default function GuestLanding() {
         {/* Hero Main Content */}
         <div className="relative z-10 max-w-7xl w-full mx-auto px-6 py-16 lg:py-24 grid lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-7 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-semibold text-primary-light backdrop-blur-md shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>EduLMS v1.0 • Chuyển đổi số Giáo dục THPT</span>
-            </div>
-
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-outfit tracking-tight leading-tight text-white">
               Đột phá sáng tạo trong <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 via-primary-light to-white">
@@ -438,6 +545,146 @@ export default function GuestLanding() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* COURSES OF ALL GRADES SECTION */}
+      <section className="scroll-mt-20 py-16 px-6 max-w-7xl mx-auto w-full space-y-10" id="courses">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-neutral-200 pb-6">
+          <div className="space-y-2 text-left">
+            <span className="text-xs font-bold uppercase tracking-widest text-primary bg-primary-light px-3 py-1 rounded-full border border-primary/10">
+              Chương Trình Đào Tạo
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 font-outfit">
+              Các khoá học hiện tại
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-600 max-w-xl">
+              Danh sách tất cả khóa học theo từng khối lớp và chuyên ngành đào tạo nghề chuẩn quốc gia.
+            </p>
+          </div>
+
+          {/* Search box for courses */}
+          <div className="relative w-full md:w-72">
+            <input
+              type="text"
+              placeholder="Tìm tên khóa học, giáo viên..."
+              value={searchCourseQuery}
+              onChange={(e) => setSearchCourseQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-neutral-300 rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+            />
+            <svg className="w-4 h-4 text-neutral-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Filter Grade Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {gradeTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedGrade(tab.id)}
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${
+                selectedGrade === tab.id
+                  ? "bg-primary text-white shadow-md shadow-primary/25"
+                  : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-100 hover:text-neutral-900"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Course Grid */}
+        {filteredCourses.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-2xl border border-neutral-200 space-y-3">
+            <svg className="w-12 h-12 text-neutral-300 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <p className="text-sm font-semibold text-neutral-600">Không tìm thấy khóa học nào phù hợp.</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCourses.map((course) => (
+              <div
+                key={course.id}
+                className="bg-white rounded-2xl border border-neutral-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+              >
+                <div>
+                  {/* Course Image */}
+                  <div className="relative h-48 w-full overflow-hidden bg-neutral-100">
+                    <img
+                      src={course.image}
+                      alt={course.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-md text-[10.5px] font-extrabold text-neutral-800 shadow-sm border border-white/50">
+                      {course.gradeLabel}
+                    </span>
+                    <span className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-primary/90 text-white backdrop-blur-md text-[10.5px] font-bold shadow-sm">
+                      {course.badge}
+                    </span>
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-[11px] font-semibold">
+                      <span className="bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md">
+                        {course.category}
+                      </span>
+                      <span className="bg-emerald-500/90 backdrop-blur-md px-2 py-0.5 rounded-md font-bold">
+                        {course.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Course Content */}
+                  <div className="p-5 space-y-3 text-left">
+                    <h3 className="text-base font-bold text-neutral-900 leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                      {course.title}
+                    </h3>
+
+                    {/* Teacher Line */}
+                    <div className="flex items-center gap-2 pt-1 border-t border-neutral-100">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs flex-shrink-0">
+                        {course.teacher.charAt(0)}
+                      </div>
+                      <p className="text-xs text-neutral-600 font-medium">
+                        Giáo viên: <strong className="text-neutral-900 font-semibold">{course.teacher}</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Course Footer & CTA */}
+                <div className="px-5 pb-5 pt-2 flex items-center justify-between border-t border-neutral-100/80 bg-neutral-50/50">
+                  <div className="flex items-center gap-3 text-[11px] text-neutral-500 font-medium">
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 01-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                      </svg>
+                      {course.students} Học sinh
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {course.lessons} bài học
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="text-xs font-bold text-primary hover:text-primary-hover hover:underline flex items-center gap-1 transition-all"
+                  >
+                    <span>Xem chi tiết</span>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* CORE FEATURES SECTION */}
