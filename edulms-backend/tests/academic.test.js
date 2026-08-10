@@ -585,9 +585,10 @@ describe("Academic Structures API Integration Tests (Real Database)", () => {
     });
 
     test("Teachers/Students can retrieve teaching assignments list", async () => {
+      const sampleTeacherToken = generateAccessToken(sampleTeacher);
       const response = await request
         .get("/api/v1/academic/teaching-assignments")
-        .set("Authorization", `Bearer ${teacherToken}`);
+        .set("Authorization", `Bearer ${sampleTeacherToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

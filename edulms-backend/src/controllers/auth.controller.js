@@ -239,7 +239,7 @@ const activate = async (req, res, next) => {
     const userByEmail = await User.findOne({ email: emailLower });
 
     if (!userByEmail) {
-      throw new ApiError(400, "Không tìm thấy tài khoản với Email này.");
+      throw new ApiError(404, "Không tìm thấy tài khoản với Email này.");
     }
 
     if (userByEmail.isActivated) {
@@ -254,7 +254,7 @@ const activate = async (req, res, next) => {
       codeNoDash.toLowerCase() === userCodeNoDash.toLowerCase();
 
     if (!isCodeMatch) {
-      throw new ApiError(400, "Mã định danh không đúng với Email này.");
+      throw new ApiError(404, "Không tìm thấy tài khoản phù hợp với Email và Mã định danh này.");
     }
 
     const user = userByEmail;
@@ -293,7 +293,7 @@ const verifyActivation = async (req, res, next) => {
     const userByEmail = await User.findOne({ email: emailLower });
 
     if (!userByEmail) {
-      throw new ApiError(400, "Không tìm thấy tài khoản với Email này.");
+      throw new ApiError(404, "Không tìm thấy tài khoản với Email này.");
     }
 
     if (userByEmail.isActivated) {
@@ -308,7 +308,7 @@ const verifyActivation = async (req, res, next) => {
       codeNoDash.toLowerCase() === userCodeNoDash.toLowerCase();
 
     if (!isCodeMatch) {
-      throw new ApiError(400, "Mã định danh không đúng với Email này.");
+      throw new ApiError(404, "Không tìm thấy tài khoản phù hợp với Email và Mã định danh này.");
     }
 
     const user = userByEmail;

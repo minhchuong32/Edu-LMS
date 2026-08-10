@@ -12,7 +12,7 @@ const createLessonContent = async (req, res, next) => {
 
 const getLessonContents = async (req, res, next) => {
   try {
-    const lessonContents = await lessonContentService.getLessonContents(req.query);
+    const lessonContents = await lessonContentService.getLessonContents(req.query, req.user);
     res.status(200).json(new ApiResponse(200, lessonContents, "Lấy danh sách nội dung bài học thành công."));
   } catch (error) {
     next(error);
@@ -39,7 +39,7 @@ const getLessonContentsByClassAndSubject = async (req, res, next) => {
 
 const getLessonContentById = async (req, res, next) => {
   try {
-    const lessonContent = await lessonContentService.getLessonContentById(req.params.id);
+    const lessonContent = await lessonContentService.getLessonContentById(req.params.id, req.user);
     res.status(200).json(new ApiResponse(200, lessonContent, "Lấy thông tin nội dung bài học thành công."));
   } catch (error) {
     next(error);

@@ -6,6 +6,8 @@ import Card from "../../components/common/Card";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
 
+import loginBg from "../../assets/login-bg.webp";
+
 export default function Login() {
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -60,8 +62,14 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center font-sans p-4 sm:p-6">
-      <Card className="max-w-md w-full p-6 sm:p-8 shadow-xl border border-neutral-200/50 bg-white/95 backdrop-blur-md space-y-6 rounded-2xl relative overflow-hidden">
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center font-sans p-4 sm:p-6 relative"
+      style={{ backgroundImage: `url(${loginBg})` }}
+    >
+      {/* Overlay to ensure backdrop contrast and smooth focus */}
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"></div>
+
+      <Card className="max-w-md w-full p-6 sm:p-8 shadow-2xl border border-white/40 bg-white backdrop-blur-md space-y-6 rounded-2xl relative z-10 overflow-hidden">
         {/* Decorative backdrop gradients */}
         <div className="absolute -top-10 -right-10 w-24 h-24 bg-primary/5 rounded-full blur-xl pointer-events-none"></div>
         <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl pointer-events-none"></div>
@@ -179,19 +187,6 @@ export default function Login() {
             )}
           </Button>
         </form>
-
-        {/* Info Box */}
-        <div className="p-4 bg-neutral-50/80 border border-neutral-200/50 rounded-2xl space-y-2 relative z-10">
-          <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Tài khoản chạy thử (Dev Preview):</p>
-          <div className="text-[11px] text-neutral-600 font-medium space-y-1.5 leading-normal">
-            <p> <span className="font-semibold text-neutral-900">admin@edulms.edu</span> (Quản trị viên)</p>
-            <p> <span className="font-semibold text-neutral-900">teacher@edulms.edu</span> (Giáo viên)</p>
-            <p> <span className="font-semibold text-neutral-900">student@edulms.edu</span> (Học sinh)</p>
-            <p> <span className="font-semibold text-neutral-900">parent@edulms.edu</span> (Phụ huynh)</p>
-            <p className="text-neutral-400 text-[10px] italic pt-1 border-t border-neutral-200/40">Nhập bất kỳ mật khẩu nào dài từ 6 ký tự để đăng nhập.</p>
-          </div>
-        </div>
-
         <div className="text-center pt-1 border-t border-neutral-200/50 relative z-10">
           <Link to="/terms" className="text-xs text-neutral-500 hover:text-primary transition-colors font-medium hover:underline">
             Điều khoản dịch vụ & Chính sách bảo mật
