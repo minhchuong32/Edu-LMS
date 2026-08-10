@@ -2,6 +2,8 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const app = require("../src/app");
 const User = require("../src/models/User");
+const RefreshToken = require("../src/models/RefreshToken");
+const { generateAccessToken } = require("../src/utils/jwt");
 const supertest = require("supertest");
 const request = supertest(app);
 
@@ -294,6 +296,65 @@ describe("Auth Activation Verification API (POST /api/v1/auth/verify-activation)
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe("Vui lòng nhập đầy đủ mã định danh và email.");
+  });
+
+  describe("POST /api/v1/auth/change-password", () => {
+    let activeUser, activeToken;
+
+    beforeEach(async () => {
+      activeUser = await User.create({
+        name: "Change Pwd User",
+        email: "changepwd@edulms.edu",
+        password: "oldPassword123",
+        role: "student",
+        isActivated: true,
+      });
+      activeToken = generateAccessToken(activeUser);
+    });
+
+    test("Should successfully change password and revoke refresh tokens", async () => {
+      await RefreshToken.create({
+        token: "dummy-refresh-token",
+        userId: activeUser._id,
+        expiresAt: new Date(Date.now() + 3600000),
+      });
+
+      const response = await request
+        .post("/api/v1/auth/change-password")
+        .set("Authorization", `Bearer ${activeToken}`)
+        .send({
+          currentPassword: "oldPassword123",
+          newPassword: "newPassword456",
+          confirmNewPassword: "newPassword456",
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toContain("Đổi mật khẩu thành công");
+
+      // Verify password in DB updated
+      const updatedUser = await User.findById(activeUser._id);
+      const isMatch = await updatedUser.comparePassword("newPassword456");
+      expect(isMatch).toBe(true);
+
+      // Verify refresh tokens revoked
+      const tokensCount = await RefreshToken.countDocuments({ userId: activeUser._id });
+      expect(tokensCount).toBe(0);
+    });
+
+    test("Should fail if current password is incorrect", async () => {
+      const response = await request
+        .post("/api/v1/auth/change-password")
+        .set("Authorization", `Bearer ${activeToken}`)
+        .send({
+          currentPassword: "wrongPassword123",
+          newPassword: "newPassword456",
+          confirmNewPassword: "newPassword456",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("Mật khẩu hiện tại không chính xác");
+    });
   });
 });
 

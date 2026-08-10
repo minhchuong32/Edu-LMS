@@ -38,12 +38,21 @@ export const getMe = async () => {
   return axiosClient.get("/auth/me").catch(() => null);
 };
 
+export const changePassword = async (currentPassword, newPassword, confirmNewPassword) => {
+  return axiosClient.post("/auth/change-password", {
+    currentPassword,
+    newPassword,
+    confirmNewPassword,
+  });
+};
+
 const authService = {
   login,
   activateAccount,
   verifyActivation,
   logout,
-  getMe
+  getMe,
+  changePassword,
 };
 
 

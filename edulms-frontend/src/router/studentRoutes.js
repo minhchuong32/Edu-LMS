@@ -2,6 +2,7 @@ import Schedule from "../features/student/pages/Schedule";
 import Courses from "../features/student/pages/Courses";
 import Quizzes from "../features/student/pages/Quizzes";
 import Grades from "../features/student/pages/Grades";
+import SecuritySettings from "../features/student/pages/SecuritySettings";
 
 export const studentRoutes = [
   { index: true, element: Schedule },
@@ -11,6 +12,7 @@ export const studentRoutes = [
   { path: "lessons", element: Courses },
   { path: "quizzes", element: Quizzes },
   { path: "assignments", element: Quizzes },
-  { path: "grades", element: Grades }
+  { path: "grades", element: Grades },
+  { path: "security", element: SecuritySettings }
 ];
 

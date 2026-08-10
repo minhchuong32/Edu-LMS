@@ -347,6 +347,61 @@ const getMe = async (req, res, next) => {
   }
 };
 
+/**
+ * Change Password for authenticated user
+ * Route: POST /api/v1/auth/change-password
+ */
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      throw new ApiError(400, "Vui lòng nhập đầy đủ mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu mới.");
+    }
+
+    if (newPassword.length < 6) {
+      throw new ApiError(400, "Mật khẩu mới phải chứa ít nhất 6 ký tự.");
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      throw new ApiError(400, "Xác nhận mật khẩu mới không trùng khớp với mật khẩu mới.");
+    }
+
+    if (currentPassword === newPassword) {
+      throw new ApiError(400, "Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+    }
+
+    // Fetch user with password field
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      throw new ApiError(404, "Không tìm thấy thông tin người dùng.");
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      throw new ApiError(400, "Mật khẩu hiện tại không chính xác.");
+    }
+
+    // Update password (pre-save hook will hash it)
+    user.password = newPassword;
+    await user.save();
+
+    // Revoke all refresh tokens for this user so old sessions require re-login
+    await RefreshToken.deleteMany({ userId: user._id });
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        { requireRelogin: true },
+        "Đổi mật khẩu thành công. Tất cả các phiên đăng nhập cũ đã được đăng xuất. Vui lòng đăng nhập lại."
+      )
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   login,
   logout,
@@ -354,5 +409,6 @@ module.exports = {
   activate,
   verifyActivation,
   getMe,
+  changePassword,
 };
 

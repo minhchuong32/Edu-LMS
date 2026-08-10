@@ -4,11 +4,35 @@ import Badge from "../components/common/Badge";
 import Button from "../components/common/Button";
 import Avatar from "../components/common/Avatar";
 import { useAuth } from "../context/AuthContext";
+import authService from "../services/authService";
+import {
+  User,
+  ShieldCheck,
+  X,
+  LogOut,
+  Menu,
+  Bell,
+  AlertCircle,
+  CheckCircle2,
+  Lock,
+} from "lucide-react";
 
 export default function RoleSidebarLayout({ role, navItems = [], user: propUser }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileTab, setProfileTab] = useState("info"); // "info" | "security"
+
+  // Change password form state
+  const [pwdForm, setPwdForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmNewPassword: "",
+  });
+  const [pwdError, setPwdError] = useState("");
+  const [pwdSuccess, setPwdSuccess] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
+
   const { user: authUser, logout } = useAuth();
 
   const currentUser = propUser || authUser || {
@@ -19,6 +43,52 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
 
   const activeRole = role || currentUser?.role || "User";
   const userCode = currentUser?.studentCode || currentUser?.teacherCode || null;
+
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPwdError("");
+    setPwdSuccess("");
+
+    if (!pwdForm.currentPassword) {
+      setPwdError("Vui lòng nhập mật khẩu hiện tại.");
+      return;
+    }
+    if (!pwdForm.newPassword) {
+      setPwdError("Vui lòng nhập mật khẩu mới.");
+      return;
+    }
+    if (pwdForm.newPassword.length < 6) {
+      setPwdError("Mật khẩu mới phải chứa ít nhất 6 ký tự.");
+      return;
+    }
+    if (pwdForm.newPassword !== pwdForm.confirmNewPassword) {
+      setPwdError("Xác nhận mật khẩu mới không trùng khớp.");
+      return;
+    }
+    if (pwdForm.currentPassword === pwdForm.newPassword) {
+      setPwdError("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+      return;
+    }
+
+    setPwdLoading(true);
+    try {
+      await authService.changePassword(
+        pwdForm.currentPassword,
+        pwdForm.newPassword,
+        pwdForm.confirmNewPassword
+      );
+      setPwdSuccess("Đổi mật khẩu thành công! Tất cả các phiên đăng nhập cũ đã hủy (Revoke Refresh Token). Đang chuyển hướng...");
+      setTimeout(async () => {
+        await logout();
+        window.location.href = "/login";
+      }, 1800);
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.";
+      setPwdError(errMsg);
+    } finally {
+      setPwdLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 font-sans flex text-neutral-600 antialiased">
@@ -39,9 +109,7 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
                 className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
                 aria-label="Đóng modal"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -69,53 +137,173 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
                 </p>
               </div>
 
-              {/* Detail fields */}
-              <div className="mt-5 space-y-3 bg-neutral-50 p-4 rounded-xl border border-neutral-200/80">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-600 font-medium">Vai trò hệ thống</span>
-                  <span className="font-bold text-neutral-900 capitalize">{activeRole}</span>
-                </div>
+              {/* Profile Tabs */}
+              <div className="flex border-b border-neutral-200 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setProfileTab("info")}
+                  className={`pb-2 px-3 text-xs font-bold transition border-b-2 flex items-center gap-1.5 ${
+                    profileTab === "info"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-neutral-500 hover:text-neutral-900"
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  <span>Thông tin cá nhân</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProfileTab("security")}
+                  className={`pb-2 px-3 text-xs font-bold transition border-b-2 flex items-center gap-1.5 ${
+                    profileTab === "security"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-neutral-500 hover:text-neutral-900"
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Security / Đổi mật khẩu</span>
+                </button>
+              </div>
 
-                {userCode && (
-                  <div className="flex items-center justify-between text-xs pt-2 border-t border-neutral-200/60">
-                    <span className="text-neutral-600 font-medium">
-                      {activeRole.toLowerCase() === "teacher" ? "Mã giảng viên" : "Mã sinh viên"}
-                    </span>
-                    <span className="font-mono font-bold text-primary bg-primary-light px-2 py-0.5 rounded">
-                      {userCode}
-                    </span>
+              {profileTab === "info" ? (
+                <>
+                  {/* Detail fields */}
+                  <div className="mt-4 space-y-3 bg-neutral-50 p-4 rounded-xl border border-neutral-200/80">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-neutral-600 font-medium">Vai trò hệ thống</span>
+                      <span className="font-bold text-neutral-900 capitalize">{activeRole}</span>
+                    </div>
+
+                    {userCode && (
+                      <div className="flex items-center justify-between text-xs pt-2 border-t border-neutral-200/60">
+                        <span className="text-neutral-600 font-medium">
+                          {activeRole.toLowerCase() === "teacher" ? "Mã giảng viên" : "Mã sinh viên"}
+                        </span>
+                        <span className="font-mono font-bold text-primary bg-primary-light px-2 py-0.5 rounded">
+                          {userCode}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-xs pt-2 border-t border-neutral-200/60">
+                      <span className="text-neutral-600 font-medium">Trạng thái tài khoản</span>
+                      <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Đang hoạt động
+                      </span>
+                    </div>
                   </div>
-                )}
 
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Trạng thái tài khoản</span>
-                  <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Đang hoạt động
-                  </span>
-                </div>
-              </div>
+                  {/* Action Buttons */}
+                  <div className="mt-5 flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      className="flex-1 text-xs font-semibold py-2.5 rounded-xl"
+                      onClick={() => setShowProfileModal(false)}
+                    >
+                      Đóng
+                    </Button>
+                    <Button
+                      variant="danger"
+                      className="flex-1 text-xs font-semibold py-2.5 rounded-xl flex items-center justify-center gap-1.5"
+                      onClick={() => {
+                        setShowProfileModal(false);
+                        setShowLogoutConfirm(true);
+                      }}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Đăng xuất</span>
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                /* SECURITY / CHANGE PASSWORD TAB */
+                <form onSubmit={handleChangePasswordSubmit} className="mt-4 space-y-3">
+                  {pwdError && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                      <span>{pwdError}</span>
+                    </div>
+                  )}
 
-              {/* Action Buttons */}
-              <div className="mt-6 flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1 text-xs font-semibold py-2.5 rounded-xl"
-                  onClick={() => setShowProfileModal(false)}
-                >
-                  Đóng
-                </Button>
-                <Button
-                  variant="danger"
-                  className="flex-1 text-xs font-semibold py-2.5 rounded-xl"
-                  onClick={() => {
-                    setShowProfileModal(false);
-                    setShowLogoutConfirm(true);
-                  }}
-                >
-                  Đăng xuất
-                </Button>
-              </div>
+                  {pwdSuccess && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                      <span>{pwdSuccess}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                        Current password
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={pwdForm.currentPassword}
+                        onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })}
+                        className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                        New password
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={pwdForm.newPassword}
+                        onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
+                        className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                        Confirm new password
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={pwdForm.confirmNewPassword}
+                        onChange={(e) => setPwdForm({ ...pwdForm, confirmNewPassword: e.target.value })}
+                        className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 text-xs font-semibold py-2 rounded-xl"
+                      onClick={() => setShowProfileModal(false)}
+                    >
+                      Hủy
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      className="flex-1 text-xs font-bold py-2 rounded-xl shadow-md flex items-center justify-center gap-1.5"
+                      disabled={pwdLoading}
+                    >
+                      {pwdLoading ? (
+                        "Đang xử lý..."
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>Change Password</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         </div>
@@ -132,9 +320,7 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-12 rounded-full bg-rose-50 text-danger flex items-center justify-center mx-auto mb-4 ring-8 ring-rose-50/50">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
+              <LogOut className="w-6 h-6 text-rose-600" />
             </div>
 
             <h3 className="text-base font-bold text-center text-neutral-900 mb-1.5">
@@ -154,13 +340,14 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
               </Button>
               <Button
                 variant="danger"
-                className="flex-1 text-xs font-semibold py-2 rounded-lg"
+                className="flex-1 text-xs font-semibold py-2 rounded-lg flex items-center justify-center gap-1.5"
                 onClick={() => {
                   setShowLogoutConfirm(false);
                   logout();
                 }}
               >
-                Đăng xuất
+                <LogOut className="w-4 h-4" />
+                <span>Đăng xuất</span>
               </Button>
             </div>
           </div>
@@ -193,9 +380,7 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
             aria-label="Đóng menu"
             className="p-1.5 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition"
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -310,9 +495,7 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
               aria-label="Mở menu"
               className="p-2 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition lg:hidden"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Menu className="w-6 h-6" />
             </button>
             <div className="hidden sm:flex items-center gap-2">
               <span className="text-xs font-semibold text-neutral-600">Hệ thống:</span>
@@ -327,9 +510,7 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
               aria-label="Thông báo"
               className="relative p-2 text-neutral-600 hover:text-neutral-900 rounded-lg hover:bg-neutral-100 transition"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
+              <Bell className="w-5 h-5" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full ring-2 ring-white"></span>
             </button>
 
@@ -356,9 +537,7 @@ export default function RoleSidebarLayout({ role, navItems = [], user: propUser 
               className="px-3 py-1.5 text-xs font-semibold h-8 flex items-center gap-1.5 hover:border-danger hover:text-danger hover:bg-rose-50 transition rounded-lg"
               onClick={() => setShowLogoutConfirm(true)}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
+              <LogOut className="w-4 h-4" />
               <span>Đăng xuất</span>
             </Button>
           </div>

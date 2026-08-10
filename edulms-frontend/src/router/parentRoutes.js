@@ -3,6 +3,7 @@ import Dashboard from "../features/parent/pages/Dashboard";
 import Reports from "../features/parent/pages/Reports";
 import Chat from "../features/parent/pages/Chat";
 import Notifications from "../features/parent/pages/Notifications";
+import SecuritySettings from "../features/student/pages/SecuritySettings";
 
 export const parentRoutes = [
   { index: true, element: Children },
@@ -10,6 +11,7 @@ export const parentRoutes = [
   { path: "dashboard", element: Dashboard },
   { path: "reports", element: Reports },
   { path: "chat", element: Chat },
-  { path: "notifications", element: Notifications }
+  { path: "notifications", element: Notifications },
+  { path: "security", element: SecuritySettings }
 ];
 

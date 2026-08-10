@@ -22,4 +22,7 @@ router.post("/verify-activation", authController.verifyActivation);
 // GET /api/v1/auth/me
 router.get("/me", authMiddleware, authController.getMe);
 
+// POST /api/v1/auth/change-password
+router.post("/change-password", authMiddleware, authController.changePassword);
+
 module.exports = router;
