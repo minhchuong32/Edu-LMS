@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import academicService from "../../../services/academicService";
+import AssignHomeroomModal from "./AssignHomeroomModal";
 import {
   FolderTree,
   Plus,
@@ -46,6 +47,7 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
   // Homeroom Teacher search state inside modal
   const [teacherSearch, setTeacherSearch] = useState("");
   const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false);
+  const [assignHomeroomClass, setAssignHomeroomClass] = useState(null);
 
   // Load data
   const fetchData = async () => {
@@ -428,6 +430,14 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
                                   </button>
                                 )}
                                 <button
+                                  onClick={() => setAssignHomeroomClass(cls)}
+                                  className="text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
+                                  title="Phân công / Đổi Giáo viên Chủ nhiệm"
+                                >
+                                  <UserCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                  <span>GVCN</span>
+                                </button>
+                                <button
                                   onClick={() => handleOpenEditClass(cls)}
                                   className="text-xs font-medium text-primary hover:bg-primary-light px-2.5 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
                                 >
@@ -621,11 +631,10 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
                                 setClassForm({ ...classForm, homeroomTeacherRef: t._id });
                                 setIsTeacherDropdownOpen(false);
                               }}
-                              className={`p-2 rounded-lg text-xs cursor-pointer flex items-center justify-between transition-colors ${
-                                classForm.homeroomTeacherRef === t._id
+                              className={`p-2 rounded-lg text-xs cursor-pointer flex items-center justify-between transition-colors ${classForm.homeroomTeacherRef === t._id
                                   ? "bg-primary-light text-primary font-semibold"
                                   : "hover:bg-neutral-100 text-neutral-900"
-                              }`}
+                                }`}
                             >
                               <div>
                                 <p className="font-medium text-neutral-900">{t.name}</p>
@@ -662,6 +671,17 @@ export default function GradeClassTree({ onRefreshData, onSelectClassForRoster }
           </div>
         </div>
       )}
+
+      {/* Standalone Assign Homeroom Modal */}
+      <AssignHomeroomModal
+        isOpen={Boolean(assignHomeroomClass)}
+        classObj={assignHomeroomClass}
+        onClose={() => setAssignHomeroomClass(null)}
+        onSuccess={() => {
+          fetchData();
+          if (onRefreshData) onRefreshData();
+        }}
+      />
     </div>
   );
 }

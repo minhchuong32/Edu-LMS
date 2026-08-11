@@ -30,7 +30,7 @@ const importUsers = async (req, res, next) => {
 const listUsers = async (req, res, next) => {
   try {
     const { role, search, classRef } = req.query;
-    const users = await userService.getUsers({ role, search, classRef });
+    const users = await userService.getUsers({ role, search, classRef }, req.user);
     res.status(200).json(
       new ApiResponse(200, users, "Lấy danh sách người dùng thành công")
     );

@@ -183,6 +183,101 @@ describe("Parent-Student Relationship & Authorization Integration Tests", () => 
     });
   });
 
+  describe("POST /api/v1/students/:studentId/parents Linking & Authorization", () => {
+    test("Admin can link Parent 2 to Student 1", async () => {
+      const response = await request(app)
+        .post(`/api/v1/students/${studentUser1._id}/parents`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          parentId: parentUser2._id,
+          relationship: "mother",
+        });
+
+      expect(response.status).toBe(201);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBe(2);
+    });
+
+    test("Admin linking duplicate Parent 2 to Student 1 returns 409 Conflict", async () => {
+      const response = await request(app)
+        .post(`/api/v1/students/${studentUser1._id}/parents`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          parentId: parentUser2._id,
+          relationship: "mother",
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body.message).toContain("đã được liên kết");
+    });
+
+    test("Student cannot self-link parent (403 Forbidden)", async () => {
+      const response = await request(app)
+        .post(`/api/v1/students/${studentUser1._id}/parents`)
+        .set("Authorization", `Bearer ${studentToken1}`)
+        .send({
+          parentId: parentUser2._id,
+          relationship: "mother",
+        });
+
+      expect(response.status).toBe(403);
+    });
+
+    test("Parent cannot self-link to student (403 Forbidden)", async () => {
+      const response = await request(app)
+        .post(`/api/v1/students/${studentUser2._id}/parents`)
+        .set("Authorization", `Bearer ${parentToken1}`)
+        .send({
+          parentId: parentUser1._id,
+          relationship: "father",
+        });
+
+      expect(response.status).toBe(403);
+    });
+
+    test("Linking non-parent user returns 400 Bad Request", async () => {
+      const response = await request(app)
+        .post(`/api/v1/students/${studentUser1._id}/parents`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          parentId: teacherUser._id,
+          relationship: "guardian",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("không phải là phụ huynh");
+    });
+  });
+
+  describe("DELETE /api/v1/students/:studentId/parents/:parentId Unlinking & Authorization", () => {
+    test("Student cannot unlink parent (403 Forbidden)", async () => {
+      const response = await request(app)
+        .delete(`/api/v1/students/${studentUser1._id}/parents/${parentUser2._id}`)
+        .set("Authorization", `Bearer ${studentToken1}`);
+
+      expect(response.status).toBe(403);
+    });
+
+    test("Admin can unlink Parent 2 from Student 1", async () => {
+      const response = await request(app)
+        .delete(`/api/v1/students/${studentUser1._id}/parents/${parentUser2._id}`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBe(1);
+    });
+
+    test("Unlinking non-existing relationship returns 404 Not Found", async () => {
+      const response = await request(app)
+        .delete(`/api/v1/students/${studentUser1._id}/parents/${parentUser2._id}`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toContain("không tồn tại");
+    });
+  });
+
   describe("GET /api/v1/parents/me/children Authorization", () => {
     test("Parent 1 gets their own children (Student 1)", async () => {
       const response = await request(app)

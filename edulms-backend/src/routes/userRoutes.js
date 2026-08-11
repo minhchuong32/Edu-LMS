@@ -6,10 +6,10 @@ const upload = require("../middlewares/upload.middleware");
 const { authMiddleware, restrictTo } = require("../middlewares");
 
 // POST /api/v1/users/import - Bulk import users from Excel
-router.post("/import", upload.single("file"), userController.importUsers);
+router.post("/import", authMiddleware, restrictTo("admin"), upload.single("file"), userController.importUsers);
 
 // GET /api/v1/users - List users with filters
-router.get("/", userController.listUsers);
+router.get("/", authMiddleware, userController.listUsers);
 
 // Admin-only user management endpoints
 router.post("/", authMiddleware, restrictTo("admin"), userController.createUser);

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import academicService from "../../../services/academicService";
+import AssignParentModal from "../../users/AssignParentModal";
+import AssignHomeroomModal from "./AssignHomeroomModal";
 
 export default function ClassRosterManager({ selectedClassId, onRefreshData }) {
   // Master data
@@ -40,6 +42,8 @@ export default function ClassRosterManager({ selectedClassId, onRefreshData }) {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyList, setHistoryList] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [assignParentStudent, setAssignParentStudent] = useState(null);
+  const [assignHomeroomClass, setAssignHomeroomClass] = useState(null);
 
   // Load Classes list
   const loadClasses = async () => {
@@ -391,6 +395,42 @@ export default function ClassRosterManager({ selectedClassId, onRefreshData }) {
           </div>
         </div>
 
+        {/* Homeroom Teacher Management Sub-Banner */}
+        {currentClassObj && (
+          <div className="pt-3 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-3 text-xs bg-purple-50/50 p-3.5 rounded-xl border border-purple-100">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-purple-900 uppercase tracking-wider text-[11px]">
+                Giáo viên Chủ nhiệm (GVCN):
+              </span>
+              {currentClassObj.homeroomTeacherRef?.name ? (
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-purple-900 text-sm">
+                    {currentClassObj.homeroomTeacherRef.name}
+                  </span>
+                  {currentClassObj.homeroomTeacherRef.email && (
+                    <span className="text-neutral-500 font-mono text-[11px]">
+                      ({currentClassObj.homeroomTeacherRef.email})
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-amber-700 font-semibold italic">Chưa phân công GVCN</span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setAssignHomeroomClass(currentClassObj)}
+              className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition inline-flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>{currentClassObj.homeroomTeacherRef?.name ? "Đổi GVCN" : "Phân công GVCN"}</span>
+            </button>
+          </div>
+        )}
+
         {/* Live Search Bar */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -460,9 +500,8 @@ export default function ClassRosterManager({ selectedClassId, onRefreshData }) {
                   return (
                     <tr
                       key={student._id}
-                      className={`hover:bg-neutral-50/80 transition-all ${
-                        isSelected ? "bg-primary-light/30" : ""
-                      }`}
+                      className={`hover:bg-neutral-50/80 transition-all ${isSelected ? "bg-primary-light/30" : ""
+                        }`}
                     >
                       <td className="p-3.5 text-center">
                         <input
@@ -497,6 +536,17 @@ export default function ClassRosterManager({ selectedClassId, onRefreshData }) {
                         )}
                       </td>
                       <td className="p-3.5 text-right space-x-2">
+                        <button
+                          onClick={() => setAssignParentStudent(student)}
+                          title="Gán & Quản lý Phụ huynh"
+                          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-all inline-flex items-center gap-1"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Gán phụ huynh
+                        </button>
+
                         <button
                           onClick={() => handleOpenSingleTransfer(student)}
                           title="Chuyển sang lớp học khác"
@@ -673,9 +723,8 @@ export default function ClassRosterManager({ selectedClassId, onRefreshData }) {
                   return (
                     <label
                       key={s._id}
-                      className={`flex items-center justify-between p-3 cursor-pointer hover:bg-neutral-50 ${
-                        checked ? "bg-primary-light/40" : ""
-                      }`}
+                      className={`flex items-center justify-between p-3 cursor-pointer hover:bg-neutral-50 ${checked ? "bg-primary-light/40" : ""
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <input
@@ -840,6 +889,26 @@ export default function ClassRosterManager({ selectedClassId, onRefreshData }) {
           </div>
         </div>
       )}
+
+      {/* Standalone Assign Parent Modal */}
+      <AssignParentModal
+        isOpen={Boolean(assignParentStudent)}
+        student={assignParentStudent}
+        onClose={() => setAssignParentStudent(null)}
+        onSuccess={loadStudents}
+      />
+
+      {/* Standalone Assign Homeroom Teacher Modal */}
+      <AssignHomeroomModal
+        isOpen={Boolean(assignHomeroomClass)}
+        classObj={assignHomeroomClass}
+        onClose={() => setAssignHomeroomClass(null)}
+        onSuccess={() => {
+          loadClasses();
+          loadStudents();
+          if (onRefreshData) onRefreshData();
+        }}
+      />
     </div>
   );
 }

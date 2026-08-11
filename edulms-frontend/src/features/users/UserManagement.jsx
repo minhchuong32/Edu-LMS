@@ -7,6 +7,7 @@ import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
 import UserImport from "./UserImport";
+import AssignParentModal from "./AssignParentModal";
 
 export default function UserManagement() {
   const { user: currentUser } = useAuth();
@@ -29,6 +30,22 @@ export default function UserManagement() {
   const [targetUser, setTargetUser] = useState(null);
   const [detailParents, setDetailParents] = useState([]);
   const [loadingDetailParents, setLoadingDetailParents] = useState(false);
+
+  // Add Parent Modal State
+  const [showAddParentModal, setShowAddParentModal] = useState(false);
+  const [parentSearch, setParentSearch] = useState("");
+  const [parentSearchResults, setParentSearchResults] = useState([]);
+  const [searchingParents, setSearchingParents] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState("");
+  const [selectedRelationship, setSelectedRelationship] = useState("father");
+  const [linkingParent, setLinkingParent] = useState(false);
+  const [linkError, setLinkError] = useState("");
+
+  // Unlink Parent Confirmation State
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [parentToUnlink, setParentToUnlink] = useState(null);
+  const [unlinkingParent, setUnlinkingParent] = useState(false);
+  const [assignParentStudent, setAssignParentStudent] = useState(null);
 
   const [editingUser, setEditingUser] = useState(null); // null if creating, user object if editing
 
@@ -94,17 +111,89 @@ export default function UserManagement() {
 
   useEffect(() => {
     if (showDetailModal && targetUser?.role === "student" && targetUser?._id) {
-      setLoadingDetailParents(true);
-      studentService
-        .getStudentParents(targetUser._id)
-        .then((res) => {
-          const list = res?.data || res || [];
-          setDetailParents(Array.isArray(list) ? list : []);
-        })
-        .catch(() => setDetailParents([]))
-        .finally(() => setLoadingDetailParents(false));
+      fetchStudentParents(targetUser._id);
     }
   }, [showDetailModal, targetUser?._id, targetUser?.role]);
+
+  // Fetch parents for a student
+  const fetchStudentParents = async (studentId) => {
+    setLoadingDetailParents(true);
+    try {
+      const res = await studentService.getStudentParents(studentId);
+      const list = res?.data || res || [];
+      setDetailParents(Array.isArray(list) ? list : []);
+    } catch {
+      setDetailParents([]);
+    } finally {
+      setLoadingDetailParents(false);
+    }
+  };
+
+  // Search parent users for linking
+  const handleSearchParents = async (query) => {
+    setParentSearch(query);
+    if (!query.trim()) {
+      setParentSearchResults([]);
+      return;
+    }
+    setSearchingParents(true);
+    try {
+      const res = await userService.getUsers({ role: "parent", search: query.trim() });
+      const list = res?.data || res || [];
+      setParentSearchResults(Array.isArray(list) ? list : []);
+    } catch {
+      setParentSearchResults([]);
+    } finally {
+      setSearchingParents(false);
+    }
+  };
+
+  // Submit link parent request
+  const handleLinkParentSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedParentId) {
+      setLinkError("Vui lòng chọn một phụ huynh từ danh sách.");
+      return;
+    }
+    setLinkError("");
+    setLinkingParent(true);
+    try {
+      await studentService.addParent(targetUser._id, {
+        parentId: selectedParentId,
+        relationship: selectedRelationship,
+      });
+      showToast("Liên kết phụ huynh thành công!", "success");
+      setShowAddParentModal(false);
+      setSelectedParentId("");
+      setParentSearch("");
+      setParentSearchResults([]);
+      await fetchStudentParents(targetUser._id);
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Không thể liên kết phụ huynh.";
+      setLinkError(msg);
+      showToast(msg, "error");
+    } finally {
+      setLinkingParent(false);
+    }
+  };
+
+  // Submit unlink parent confirm request
+  const handleUnlinkParentConfirm = async () => {
+    if (!parentToUnlink || !targetUser) return;
+    setUnlinkingParent(true);
+    try {
+      await studentService.removeParent(targetUser._id, parentToUnlink._id);
+      showToast("Đã gỡ liên kết phụ huynh thành công!", "success");
+      setShowUnlinkModal(false);
+      setParentToUnlink(null);
+      await fetchStudentParents(targetUser._id);
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Không thể gỡ liên kết phụ huynh.";
+      showToast(msg, "error");
+    } finally {
+      setUnlinkingParent(false);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === "list") {
@@ -467,6 +556,20 @@ export default function UserManagement() {
                               </svg>
                             </button>
 
+                            {/* ASSIGN PARENT BUTTON (FOR STUDENTS) */}
+                            {u.role === "student" && (
+                              <button
+                                type="button"
+                                onClick={() => setAssignParentStudent(u)}
+                                className="p-1.5 text-neutral-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                                title="Gán & Quản lý Phụ huynh"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                              </button>
+                            )}
+
                             {/* EDIT BUTTON */}
                             <button
                               type="button"
@@ -766,22 +869,55 @@ export default function UserManagement() {
                     <span className="text-neutral-500 font-semibold">Lớp học:</span>
                     <span className="font-bold text-neutral-800">{targetUser.classRef?.name || "Chưa xếp lớp"}</span>
                   </div>
-                  <div className="flex flex-col gap-1 border-b pb-2">
-                    <span className="text-neutral-500 font-semibold">Phụ huynh liên kết:</span>
+                  <div className="flex flex-col gap-2 border-b pb-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-500 font-semibold">Phụ huynh liên kết:</span>
+                      {(currentUser?.role === "admin" || currentUser?.role === "teacher") && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAddParentModal(true);
+                            setLinkError("");
+                            setSelectedParentId("");
+                            setParentSearch("");
+                            setParentSearchResults([]);
+                            handleSearchParents("");
+                          }}
+                          className="text-xs text-primary font-bold hover:underline flex items-center gap-1"
+                        >
+                          + Thêm phụ huynh
+                        </button>
+                      )}
+                    </div>
+
                     {loadingDetailParents ? (
                       <span className="text-neutral-400 italic text-xs">Đang tải thông tin phụ huynh...</span>
                     ) : detailParents && detailParents.length > 0 ? (
-                      <div className="space-y-1.5 mt-0.5">
+                      <div className="space-y-2 mt-1">
                         {detailParents.map((p, idx) => (
-                          <div key={p._id || idx} className="text-xs bg-neutral-50 p-2.5 rounded-lg border border-neutral-200 flex justify-between items-center">
-                            <div>
-                              <span className="font-bold text-neutral-800 block">{p.name}</span>
-                              <span className="font-mono text-neutral-500 text-[11px]">{p.email}</span>
+                          <div key={p._id || idx} className="text-xs bg-neutral-50 p-2.5 rounded-lg border border-neutral-200 flex justify-between items-center shadow-sm">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-neutral-900">{p.name}</span>
+                                {p.relationship && (
+                                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold capitalize">
+                                    {p.relationship === "father" ? "Cha" : p.relationship === "mother" ? "Mẹ" : p.relationship === "guardian" ? "Người giám hộ" : p.relationship}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="font-mono text-neutral-500 text-[11px] block">{p.email}</span>
                             </div>
-                            {p.relationship && (
-                              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold capitalize">
-                                {p.relationship === "father" ? "Cha" : p.relationship === "mother" ? "Mẹ" : p.relationship === "guardian" ? "Người giám hộ" : p.relationship}
-                              </span>
+                            {(currentUser?.role === "admin" || currentUser?.role === "teacher") && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setParentToUnlink(p);
+                                  setShowUnlinkModal(true);
+                                }}
+                                className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded transition"
+                              >
+                                Gỡ
+                              </button>
                             )}
                           </div>
                         ))}
@@ -818,6 +954,163 @@ export default function UserManagement() {
           </div>
         </div>
       )}
+
+      {/* Modal Thêm Phụ Huynh Liên Kết */}
+      {showAddParentModal && (
+        <div className="fixed inset-0 bg-neutral-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-neutral-200">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="font-bold text-neutral-900 text-base">Thêm Phụ huynh liên kết</h3>
+              <button
+                type="button"
+                onClick={() => setShowAddParentModal(false)}
+                className="text-neutral-400 hover:text-neutral-700 text-sm p-1 rounded"
+              >
+                ✕
+              </button>
+            </div>
+
+            {linkError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl">
+                {linkError}
+              </div>
+            )}
+
+            <form onSubmit={handleLinkParentSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                  Tìm kiếm phụ huynh (Họ tên / Email)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Nhập tên hoặc email phụ huynh..."
+                  value={parentSearch}
+                  onChange={(e) => handleSearchParents(e.target.value)}
+                  className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-neutral-700 mb-1.5">
+                  Danh sách phụ huynh tìm thấy
+                </label>
+                <div className="max-h-36 overflow-y-auto border border-neutral-200 rounded-xl p-2 space-y-1 bg-neutral-50">
+                  {searchingParents ? (
+                    <div className="text-center text-neutral-400 py-3 italic">Đang tìm kiếm phụ huynh...</div>
+                  ) : parentSearchResults.length === 0 ? (
+                    <div className="text-center text-neutral-400 py-3 italic">
+                      {parentSearch.trim() ? "Không tìm thấy phụ huynh phù hợp" : "Nhập tên hoặc email để tìm kiếm"}
+                    </div>
+                  ) : (
+                    parentSearchResults.map((p) => (
+                      <label
+                        key={p._id}
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer border transition ${
+                          selectedParentId === p._id
+                            ? "bg-primary/10 border-primary font-bold"
+                            : "bg-white border-neutral-200 hover:bg-neutral-100"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="selectedParent"
+                            value={p._id}
+                            checked={selectedParentId === p._id}
+                            onChange={() => setSelectedParentId(p._id)}
+                            className="accent-primary"
+                          />
+                          <div>
+                            <span className="block text-neutral-900 font-semibold">{p.name}</span>
+                            <span className="text-[11px] text-neutral-500 font-mono">{p.email}</span>
+                          </div>
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                  Vai trò quan hệ
+                </label>
+                <select
+                  value={selectedRelationship}
+                  onChange={(e) => setSelectedRelationship(e.target.value)}
+                  className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs"
+                >
+                  <option value="father">Cha (Father)</option>
+                  <option value="mother">Mẹ (Mother)</option>
+                  <option value="guardian">Người giám hộ (Guardian)</option>
+                  <option value="other">Khác (Other)</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="py-1.5 px-4 text-xs"
+                  onClick={() => setShowAddParentModal(false)}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="py-1.5 px-4 text-xs"
+                  disabled={linkingParent || !selectedParentId}
+                >
+                  {linkingParent ? "Đang liên kết..." : "Liên kết phụ huynh"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xác Nhận Gỡ Phụ Huynh */}
+      {showUnlinkModal && parentToUnlink && (
+        <div className="fixed inset-0 bg-neutral-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-neutral-200 text-center">
+            <h3 className="font-bold text-neutral-900 text-base">Xác nhận gỡ liên kết Phụ huynh</h3>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              Bạn có chắc chắn muốn gỡ liên kết phụ huynh <strong className="text-neutral-900">{parentToUnlink.name}</strong> khỏi học sinh <strong className="text-neutral-900">{targetUser?.name}</strong>?
+            </p>
+            <div className="flex justify-center gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="py-1.5 px-4 text-xs"
+                onClick={() => {
+                  setShowUnlinkModal(false);
+                  setParentToUnlink(null);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                className="py-1.5 px-4 text-xs"
+                onClick={handleUnlinkParentConfirm}
+                disabled={unlinkingParent}
+              >
+                {unlinkingParent ? "Đang gỡ..." : "Xác nhận gỡ"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- STANDALONE ASSIGN PARENT MODAL --- */}
+      <AssignParentModal
+        isOpen={Boolean(assignParentStudent)}
+        student={assignParentStudent}
+        onClose={() => setAssignParentStudent(null)}
+        onSuccess={fetchUsers}
+      />
     </div>
   );
 }

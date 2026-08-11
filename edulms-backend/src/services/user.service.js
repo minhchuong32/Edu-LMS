@@ -278,7 +278,7 @@ const importUsersFromExcel = async (fileBuffer, defaultRole) => {
 /**
  * Retrieve user list based on query criteria (search, role, & classRef)
  */
-const getUsers = async (filters = {}) => {
+const getUsers = async (filters = {}, currentUser = null) => {
   const { role, search, classRef } = filters;
   const query = {};
 
@@ -290,6 +290,27 @@ const getUsers = async (filters = {}) => {
     query.classRef = null;
   } else if (classRef) {
     query.classRef = classRef;
+  }
+
+  // Teacher scoping: Teacher can only view students in classes they manage
+  if (currentUser && currentUser.role === "teacher" && role === "student") {
+    const homeroomClasses = await Class.find({ homeroomTeacherRef: currentUser._id }).select("_id");
+    const homeroomIds = homeroomClasses.map((c) => c._id.toString());
+
+    const TeachingAssignment = require("../models/TeachingAssignment");
+    const assignments = await TeachingAssignment.find({ teacherRef: currentUser._id }).select("classRef");
+    const assignedIds = assignments.map((a) => (a.classRef._id || a.classRef).toString());
+
+    const teacherClassIds = Array.from(new Set([...homeroomIds, ...assignedIds]));
+
+    if (classRef && classRef !== "all") {
+      if (!teacherClassIds.includes(classRef.toString())) {
+        return []; // Teacher is not authorized for this class
+      }
+      query.classRef = classRef;
+    } else {
+      query.classRef = { $in: teacherClassIds };
+    }
   }
 
   if (search) {

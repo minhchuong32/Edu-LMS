@@ -131,6 +131,17 @@ const getClasses = async (filters = {}, user = null) => {
     query._id = studentClassId;
   }
 
+  if (user && user.role === "teacher") {
+    const homeroomClasses = await Class.find({ homeroomTeacherRef: user._id }).select("_id");
+    const homeroomIds = homeroomClasses.map((c) => c._id.toString());
+
+    const assignments = await TeachingAssignment.find({ teacherRef: user._id }).select("classRef");
+    const assignedIds = assignments.map((a) => (a.classRef._id || a.classRef).toString());
+
+    const teacherClassIds = Array.from(new Set([...homeroomIds, ...assignedIds]));
+    query._id = { $in: teacherClassIds };
+  }
+
   if (gradeRef) {
     query.gradeRef = gradeRef;
   }
