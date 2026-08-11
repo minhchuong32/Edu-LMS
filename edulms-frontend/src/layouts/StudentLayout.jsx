@@ -5,6 +5,7 @@ import Button from "../components/common/Button";
 import Avatar from "../components/common/Avatar";
 import { useAuth } from "../context/AuthContext";
 import authService from "../services/authService";
+import studentService from "../services/studentService";
 import {
   User,
   ShieldCheck,
@@ -29,6 +30,8 @@ export default function StudentLayout() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileTab, setProfileTab] = useState("info"); // "info" | "security"
+  const [parents, setParents] = useState([]);
+  const [loadingParents, setLoadingParents] = useState(false);
 
   // Change password form state
   const [pwdForm, setPwdForm] = useState({
@@ -57,6 +60,20 @@ export default function StudentLayout() {
 
   const activeRole = currentUser?.role || "Student";
   const studentCode = currentUser?.studentCode || currentUser?.userCode || null;
+
+  React.useEffect(() => {
+    if (showProfileModal && currentUser?._id) {
+      setLoadingParents(true);
+      studentService
+        .getStudentParents(currentUser._id)
+        .then((res) => {
+          const parentList = res?.data || res || [];
+          setParents(Array.isArray(parentList) ? parentList : []);
+        })
+        .catch(() => setParents([]))
+        .finally(() => setLoadingParents(false));
+    }
+  }, [showProfileModal, currentUser?._id]);
 
   // Header Nav Items
   const studentNavItems = [
@@ -250,6 +267,31 @@ export default function StudentLayout() {
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         Đang học
                       </span>
+                    </div>
+
+                    <div className="pt-2 border-t border-neutral-200/60 text-xs">
+                      <span className="text-neutral-600 font-medium block mb-1.5">
+                        Phụ huynh liên kết
+                      </span>
+                      {loadingParents ? (
+                        <span className="text-neutral-400 italic text-xs">Đang tải thông tin phụ huynh...</span>
+                      ) : parents && parents.length > 0 ? (
+                        parents.map((p, idx) => (
+                          <div key={p._id || idx} className="bg-white p-2.5 rounded-lg border border-neutral-200/80 flex flex-col gap-0.5 shadow-sm mb-1.5">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-neutral-900">{p.name}</span>
+                              {p.relationship && (
+                                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded capitalize font-semibold">
+                                  {p.relationship === "father" ? "Cha" : p.relationship === "mother" ? "Mẹ" : p.relationship === "guardian" ? "Người giám hộ" : p.relationship}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-neutral-500 font-mono text-[11px]">{p.email}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-neutral-400 italic font-normal">Chưa có thông tin phụ huynh liên kết</span>
+                      )}
                     </div>
                   </div>
 

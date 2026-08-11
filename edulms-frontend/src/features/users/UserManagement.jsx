@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import userService from "../../services/userService";
 import academicService from "../../services/academicService";
+import studentService from "../../services/studentService";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
@@ -25,9 +26,11 @@ export default function UserManagement() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [targetUser, setTargetUser] = useState(null);
+  const [detailParents, setDetailParents] = useState([]);
+  const [loadingDetailParents, setLoadingDetailParents] = useState(false);
 
   const [editingUser, setEditingUser] = useState(null); // null if creating, user object if editing
-  const [targetUser, setTargetUser] = useState(null); // target user for delete / detail view
 
   const [formData, setFormData] = useState({
     name: "",
@@ -85,8 +88,23 @@ export default function UserManagement() {
   };
 
   useEffect(() => {
+    fetchUsers();
     fetchClasses();
-  }, []);
+  }, [search, role]);
+
+  useEffect(() => {
+    if (showDetailModal && targetUser?.role === "student" && targetUser?._id) {
+      setLoadingDetailParents(true);
+      studentService
+        .getStudentParents(targetUser._id)
+        .then((res) => {
+          const list = res?.data || res || [];
+          setDetailParents(Array.isArray(list) ? list : []);
+        })
+        .catch(() => setDetailParents([]))
+        .finally(() => setLoadingDetailParents(false));
+    }
+  }, [showDetailModal, targetUser?._id, targetUser?.role]);
 
   useEffect(() => {
     if (activeTab === "list") {
@@ -747,6 +765,30 @@ export default function UserManagement() {
                   <div className="flex justify-between border-b pb-2">
                     <span className="text-neutral-500 font-semibold">Lớp học:</span>
                     <span className="font-bold text-neutral-800">{targetUser.classRef?.name || "Chưa xếp lớp"}</span>
+                  </div>
+                  <div className="flex flex-col gap-1 border-b pb-2">
+                    <span className="text-neutral-500 font-semibold">Phụ huynh liên kết:</span>
+                    {loadingDetailParents ? (
+                      <span className="text-neutral-400 italic text-xs">Đang tải thông tin phụ huynh...</span>
+                    ) : detailParents && detailParents.length > 0 ? (
+                      <div className="space-y-1.5 mt-0.5">
+                        {detailParents.map((p, idx) => (
+                          <div key={p._id || idx} className="text-xs bg-neutral-50 p-2.5 rounded-lg border border-neutral-200 flex justify-between items-center">
+                            <div>
+                              <span className="font-bold text-neutral-800 block">{p.name}</span>
+                              <span className="font-mono text-neutral-500 text-[11px]">{p.email}</span>
+                            </div>
+                            {p.relationship && (
+                              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold capitalize">
+                                {p.relationship === "father" ? "Cha" : p.relationship === "mother" ? "Mẹ" : p.relationship === "guardian" ? "Người giám hộ" : p.relationship}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-neutral-400 italic text-xs">Chưa có thông tin phụ huynh liên kết</span>
+                    )}
                   </div>
                 </>
               )}

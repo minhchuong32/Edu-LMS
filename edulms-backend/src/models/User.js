@@ -49,11 +49,18 @@ const userSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    relationship: {
+      type: String,
+      enum: ["father", "mother", "guardian", "other"],
+      default: "guardian",
+    },
   },
   {
     timestamps: true,
   }
 );
+
+userSchema.index({ role: 1, childrenRefs: 1 });
 
 // Hash password before saving
 userSchema.pre("save", async function () {

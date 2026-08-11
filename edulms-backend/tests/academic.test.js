@@ -797,18 +797,18 @@ describe("Academic Structures API Integration Tests (Real Database)", () => {
   describe("Student Scoped Class & Subject Access Restrictions", () => {
     let assignedClass, unassignedClass, assignedSubject, unassignedSubject, scopedStudent, scopedStudentToken;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       assignedClass = await Class.create({
         name: "11A1",
         gradeRef: sampleGrade._id,
-        homeroomTeacherRef: sampleTeacher._id,
+        homeroomTeacherRef: new mongoose.Types.ObjectId(),
         schoolYear: "2025-2026",
       });
 
       unassignedClass = await Class.create({
         name: "11A2",
         gradeRef: sampleGrade._id,
-        homeroomTeacherRef: sampleTeacher._id,
+        homeroomTeacherRef: new mongoose.Types.ObjectId(),
         schoolYear: "2025-2026",
       });
 

@@ -6,6 +6,7 @@
     "start": "node src/server.js",
     "seed": "node scripts/seed.js",
     "seed:courses": "node scripts/seed_courses.js",
+    "seed:demo-family": "node scripts/seed_demo_parent_student.js",
     "test": "jest --runInBand --detectOpenHandles --forceExit"
   },
   "keywords": [],

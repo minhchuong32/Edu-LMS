@@ -93,6 +93,7 @@ async function runSeed() {
       email: "parent@edulms.edu",
       password: "parentpassword",
       role: "parent",
+      relationship: "father",
       isActivated: true,
     });
 

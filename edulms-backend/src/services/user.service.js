@@ -304,6 +304,7 @@ const getUsers = async (filters = {}) => {
 
   return await User.find(query)
     .populate("classRef", "name schoolYear")
+    .populate("childrenRefs", "name email studentCode")
     .sort({ createdAt: -1 });
 };
 

@@ -46,7 +46,7 @@ describe("RBAC & Class Scope Middleware Unit Tests", () => {
     test("Should fail with 401 if user does not exist in DB", async () => {
       const token = generateAccessToken({ _id: new mongoose.Types.ObjectId(), email: "test@edulms.edu", role: "student" });
       req.headers.authorization = `Bearer ${token}`;
-      User.findById.mockResolvedValue(null);
+      User.findById.mockReturnValue({ populate: jest.fn().mockResolvedValue(null) });
 
       await authMiddleware(req, res, next);
       expect(next).toHaveBeenCalledWith(
@@ -59,7 +59,7 @@ describe("RBAC & Class Scope Middleware Unit Tests", () => {
       const mockUser = { _id: userId, email: "test@edulms.edu", role: "student" };
       const token = generateAccessToken(mockUser);
       req.headers.authorization = `Bearer ${token}`;
-      User.findById.mockResolvedValue(mockUser);
+      User.findById.mockReturnValue({ populate: jest.fn().mockResolvedValue(mockUser) });
 
       await authMiddleware(req, res, next);
       expect(req.user).toEqual(mockUser);
