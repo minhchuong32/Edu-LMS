@@ -12,6 +12,14 @@ const uploadRoutes = require("./uploadRoutes");
 const studentRoutes = require("./studentRoutes");
 const parentRoutes = require("./parentRoutes");
 
+// API v1 health check
+apiRouter.get("/", (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: "EduLMS API v1 is running",
+    });
+});
+
 // Mount sub-routers
 apiRouter.use("/auth", authRoutes);
 apiRouter.use("/users", userRoutes);

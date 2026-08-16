@@ -1,57 +1,113 @@
 import axios from "axios";
 
-// Khởi tạo Axios Instance
+// URL Backend API
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5000/api/v1";
+
+// Tạo Axios Instance dùng chung cho toàn bộ app
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1",
+  baseURL: API_URL,
+
+  // Dữ liệu gửi lên Backend dạng JSON
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Quan trọng để gửi/nhận cookie (Refresh Token)
+
+  // Cho phép gửi Cookie (Refresh Token)
+  withCredentials: true,
 });
 
-// Request Interceptor (Gắn Bearer Token)
+// ======================================================
+// REQUEST INTERCEPTOR
+// Tự động thêm Access Token vào mỗi request
+// ======================================================
+
 axiosClient.interceptors.request.use(
   (config) => {
+    // Lấy Access Token từ localStorage
     const token = localStorage.getItem("accessToken");
+
     if (token) {
+      // Gửi Token cho Backend
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+
+  (error) => Promise.reject(error)
 );
 
-// Response Interceptor (Đánh chặn 401 & Tự động Refresh)
+// ======================================================
+// RESPONSE INTERCEPTOR
+// Xử lý response và tự động Refresh Token khi 401
+// ======================================================
+
 axiosClient.interceptors.response.use(
+  // Request thành công → trả về data
   (response) => response.data,
+
+  // Request thất bại
   async (error) => {
     const originalRequest = error.config;
-    // Nếu lỗi là 401 (Unauthorized) và request này chưa từng được thử lại (_retry)
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true; // Đánh dấu đã thử lại để tránh lặp vô hạn
+
+    // Access Token hết hạn → Backend trả 401
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry
+    ) {
+      // Đánh dấu đã retry để tránh vòng lặp vô hạn
+      originalRequest._retry = true;
+
       try {
-        // Sử dụng instance axios gốc để tránh gọi đè vào interceptor của axiosClient
+        // Gọi API Refresh Token bằng Axios gốc
         const response = await axios.post(
-          `${import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1"}/auth/refresh`,
+          `${API_URL}/auth/refresh`,
           {},
-          { withCredentials: true }
+          {
+            // Gửi Refresh Token Cookie
+            withCredentials: true,
+          }
         );
-        
-        // Trích xuất accessToken mới từ cấu trúc ApiResponse của backend
-        const token = response.data?.data?.token || response.data?.token;
+
+        // Lấy Access Token mới
+        const token =
+          response.data?.data?.accessToken ||
+          response.data?.accessToken ||
+          response.data?.data?.token ||
+          response.data?.token;
+
+        if (!token) {
+          throw new Error("Không tìm thấy Access Token");
+        }
+
+        // Lưu Access Token mới
         localStorage.setItem("accessToken", token);
-        originalRequest.headers.Authorization = `Bearer ${token}`;
-        return axiosClient(originalRequest); // Gửi lại request ban đầu với token mới
+
+        // Gắn Token mới vào request cũ
+        originalRequest.headers.Authorization =
+          `Bearer ${token}`;
+
+        // Gửi lại request ban đầu
+        return axiosClient(originalRequest);
+
       } catch (refreshError) {
-        // Khi Refresh Token hết hạn hoặc không hợp lệ -> Đăng xuất người dùng
+        // Refresh thất bại → đăng xuất
         localStorage.removeItem("accessToken");
+
+        // Chuyển về trang đăng nhập
         window.location.href = "/login";
+
         return Promise.reject(refreshError);
       }
     }
-    return Promise.reject(error.response?.data || error.message);
+
+    // Trả lỗi từ Backend
+    return Promise.reject(
+      error.response?.data || error.message
+    );
   }
 );
 

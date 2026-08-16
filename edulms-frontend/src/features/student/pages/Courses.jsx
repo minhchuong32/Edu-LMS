@@ -1,4 +1,34 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import {
+  Video,
+  FileText,
+  Link as LinkIcon,
+  FileEdit,
+  Paperclip,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize,
+  Download,
+  ExternalLink,
+  Maximize2,
+  X,
+  BookOpen,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  CheckCircle2,
+  Circle,
+  Check,
+  CheckCircle,
+  Link2,
+  Lightbulb,
+  Save,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import lessonContentService from "../../../services/lessonContentService";
 import academicService from "../../../services/academicService";
 import Button from "../../../components/common/Button";
@@ -22,11 +52,11 @@ const getFileDownloadUrl = (url) => {
 };
 
 const CONTENT_TYPES = [
-  { value: "video", label: "Video bài giảng", icon: "🎥", color: "bg-purple-50 text-purple-700 border-purple-200" },
-  { value: "document", label: "Tài liệu (PDF/Doc)", icon: "📄", color: "bg-blue-50 text-blue-700 border-blue-200" },
-  { value: "link", label: "Đường dẫn (Link)", icon: "🔗", color: "bg-amber-50 text-amber-700 border-amber-200" },
-  { value: "exercise", label: "Bài tập / Luyện tập", icon: "📝", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  { value: "other", label: "Khác", icon: "📎", color: "bg-neutral-100 text-neutral-700 border-neutral-200" },
+  { value: "video", label: "Video bài giảng", icon: Video, color: "bg-purple-50 text-purple-700 border-purple-200" },
+  { value: "document", label: "Tài liệu (PDF/Doc)", icon: FileText, color: "bg-blue-50 text-blue-700 border-blue-200" },
+  { value: "link", label: "Đường dẫn (Link)", icon: LinkIcon, color: "bg-amber-50 text-amber-700 border-amber-200" },
+  { value: "exercise", label: "Bài tập / Luyện tập", icon: FileEdit, color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  { value: "other", label: "Khác", icon: Paperclip, color: "bg-neutral-100 text-neutral-700 border-neutral-200" },
 ];
 
 // Rich fallback sample data for interactive demonstration
@@ -288,9 +318,7 @@ function HTML5VideoPlayer({ url, title, onVideoEnded }) {
           className="absolute inset-0 m-auto w-20 h-20 rounded-full bg-primary/90 text-white flex items-center justify-center shadow-2xl hover:scale-110 hover:bg-primary transition-all duration-300 backdrop-blur-sm group-hover:opacity-100"
           title="Phát video"
         >
-          <svg className="w-10 h-10 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
+          <Play className="w-10 h-10 fill-current translate-x-0.5 text-white" />
         </button>
       )}
 
@@ -319,17 +347,13 @@ function HTML5VideoPlayer({ url, title, onVideoEnded }) {
             {/* Play / Pause Toggle */}
             <button
               onClick={togglePlay}
-              className="p-1.5 rounded-lg hover:bg-white/20 transition text-white"
+              className="p-1.5 rounded-lg hover:bg-white/20 transition text-white flex items-center justify-center"
               title={isPlaying ? "Tạm dừng" : "Phát"}
             >
               {isPlaying ? (
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                </svg>
+                <Pause className="w-6 h-6 fill-current text-white" />
               ) : (
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <Play className="w-6 h-6 fill-current text-white" />
               )}
             </button>
 
@@ -337,18 +361,13 @@ function HTML5VideoPlayer({ url, title, onVideoEnded }) {
             <div className="flex items-center gap-1.5 group/vol">
               <button
                 onClick={toggleMute}
-                className="p-1.5 rounded-lg hover:bg-white/20 transition text-white"
+                className="p-1.5 rounded-lg hover:bg-white/20 transition text-white flex items-center justify-center"
                 title={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
               >
                 {isMuted || volume === 0 ? (
-                  <svg className="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                  </svg>
+                  <VolumeX className="w-5 h-5 text-rose-400" />
                 ) : (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                  </svg>
+                  <Volume2 className="w-5 h-5 text-white" />
                 )}
               </button>
               <input
@@ -397,17 +416,13 @@ function HTML5VideoPlayer({ url, title, onVideoEnded }) {
             {/* Fullscreen Toggle */}
             <button
               onClick={toggleFullscreen}
-              className="p-1.5 rounded-lg hover:bg-white/20 transition text-white"
+              className="p-1.5 rounded-lg hover:bg-white/20 transition text-white flex items-center justify-center"
               title="Toàn màn hình"
             >
               {isFullscreen ? (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 9L4 4m0 0v5m0-5h5m6 0l5 5m0-5v5m0-5h-5m0 16l5-5m0 5v-5m0 5h-5m-6 0l-5-5m0 5v-5m0 5h5" />
-                </svg>
+                <Minimize className="w-5 h-5 text-white" />
               ) : (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
+                <Maximize className="w-5 h-5 text-white" />
               )}
             </button>
           </div>
@@ -430,7 +445,7 @@ function PDFDocumentViewer({ url, title }) {
       <div className="bg-neutral-900 text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800">
         <div className="flex items-center gap-3 min-w-0">
           <span className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 font-extrabold text-xs flex items-center justify-center flex-shrink-0 border border-rose-500/30">
-            PDF
+            <FileText className="w-5 h-5 text-rose-400" />
           </span>
           <div className="min-w-0">
             <h3 className="text-sm font-bold truncate text-white">
@@ -453,9 +468,7 @@ function PDFDocumentViewer({ url, title }) {
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm"
             title="Tải tệp PDF về máy tính"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
+            <Download className="w-4 h-4" />
             <span>Tải về PDF</span>
           </a>
 
@@ -467,21 +480,17 @@ function PDFDocumentViewer({ url, title }) {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold transition"
             title="Mở tài liệu trên tab mới"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
+            <ExternalLink className="w-4 h-4" />
             <span className="hidden sm:inline">Mở tab mới</span>
           </a>
 
           {/* Fullscreen Popup Toggle */}
           <button
             onClick={() => setShowModal(true)}
-            className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition"
+            className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition flex items-center justify-center"
             title="Phóng to toàn màn hình"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
+            <Maximize2 className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -496,9 +505,7 @@ function PDFDocumentViewer({ url, title }) {
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 p-6 text-center">
-            <svg className="w-16 h-16 mb-3 text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+            <FileText className="w-16 h-16 mb-3 text-neutral-300" strokeWidth={1} />
             <p className="text-sm font-semibold">Tài liệu không có sẵn đính kèm URL</p>
           </div>
         )}
@@ -511,9 +518,10 @@ function PDFDocumentViewer({ url, title }) {
             <h4 className="text-sm font-bold truncate">{title}</h4>
             <button
               onClick={() => setShowModal(false)}
-              className="p-1.5 rounded-lg bg-neutral-800 text-neutral-300 hover:text-white transition"
+              className="p-1.5 rounded-lg bg-neutral-800 text-neutral-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold"
             >
-              ✕ Đóng toàn màn hình
+              <X className="w-4 h-4" />
+              <span>Đóng toàn màn hình</span>
             </button>
           </div>
           <iframe
@@ -699,11 +707,11 @@ export default function Courses() {
             <select
               value={selectedSubjectId}
               onChange={(e) => setSelectedSubjectId(e.target.value)}
-              className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 text-xs font-bold rounded-xl px-3.5 py-2.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
+              className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 text-xs font-bold rounded-xl px-3.5 py-2.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition cursor-pointer"
             >
               {subjects.map((sub) => (
                 <option key={sub._id} value={sub._id}>
-                  📚 {sub.name}
+                  {sub.name}
                 </option>
               ))}
             </select>
@@ -711,13 +719,15 @@ export default function Courses() {
 
           <Button
             variant="outline"
-            className="py-2 px-3 text-xs"
+            className="py-2 px-3 text-xs flex items-center gap-1.5"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             title="Ẩn/hiện thanh bài giảng bên trái"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-            </svg>
+            {isSidebarOpen ? (
+              <PanelLeftClose className="w-4 h-4" />
+            ) : (
+              <PanelLeftOpen className="w-4 h-4" />
+            )}
             <span className="hidden sm:inline">
               {isSidebarOpen ? "Ẩn danh sách" : "Hiện danh sách"}
             </span>
@@ -734,7 +744,8 @@ export default function Courses() {
             <div className="space-y-3 pb-3 border-b border-neutral-100">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
-                  <span>📖</span> Danh sách bài học
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  <span>Danh sách bài học</span>
                 </h3>
                 <span className="text-xs bg-neutral-100 font-extrabold text-neutral-600 px-2 py-0.5 rounded-full">
                   {filteredLessons.length} bài
@@ -750,9 +761,7 @@ export default function Courses() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg outline-none focus:border-primary transition"
                 />
-                <svg className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               </div>
 
               {/* PROGRESS BAR TRACK */}
@@ -779,6 +788,7 @@ export default function Courses() {
                   const isSelected = selectedLesson?._id === item._id;
                   const isDone = completedLessons[item._id];
                   const typeInfo = CONTENT_TYPES.find((t) => t.value === item.contentType) || CONTENT_TYPES[0];
+                  const TypeIcon = typeInfo.icon;
 
                   return (
                     <div
@@ -803,8 +813,9 @@ export default function Courses() {
 
                         <div className="space-y-1 min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${typeInfo.color}`}>
-                              {typeInfo.icon} {typeInfo.label}
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border inline-flex items-center gap-1 ${typeInfo.color}`}>
+                              {TypeIcon && <TypeIcon className="w-3 h-3" />}
+                              <span>{typeInfo.label}</span>
                             </span>
                             {item.duration && (
                               <span className="text-[10px] font-mono text-neutral-400">
@@ -831,9 +842,11 @@ export default function Courses() {
                         }`}
                         title={isDone ? "Đã hoàn thành (Nhấn để hủy)" : "Đánh dấu đã hoàn thành"}
                       >
-                        <svg className="w-5 h-5" fill={isDone ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        {isDone ? (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-neutral-300" />
+                        )}
                       </button>
                     </div>
                   );
@@ -862,12 +875,14 @@ export default function Courses() {
                   {/* COMPLETE TOGGLE BUTTON */}
                   <Button
                     variant={completedLessons[selectedLesson._id] ? "success" : "outline"}
-                    className="py-1.5 px-3 text-xs"
+                    className="py-1.5 px-3 text-xs flex items-center gap-1.5"
                     onClick={() => toggleLessonCompleted(selectedLesson._id)}
                   >
-                    <svg className="w-4 h-4" fill={completedLessons[selectedLesson._id] ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                    {completedLessons[selectedLesson._id] ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
                     <span>
                       {completedLessons[selectedLesson._id] ? "Đã hoàn thành bài học" : "Đánh dấu hoàn thành"}
                     </span>
@@ -896,9 +911,7 @@ export default function Courses() {
                   /* LINK / OTHER ATTACHMENT CARD */
                   <div className="bg-white rounded-2xl border border-neutral-200 p-6 text-center space-y-4 shadow-sm">
                     <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
-                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
+                      <Link2 className="w-7 h-7 text-amber-600" />
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-neutral-900">Đường dẫn liên kết / Bài tập trực tuyến</h3>
@@ -914,9 +927,7 @@ export default function Courses() {
                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition shadow-sm"
                       >
                         <span>Mở liên kết đính kèm</span>
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
+                        <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
                   </div>
@@ -929,33 +940,36 @@ export default function Courses() {
                 <div className="flex border-b border-neutral-200 bg-neutral-50/50">
                   <button
                     onClick={() => setActiveTab("overview")}
-                    className={`px-5 py-3 text-xs font-bold border-b-2 transition ${
+                    className={`px-5 py-3 text-xs font-bold border-b-2 transition flex items-center gap-1.5 ${
                       activeTab === "overview"
                         ? "border-primary text-primary bg-white"
                         : "border-transparent text-neutral-500 hover:text-neutral-800"
                     }`}
                   >
-                    📝 Mô tả bài học
+                    <FileText className="w-4 h-4" />
+                    <span>Mô tả bài học</span>
                   </button>
                   <button
                     onClick={() => setActiveTab("attachments")}
-                    className={`px-5 py-3 text-xs font-bold border-b-2 transition ${
+                    className={`px-5 py-3 text-xs font-bold border-b-2 transition flex items-center gap-1.5 ${
                       activeTab === "attachments"
                         ? "border-primary text-primary bg-white"
                         : "border-transparent text-neutral-500 hover:text-neutral-800"
                     }`}
                   >
-                    📎 Tài liệu đính kèm
+                    <Paperclip className="w-4 h-4" />
+                    <span>Tài liệu đính kèm</span>
                   </button>
                   <button
                     onClick={() => setActiveTab("notes")}
-                    className={`px-5 py-3 text-xs font-bold border-b-2 transition ${
+                    className={`px-5 py-3 text-xs font-bold border-b-2 transition flex items-center gap-1.5 ${
                       activeTab === "notes"
                         ? "border-primary text-primary bg-white"
                         : "border-transparent text-neutral-500 hover:text-neutral-800"
                     }`}
                   >
-                    💡 Ghi chú cá nhân
+                    <Lightbulb className="w-4 h-4" />
+                    <span>Ghi chú cá nhân</span>
                   </button>
                 </div>
 
@@ -980,7 +994,7 @@ export default function Courses() {
                       {selectedLesson.attachmentUrl ? (
                         <div className="flex items-center justify-between p-3.5 rounded-xl border border-neutral-200 bg-neutral-50">
                           <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-2xl">📄</span>
+                            <FileText className="w-6 h-6 text-blue-600 flex-shrink-0" />
                             <div className="min-w-0">
                               <p className="text-xs font-bold text-neutral-900 truncate">
                                 {selectedLesson.title}
@@ -996,9 +1010,10 @@ export default function Courses() {
                               target="_blank"
                               rel="noopener noreferrer"
                               download
-                              className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary-hover transition"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary-hover transition"
                             >
-                              Tải về
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Tải về</span>
                             </a>
                           </div>
                         </div>
@@ -1021,8 +1036,9 @@ export default function Courses() {
                         className="w-full px-3.5 py-2.5 text-xs text-neutral-800 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-primary focus:bg-white transition"
                       />
                       <div className="flex justify-end">
-                        <Button variant="primary" className="py-1.5 px-4 text-xs" onClick={handleSaveNote}>
-                          Lưu ghi chú
+                        <Button variant="primary" className="py-1.5 px-4 text-xs flex items-center gap-1.5" onClick={handleSaveNote}>
+                          <Save className="w-3.5 h-3.5" />
+                          <span>Lưu ghi chú</span>
                         </Button>
                       </div>
                     </div>
@@ -1033,11 +1049,12 @@ export default function Courses() {
                 <div className="bg-neutral-50 px-5 py-3.5 border-t border-neutral-200 flex items-center justify-between gap-4">
                   <Button
                     variant="outline"
-                    className="py-2 px-4 text-xs"
+                    className="py-2 px-4 text-xs flex items-center gap-1.5"
                     disabled={currentIndex <= 0}
                     onClick={handlePrevLesson}
                   >
-                    ← Bài trước
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>Bài trước</span>
                   </Button>
 
                   <span className="text-xs font-semibold text-neutral-500">
@@ -1046,18 +1063,19 @@ export default function Courses() {
 
                   <Button
                     variant="primary"
-                    className="py-2 px-4 text-xs"
+                    className="py-2 px-4 text-xs flex items-center gap-1.5"
                     disabled={currentIndex >= filteredLessons.length - 1 || currentIndex === -1}
                     onClick={handleNextLesson}
                   >
-                    Bài tiếp theo →
+                    <span>Bài tiếp theo</span>
+                    <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
             </>
           ) : (
             <div className="bg-white rounded-2xl border border-neutral-200 p-12 text-center space-y-3">
-              <span className="text-4xl">📚</span>
+              <BookOpen className="w-12 h-12 text-neutral-400 mx-auto" />
               <h3 className="text-base font-bold text-neutral-800">Vui lòng chọn bài học từ danh sách</h3>
               <p className="text-xs text-neutral-500">Chọn môn học và nhấp vào bài giảng ở cột bên trái để bắt đầu học.</p>
             </div>
