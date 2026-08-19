@@ -7,6 +7,7 @@ import TermsPrivacyPage from "../pages/public/TermsPrivacyPage";
 import SystemGuidePage from "../pages/public/SystemGuidePage";
 import EduPortalPage from "../pages/public/EduPortalPage";
 
+import GuestLayout from "../layouts/GuestLayout";
 import AdminLayout from "../layouts/AdminLayout";
 import TeacherLayout from "../layouts/TeacherLayout";
 import StudentLayout from "../layouts/StudentLayout";
@@ -40,13 +41,17 @@ export default function AppRouter() {
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
-        {/* Public Landing & Authentication Routes */}
-        <Route path="/" element={<GuestLanding />} />
+        {/* Standalone Authentication Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/activate" element={<Activate />} />
-        <Route path="/terms" element={<TermsPrivacyPage />} />
-        <Route path="/guide" element={<SystemGuidePage />} />
-        <Route path="/portal" element={<EduPortalPage />} />
+
+        {/* Public Guest Layout Routes */}
+        <Route element={<GuestLayout />}>
+          <Route path="/" element={<GuestLanding />} />
+          <Route path="/terms" element={<TermsPrivacyPage />} />
+          <Route path="/guide" element={<SystemGuidePage />} />
+          <Route path="/portal" element={<EduPortalPage />} />
+        </Route>
 
         {/* Protected Session Routes */}
         <Route element={<PrivateRoute />}>

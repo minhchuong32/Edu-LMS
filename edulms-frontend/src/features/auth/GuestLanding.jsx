@@ -1,9 +1,7 @@
-import React, { useEffect, useState, useRef } from "react";
-import Footer from "../../components/common/Footer";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Button from "../../components/common/Button";
-import heroBg from "../../assets/hero-bg.webp";
+import { heroBg } from "../../assets";
 
 export default function GuestLanding() {
   const { isAuthenticated, user } = useAuth();
@@ -342,79 +340,7 @@ export default function GuestLanding() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col font-sans selection:bg-primary selection:text-white" id="top">
-      {/* STICKY HEADER */}
-      <header className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-neutral-200/80 z-50 px-6 py-3.5 shadow-sm transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div
-            className="flex items-center gap-3 cursor-pointer group"
-            onClick={(e) => scrollToSection(e, "top")}
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary text-white font-extrabold font-outfit flex items-center justify-center text-2xl shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
-              E
-            </div>
-            <div>
-              <h1 className="font-outfit font-extrabold text-lg tracking-wide text-neutral-900 leading-none group-hover:text-primary transition-colors">EduLMS</h1>
-              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mt-0.5">
-                Cổng Quản lý Học tập THPT
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-8 text-xs sm:text-sm font-semibold">
-            <a
-              href="#top"
-              onClick={(e) => scrollToSection(e, "top")}
-              className={`transition-colors hidden md:block ${activeSection === "top"
-                ? "text-primary font-bold border-b-2 border-primary pb-0.5"
-                : "text-neutral-600 hover:text-primary"
-                }`}
-            >
-              Giới thiệu
-            </a>
-            <a
-              href="#courses"
-              onClick={(e) => scrollToSection(e, "courses")}
-              className={`transition-colors hidden md:block ${activeSection === "courses"
-                ? "text-primary font-bold border-b-2 border-primary pb-0.5"
-                : "text-neutral-600 hover:text-primary"
-                }`}
-            >
-              Khóa học
-            </a>
-            <a
-              href="#features"
-              onClick={(e) => scrollToSection(e, "features")}
-              className={`transition-colors hidden md:block ${activeSection === "features"
-                ? "text-primary font-bold border-b-2 border-primary pb-0.5"
-                : "text-neutral-600 hover:text-primary"
-                }`}
-            >
-              Tính năng
-            </a>
-            <a
-              href="#roles"
-              onClick={(e) => scrollToSection(e, "roles")}
-              className={`transition-colors hidden md:block ${activeSection === "roles"
-                ? "text-primary font-bold border-b-2 border-primary pb-0.5"
-                : "text-neutral-600 hover:text-primary"
-                }`}
-            >
-              Phân hệ vai trò
-            </a>
-            <div className="h-4 w-px bg-neutral-200 hidden md:block"></div>
-
-            {/* Header Login CTA Button */}
-            <Button
-              variant="primary"
-              className="text-xs px-4 py-2 font-bold rounded-xl shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-              onClick={() => navigate("/login")}
-            >
-              Đăng nhập ngay
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="bg-neutral-50 flex flex-col font-sans selection:bg-primary selection:text-white" id="top">
 
       {/* HERO SECTION WITH BACKGROUND IMAGE */}
       <section className="relative overflow-hidden bg-neutral-950 text-white min-h-[580px] lg:min-h-[640px] flex items-center">
@@ -785,9 +711,6 @@ export default function GuestLanding() {
           </Button>
         </div>
       </section>
-
-      {/* FOOTER */}
-      <Footer />
     </div>
   );
 }

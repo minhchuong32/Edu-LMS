@@ -20,8 +20,8 @@ apiRouter.get("/", (req, res) => {
     });
 });
 
-// Mount sub-routers
-apiRouter.use("/auth", authRoutes);
+// gắn các route con vào route chính 
+apiRouter.use("/auth", authRoutes); // auth/login ; auth/logout ; ...
 apiRouter.use("/users", userRoutes);
 apiRouter.use("/academic", academicRoutes);
 apiRouter.use("/attendance", attendanceRoutes);

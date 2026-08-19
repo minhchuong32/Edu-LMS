@@ -6,7 +6,7 @@ import Card from "../../components/common/Card";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
 
-import loginBg from "../../assets/login-bg.webp";
+import { loginBg } from "../../assets";
 
 export default function Login() {
   const { login, isAuthenticated, user } = useAuth();

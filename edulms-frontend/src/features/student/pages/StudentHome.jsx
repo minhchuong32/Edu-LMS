@@ -19,7 +19,7 @@ import {
   Bell,
   CheckCircle2,
 } from "lucide-react";
-import heroBg from "../../../assets/hero-bg.webp";
+import { heroBg } from "../../../assets";
 
 // Sample fallback courses for rich display if API return is empty
 const DEMO_STUDENT_COURSES = [

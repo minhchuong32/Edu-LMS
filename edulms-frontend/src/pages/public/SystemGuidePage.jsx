@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/common/Button";
-import Footer from "../../components/common/Footer";
 import {
   BookOpen,
   GraduationCap,
@@ -213,52 +212,7 @@ export default function SystemGuidePage() {
   });
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-800 font-sans flex flex-col selection:bg-primary selection:text-white">
-      {/* HEADER NAVIGATION */}
-      <header className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-neutral-200/80 z-50 px-6 py-3.5 shadow-sm transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-primary text-white font-extrabold font-outfit flex items-center justify-center text-2xl shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
-              E
-            </div>
-            <div>
-              <h1 className="font-outfit font-extrabold text-lg tracking-wide text-neutral-900 leading-none group-hover:text-primary transition-colors">
-                EduLMS
-              </h1>
-              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mt-0.5">
-                Cổng Hướng Dẫn Sử Dụng Hệ Thống
-              </span>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-4">
-            <Link
-              to="/"
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 hover:text-primary transition"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Trang chủ</span>
-            </Link>
-
-            <Link
-              to="/terms"
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 hover:text-primary transition"
-            >
-              <FileText className="w-4 h-4" />
-              <span>Điều khoản & Bảo mật</span>
-            </Link>
-
-            <Button
-              variant="primary"
-              className="text-xs px-4 py-2 font-bold rounded-xl shadow-sm shadow-primary/10"
-              onClick={() => navigate("/login")}
-            >
-              Đăng nhập ngay
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div className="bg-neutral-50 text-neutral-800 font-sans flex flex-col selection:bg-primary selection:text-white">
       {/* HERO SECTION */}
       <section className="bg-gradient-to-b from-neutral-100 via-neutral-50 to-neutral-50 border-b border-neutral-200/80 py-12 px-6">
         <div className="max-w-7xl mx-auto text-center space-y-4">
@@ -436,9 +390,6 @@ export default function SystemGuidePage() {
           </div>
         </div>
       </main>
-
-      {/* FOOTER */}
-      <Footer />
 
       {/* FLOATING BACK TO TOP BUTTON */}
       {showBackToTop && (
