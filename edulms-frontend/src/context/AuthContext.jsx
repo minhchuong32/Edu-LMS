@@ -1,9 +1,14 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import authService from "../services/authService";
 
+// khởi tạo Context để quản lý trạng thái xác thực: Thay vì ở từng Component con 
+// phải import useContext và import AuthContext, 
+// chỉ cần gọi ngắn gọn: const { user, login, logout } = useAuth();.
 const AuthContext = createContext(null);
 
+// AuthProvider component
 export function AuthProvider({ children }) {
+  // Lưu thông tin user (sử dụng function vì nó chỉ chạy khi component khởi tạo lần đầu)
   const [user, setUser] = useState(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -12,11 +17,14 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
+  // Lưu token
   const [token, setToken] = useState(() => localStorage.getItem("accessToken"));
+  // Kiểm tra trạng thái xác thực (!! -> ép về boolean)
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem("accessToken"));
+  // Kiểm tra trạng thái tải
   const [loading, setLoading] = useState(true);
 
-  // Initialize and check current authentication state
+  // Khởi tạo và kiểm tra trạng thái xác thực chạy lại khi token thay đổi
   useEffect(() => {
     const initializeAuth = async () => {
       const storedToken = localStorage.getItem("accessToken");
@@ -24,20 +32,21 @@ export function AuthProvider({ children }) {
 
       if (storedToken) {
         try {
-          // Verify with server. If the server lacks this endpoint, fall back to our stored session
+          // Kiểm tra token với server. Nếu server không có endpoint này, quay lại phiên đã lưu
           const response = await authService.getMe();
-          
+          // Kiểm tra response từ server
           if (response?.success && (response?.data?.user || response?.user)) {
+            // Nếu có response từ server, cập nhật user và token
             const userProfile = response.data?.user || response.user;
             setUser(userProfile);
             localStorage.setItem("user", JSON.stringify(userProfile));
             setIsAuthenticated(true);
           } else if (storedUser) {
-            // Keep the logged-in user role session details
+            // Giữ lại thông tin phiên đăng nhập của người dùng
             setUser(JSON.parse(storedUser));
             setIsAuthenticated(true);
           } else {
-            // No cached user profile details; reset auth state
+            // Không có thông tin hồ sơ người dùng; đặt lại trạng thái xác thực
             localStorage.removeItem("accessToken");
             localStorage.removeItem("user");
             setUser(null);
@@ -59,14 +68,17 @@ export function AuthProvider({ children }) {
     initializeAuth();
   }, [token]);
 
-  // Login handler
+  // Xử lý đăng nhập
   const login = async (email, password) => {
     setLoading(true);
     try {
+      // destructuring để lấy token và user từ response của server
       const { token: accessToken, user: userData } = await authService.login(email, password);
 
+      // Lưu token và user vào localStorage
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("user", JSON.stringify(userData));
+      // Cập nhật token và user
       setToken(accessToken);
       setUser(userData);
       setIsAuthenticated(true);
@@ -76,7 +88,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // First-time account activation handler
+  // Xử lý kích hoạt tài khoản lần đầu
   const activateAccount = async (code, email, password) => {
     setLoading(true);
     try {
@@ -122,7 +134,7 @@ export function AuthProvider({ children }) {
     verifyActivation,
   };
 
-
+  // Sử dụng Context.Provider để bọc toàn bộ ứng dụng và truyền value xuống các component con
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

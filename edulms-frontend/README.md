@@ -68,3 +68,13 @@ edulms-frontend/
    ```bash
    npm run build
    ```
+
+---
+
+## 📖 Tài Liệu Kiến Trúc & Luồng Hoạt Động Frontend
+
+Chi tiết nguyên lý hoạt động của các thành phần chính:
+* 📐 **Sơ đồ nguyên lý FE-BE & Kiến trúc 4 tầng**: [docs/FRONTEND_ARCHITECTURE.md](docs/FRONTEND_ARCHITECTURE.md)
+* 📡 **Nguyên lý kết nối HTTP & Interceptor (`axiosClient.js`)**: [src/api/README.md](src/api/README.md)
+* 🔐 **Nguyên lý quản lý phiên & trạng thái xác thực (`AuthContext.jsx`)**: [src/context/README.md](src/context/README.md)
+
