@@ -1,5 +1,12 @@
 import axios from "axios";
 
+//  (Middleman) cho mọi giao tiếp HTTP giữa Frontend và Backend, giúp ứng dụng
+//  Tập trung cấu hình HTTP
+//  Tự động đính kèm Access Token
+//  Tự động gia hạn phiên làm việc
+//  Tự động đăng xuất khi phiên làm việc hết hạn hoàn toàn
+//   Làm sạch dữ liệu phản hồi
+
 // URL Backend API
 const API_URL =
   import.meta.env.VITE_API_URL ||

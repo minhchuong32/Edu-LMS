@@ -3,7 +3,7 @@ const router = express.Router();
 const academicController = require("../controllers/academic.controller");
 const { authMiddleware, restrictTo } = require("../middlewares");
 
-// Apply authentication middleware to all academic routes
+// Apply authentication middleware to all academic routes: check token and get role user to control permission 
 router.use(authMiddleware);
 
 // --- Grades Routes ---

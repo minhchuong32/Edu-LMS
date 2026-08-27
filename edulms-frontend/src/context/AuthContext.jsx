@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import authService from "../services/authService";
 
-// khởi tạo Context để quản lý trạng thái xác thực: Thay vì ở từng Component con 
-// phải import useContext và import AuthContext, 
-// chỉ cần gọi ngắn gọn: const { user, login, logout } = useAuth();.
+//  Làm việc ở tầng Giao diện React (UI & State) 
+//  (quản lý ai đang đăng nhập, hiển thị tên/avatar
+//   , ẩn/hẹn menu theo quyền Admin/Giáo viên/Học sinh, điều hướng trang).
+
+// khởi tạo Context để quản lý trạng thái xác thực
 const AuthContext = createContext(null);
 
 // AuthProvider component

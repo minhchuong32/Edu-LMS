@@ -3,6 +3,12 @@
 Tài liệu mô tả tổng quan về kiến trúc luồng dữ liệu, nguyên lý kết nối giữa Frontend (`edulms-frontend`) với Backend API và quy trình xử lý hiển thị giao diện (UI Rendering).
 
 ---
+## 📚 Các Thuật Ngữ Dùng Trong API Client
+- baseURL	Địa chỉ gốc của Backend
+- headers	Thông tin gửi kèm request
+- token	"Chìa khóa" xác thực người dùng
+- interceptor	Bộ phận tự động chặn và xử lý request/response
+---
 
 ## 🌐 Sơ Đồ Nguyên Lý Hoạt Động Tổng Quan
 
@@ -59,7 +65,35 @@ sequenceDiagram
                                   ▼
                     [ Backend Node.js / Express Server ]
 ```
-
+---
+1. UI (Giao diện)
+        ↓
+2. State & Context (Quản lý dữ liệu)
+        ↓
+3. Service (Gọi API theo chức năng)
+        ↓
+4. Axios Client (Cấu hình gửi request)
+        ↓
+5. Backend
+---
+Ex:
+Login.jsx
+   │
+   │ Người dùng bấm Login
+   ▼
+AuthContext.jsx
+   │
+   │ login(email, password)
+   ▼
+authService.js
+   │
+   │ authService.login(data)
+   ▼
+axiosClient.js
+   │
+   │ POST /auth/login
+   ▼
+Backend Express
 ---
 
 ## 🔄 Chi Tiết Luồng Dữ Liệu Từ Request Đến UI
