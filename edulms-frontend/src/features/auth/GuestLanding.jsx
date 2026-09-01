@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Button from "../../components/common/Button";
@@ -509,11 +510,10 @@ export default function GuestLanding() {
             <button
               key={tab.id}
               onClick={() => setSelectedGrade(tab.id)}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${
-                selectedGrade === tab.id
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${selectedGrade === tab.id
                   ? "bg-primary text-white shadow-md shadow-primary/25"
                   : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-100 hover:text-neutral-900"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
