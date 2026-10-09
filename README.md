@@ -91,18 +91,18 @@ The application follows a decoupled **Client–Server architecture**, separating
 
 # 🛠 Tech Stack
 
-| Category | Technology | Description |
-|-----------|------------|-------------|
-| **Frontend Framework** | React 19, Vite | Fast HMR SPA building |
-| **Styling & UI** | Tailwind CSS, Lucide React | Modern responsive design & vector icons |
-| **Routing & Forms** | React Router DOM v7, React Hook Form | Declarative routing & structured forms |
-| **Backend Framework** | Node.js, Express 5 | High-performance RESTful API server |
-| **Database** | MongoDB, Mongoose ODM | Document-oriented database & schema modeling |
-| **Authentication** | JWT (jsonwebtoken), bcryptjs | Secure password hashing & token validation |
-| **File Storage** | Multer, Cloudinary | Media & document upload storage |
-| **Data Import/Export** | SheetJS (XLSX) | Excel parsing and report generation |
-| **HTTP Client** | Axios | Interceptor-based API request handler |
-| **Deployment** | Docker, Docker Compose | Containerized application delivery |
+| Category               | Technology                           | Description                                  |
+| ---------------------- | ------------------------------------ | -------------------------------------------- |
+| **Frontend Framework** | React 19, Vite                       | Fast HMR SPA building                        |
+| **Styling & UI**       | Tailwind CSS, Lucide React           | Modern responsive design & vector icons      |
+| **Routing & Forms**    | React Router DOM v7, React Hook Form | Declarative routing & structured forms       |
+| **Backend Framework**  | Node.js, Express 5                   | High-performance RESTful API server          |
+| **Database**           | MongoDB, Mongoose ODM                | Document-oriented database & schema modeling |
+| **Authentication**     | JWT (jsonwebtoken), bcryptjs         | Secure password hashing & token validation   |
+| **File Storage**       | Multer, Cloudinary                   | Media & document upload storage              |
+| **Data Import/Export** | SheetJS (XLSX)                       | Excel parsing and report generation          |
+| **HTTP Client**        | Axios                                | Interceptor-based API request handler        |
+| **Deployment**         | Docker, Docker Compose               | Containerized application delivery           |
 
 ---
 
@@ -164,26 +164,31 @@ EduLMS implements secure authentication using JSON Web Tokens (JWT).
 # 📚 Main Modules
 
 ## 1. User & Authentication Module
+
 - Login, Register & Password Management
 - User Profiles & Avatar Customization
 - Student Code (Mã Học Sinh) Activation Flow
 
 ## 2. Academic Structure & Class Management
+
 - Grade Levels (Khối 10, 11, 12) & Class Tree Structure
 - Homeroom Teacher (GVCN) Assignment
 - Student Class Roster & Transfer Management
 
 ## 3. Digital Gradebook & Evaluation (Sổ Điểm Điện Tử)
+
 - Automated GPA Calculations
 - Coefficient Rules: Coefficient 1 (Oral/15m), Coefficient 2 (1-period), Coefficient 3 (Semester)
 - Student Conduct & Attendance Ratings
 
 ## 4. Assignment & Material System
+
 - Teacher Lesson & PDF/Video Material Uploads
 - Homework Assignment Creation & Submission Tracking
 - Online Grading & Student Feedback
 
 ## 5. Public Education Portal & Guides
+
 - Official Department of Education Announcements
 - Direct Links to Authentic Educational News Articles
 - Role-Based Interactive System Usage Manuals
@@ -286,26 +291,26 @@ docker compose up --build -d
 
 ### Services Overview:
 
-| Service | Container Name | URL / Port |
-|----------|----------------|------------|
-| **Frontend** | `edulms-frontend` | http://localhost:5173 |
-| **Backend API** | `edulms-backend` | http://localhost:5000 |
-| **Database** | `mongodb` | localhost:27017 |
+| Service         | Container Name    | URL / Port            |
+| --------------- | ----------------- | --------------------- |
+| **Frontend**    | `edulms-frontend` | http://localhost:5173 |
+| **Backend API** | `edulms-backend`  | http://localhost:5000 |
+| **Database**    | `mongodb`         | localhost:27017       |
 
 ---
 
 # 📡 API Endpoints Overview
 
-| Module | HTTP Method | Endpoint | Description |
-|----------|-------------|----------|-------------|
-| **Auth** | `POST` | `/api/auth/login` | Authenticate user & receive tokens |
-| **Auth** | `POST` | `/api/auth/refresh` | Renew access token using refresh token |
-| **Users** | `GET` | `/api/users` | List users with role filtering |
-| **Grades** | `GET` / `POST` | `/api/academic/grades` | Manage grade levels |
-| **Classes** | `GET` / `POST` | `/api/academic/classes` | Manage classes & homeroom teachers |
-| **Subjects** | `GET` / `POST` | `/api/academic/subjects` | Manage curriculum subjects |
-| **Assignments** | `GET` / `POST` | `/api/assignments` | Manage homework & submissions |
-| **Gradebook** | `GET` / `PUT` | `/api/gradebook` | View & update digital gradebook scores |
+| Module          | HTTP Method    | Endpoint                 | Description                            |
+| --------------- | -------------- | ------------------------ | -------------------------------------- |
+| **Auth**        | `POST`         | `/api/auth/login`        | Authenticate user & receive tokens     |
+| **Auth**        | `POST`         | `/api/auth/refresh`      | Renew access token using refresh token |
+| **Users**       | `GET`          | `/api/users`             | List users with role filtering         |
+| **Grades**      | `GET` / `POST` | `/api/academic/grades`   | Manage grade levels                    |
+| **Classes**     | `GET` / `POST` | `/api/academic/classes`  | Manage classes & homeroom teachers     |
+| **Subjects**    | `GET` / `POST` | `/api/academic/subjects` | Manage curriculum subjects             |
+| **Assignments** | `GET` / `POST` | `/api/assignments`       | Manage homework & submissions          |
+| **Gradebook**   | `GET` / `PUT`  | `/api/gradebook`         | View & update digital gradebook scores |
 
 ---
 
