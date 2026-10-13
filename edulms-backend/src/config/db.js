@@ -1,4 +1,8 @@
 const mongoose = require("mongoose");
+const dns = require("dns");
+
+// Khắc phục lỗi ECONNREFUSED khi truy vấn bản ghi DNS SRV của MongoDB Atlas trên nhà mạng VN
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const connectDB = async () => {
   try {
