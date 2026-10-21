@@ -1,4 +1,4 @@
-# 🎓 EduLMS – Learning Management System
+# 🎓 EduLMS – Hệ thống Quản lý Học tập
 
 ![React](https://img.shields.io/badge/React-19.0-blue)
 ![Node.js](https://img.shields.io/badge/Node.js-Express-green)
@@ -7,206 +7,206 @@
 ![TailwindCSS](https://img.shields.io/badge/Styling-TailwindCSS-38B2AC)
 ![License](https://img.shields.io/badge/License-MIT-success)
 
-EduLMS is a modern, production-ready Learning Management System (LMS) designed for High Schools (THPT) to digitize academic administration, teaching, learning, attendance, grading, and school-parent-student communication on a unified digital platform.
+EduLMS là hệ thống quản lý học tập (LMS) hiện đại, được thiết kế dành cho các trường trung học phổ thông (THPT), nhằm số hóa công tác quản lý học vụ, giảng dạy, học tập, điểm danh, đánh giá kết quả học tập và kết nối giữa nhà trường, phụ huynh với học sinh trên một nền tảng thống nhất.
 
-The application follows a decoupled **Client–Server architecture**, separating the frontend (`edulms-frontend`) and backend (`edulms-backend`) into independent services. It provides secure authentication, fine-grained Role-Based Access Control (RBAC), real-time notifications, conduct & attendance tracking, online assignment submissions, auto-calculated GPA gradebooks, and comprehensive administrative tools.
-
----
-
-# ✨ Features
-
-## 👨‍💼 Administrator
-
-- **Academic Structure Management**: Manage Grade Levels (10, 11, 12), Classes, Subjects, and Academic Years.
-- **User & Role Management**: Provision accounts for Teachers, Students, and Parents with RBAC.
-- **Homeroom Teacher Assignment**: Assign Homeroom Teachers (GVCN) to classes with roster management.
-- **Teaching Assignment**: Assign Subject Teachers to specific classes and semesters.
-- **System Configuration & Dashboard**: Monitor overall system metrics, statistics, and system logs.
+Ứng dụng sử dụng **kiến trúc Client–Server tách biệt**, trong đó giao diện người dùng (`edulms-frontend`) và máy chủ xử lý nghiệp vụ (`edulms-backend`) được triển khai thành các dịch vụ độc lập. Hệ thống cung cấp cơ chế xác thực an toàn, phân quyền truy cập theo vai trò (RBAC), thông báo theo thời gian thực, theo dõi hạnh kiểm và chuyên cần, nộp bài tập trực tuyến, tự động tính điểm trung bình cùng các công cụ quản trị toàn diện.
 
 ---
 
-## 👨‍🏫 Teacher
+# ✨ Chức năng theo vai trò
 
-- **Subject & Classroom Portal**: Access assigned classes, lesson materials, and syllabus.
-- **Digital Gradebook (Sổ Điểm Điện Tử)**: Input & calculate grades with strict coefficient rules (Coefficient 1: Oral/15m, Coefficient 2: 1-period exam, Coefficient 3: Semester final).
-- **Attendance & Conduct Management**: Mark attendance per period (Periods 1-10) and record student conduct/discipline points.
-- **Assignment & Quiz Management**: Create homework assignments, accept PDF/file uploads, and grade student submissions.
-- **Class Roster & Student Progress**: Monitor class roster, student academic records, and semester summaries.
+## 👨‍💼 Quản trị viên
 
----
-
-## 👨‍🎓 Student
-
-- **Student Workspace**: Overview of enrolled courses, timetable, and academic performance.
-- **Assignment Submission**: View pending assignments, submit homework files/notes, and check teacher feedback.
-- **Digital Scorecard (Bảng Điểm Cá Nhân)**: Track realtime GPA, individual subject scores, and semester rankings.
-- **Timetable & Attendance Status**: Check daily timetable schedule (Periods 1-10) and attendance history.
-- **Education Portal & System Guides**: Access official Department of Education announcements, news articles, and user manuals.
+- **Quản lý cơ cấu học vụ**: Quản lý khối lớp (10, 11, 12), lớp học, môn học và năm học.
+- **Quản lý người dùng và vai trò**: Tạo, cấp tài khoản cho giáo viên, học sinh và phụ huynh theo cơ chế phân quyền RBAC.
+- **Phân công giáo viên chủ nhiệm**: Gán giáo viên chủ nhiệm (GVCN) cho từng lớp và quản lý danh sách học sinh.
+- **Phân công giảng dạy**: Phân công giáo viên bộ môn phụ trách các lớp và học kỳ cụ thể.
+- **Cấu hình hệ thống và bảng điều khiển**: Theo dõi các chỉ số tổng quan, số liệu thống kê và nhật ký hệ thống.
 
 ---
 
-## 👨‍👩‍👧 Parent
+## 👨‍🏫 Giáo viên
 
-- **Parent Portal**: Connect parent accounts directly to student profiles using Student Code (Mã Học Sinh).
-- **Real-time Monitoring**: Monitor children's daily attendance, conduct score, and exam results.
-- **Direct School Connection**: Receive official announcements and notifications from Homeroom Teachers.
-
----
-
-# 🚀 Key Features
-
-- **JWT Authentication & Token Renewal**: Access Token and Refresh Token security mechanism.
-- **Role-Based Access Control (RBAC)**: Strict permission boundaries for Admin, Teacher, Student, and Parent.
-- **Standardized High School Gradebook**: Automatic GPA calculation with exact Vietnamese Ministry of Education coefficients.
-- **Attendance & Schedule System**: Period-based attendance tracking (Periods 1 to 10) with weekly timetables.
-- **Class Roster & Transfer (Roster Management)**: Manage class lists and student class transfers effortlessly.
-- **Education Portal & Public Guides**: Dedicated news portal linked with official education news articles and PDF policy guidelines.
-- **Responsive & Modern UI**: Sleek dark/light theme options built with React 19, Tailwind CSS, and Lucide React icons.
-- **Excel Data Export & Import**: Batch import/export student rosters and grade sheets via XLSX files.
+- **Cổng thông tin môn học và lớp học**: Truy cập các lớp được phân công, tài liệu bài giảng và đề cương môn học.
+- **Sổ điểm điện tử**: Nhập và tính điểm theo quy định hệ số: hệ số 1 đối với điểm miệng/15 phút, hệ số 2 đối với bài kiểm tra một tiết, hệ số 3 đối với bài thi học kỳ.
+- **Quản lý điểm danh và hạnh kiểm**: Điểm danh theo từng tiết học (tiết 1–10), ghi nhận hạnh kiểm và điểm rèn luyện/kỷ luật của học sinh.
+- **Quản lý bài tập và bài kiểm tra**: Tạo bài tập, nhận tệp PDF/tệp tải lên và chấm bài học sinh nộp.
+- **Danh sách lớp và tiến độ học tập**: Theo dõi danh sách học sinh, hồ sơ học tập và tổng kết học kỳ.
 
 ---
 
-# 🏗️ System Architecture
+## 👨‍🎓 Học sinh
+
+- **Không gian học tập cá nhân**: Xem tổng quan các môn học, thời khóa biểu và kết quả học tập.
+- **Nộp bài tập**: Xem bài tập cần hoàn thành, nộp tệp/ghi chú và kiểm tra nhận xét của giáo viên.
+- **Bảng điểm cá nhân**: Theo dõi điểm trung bình, điểm từng môn và xếp hạng học kỳ theo thời gian thực.
+- **Thời khóa biểu và tình trạng chuyên cần**: Xem lịch học hằng ngày (tiết 1–10) và lịch sử điểm danh.
+- **Cổng thông tin giáo dục và hướng dẫn sử dụng**: Truy cập thông báo chính thức của ngành giáo dục, tin tức và tài liệu hướng dẫn sử dụng.
+
+---
+
+## 👨‍👩‍👧 Phụ huynh
+
+- **Cổng thông tin phụ huynh**: Liên kết tài khoản phụ huynh với hồ sơ học sinh thông qua mã học sinh.
+- **Theo dõi theo thời gian thực**: Theo dõi tình hình điểm danh hằng ngày, hạnh kiểm và kết quả kiểm tra của con.
+- **Kết nối trực tiếp với nhà trường**: Nhận thông báo chính thức và thông tin từ giáo viên chủ nhiệm.
+
+---
+
+# 🚀 Các tính năng chính
+
+- **Xác thực JWT và làm mới mã thông báo**: Sử dụng Access Token và Refresh Token để bảo vệ phiên đăng nhập.
+- **Phân quyền truy cập theo vai trò (RBAC)**: Phân định quyền hạn rõ ràng giữa Quản trị viên, Giáo viên, Học sinh và Phụ huynh.
+- **Sổ điểm THPT theo quy định**: Tự động tính điểm trung bình với các hệ số được áp dụng trong chương trình giáo dục Việt Nam.
+- **Điểm danh và thời khóa biểu**: Theo dõi chuyên cần theo tiết học (tiết 1–10) và thời khóa biểu hằng tuần.
+- **Quản lý danh sách lớp và chuyển lớp**: Quản lý danh sách học sinh và việc chuyển lớp thuận tiện.
+- **Cổng thông tin giáo dục và tài liệu công khai**: Cung cấp cổng tin tức liên kết đến các bài viết giáo dục chính thức và tài liệu hướng dẫn dạng PDF.
+- **Giao diện hiện đại, tương thích nhiều thiết bị**: Hỗ trợ giao diện sáng/tối, xây dựng bằng React 19, Tailwind CSS và biểu tượng Lucide React.
+- **Nhập và xuất dữ liệu Excel**: Nhập/xuất hàng loạt danh sách học sinh và bảng điểm thông qua tệp XLSX.
+
+---
+
+# 🏗️ Kiến trúc hệ thống
 
 ```text
        React 19 + Vite + Tailwind CSS (edulms-frontend)
-                             │
-                             ▼
+                            │
+                            ▼
                      Axios HTTP Client
-                             │
-                             ▼
+                            │
+                            ▼
              Express.js REST API (edulms-backend)
-                             │
-      ┌──────────────────────┴──────────────────────┐
-      │  • JWT Authentication & Middleware          │
-      │  • Express Validators & Controllers         │
-      │  • Multer + Cloudinary Storage             │
-      │  • Excel / Data Processing (XLSX)           │
-      └──────────────────────┬──────────────────────┘
-                             ▼
-                MongoDB Database (Mongoose ODM)
+                            │
+      ┌─────────────────────┴─────────────────────┐
+      │  • Xác thực JWT và Middleware             │
+      │  • Bộ kiểm tra dữ liệu và Controllers     │
+      │  • Multer + lưu trữ Cloudinary            │
+      │  • Xử lý dữ liệu/Excel (XLSX)             │
+      └─────────────────────┬─────────────────────┘
+                            ▼
+                Cơ sở dữ liệu MongoDB (Mongoose ODM)
 ```
 
 ---
 
-# 🛠 Tech Stack
+# 🛠️ Công nghệ sử dụng
 
-| Category               | Technology                           | Description                                  |
-| ---------------------- | ------------------------------------ | -------------------------------------------- |
-| **Frontend Framework** | React 19, Vite                       | Fast HMR SPA building                        |
-| **Styling & UI**       | Tailwind CSS, Lucide React           | Modern responsive design & vector icons      |
-| **Routing & Forms**    | React Router DOM v7, React Hook Form | Declarative routing & structured forms       |
-| **Backend Framework**  | Node.js, Express 5                   | High-performance RESTful API server          |
-| **Database**           | MongoDB, Mongoose ODM                | Document-oriented database & schema modeling |
-| **Authentication**     | JWT (jsonwebtoken), bcryptjs         | Secure password hashing & token validation   |
-| **File Storage**       | Multer, Cloudinary                   | Media & document upload storage              |
-| **Data Import/Export** | SheetJS (XLSX)                       | Excel parsing and report generation          |
-| **HTTP Client**        | Axios                                | Interceptor-based API request handler        |
-| **Deployment**         | Docker, Docker Compose               | Containerized application delivery           |
+| Hạng mục | Công nghệ | Mô tả |
+| --- | --- | --- |
+| **Thư viện giao diện** | React 19, Vite | Xây dựng ứng dụng SPA với khả năng cập nhật mô-đun nóng (HMR) nhanh |
+| **Giao diện và kiểu dáng** | Tailwind CSS, Lucide React | Thiết kế hiện đại, tương thích nhiều kích thước màn hình và bộ biểu tượng vector |
+| **Điều hướng và biểu mẫu** | React Router DOM v7, React Hook Form | Khai báo tuyến đường và xây dựng biểu mẫu có cấu trúc |
+| **Nền tảng máy chủ** | Node.js, Express 5 | Máy chủ REST API hiệu năng cao |
+| **Cơ sở dữ liệu** | MongoDB, Mongoose ODM | Cơ sở dữ liệu hướng tài liệu và mô hình hóa lược đồ |
+| **Xác thực** | JWT (`jsonwebtoken`), `bcryptjs` | Băm mật khẩu an toàn và xác thực mã thông báo |
+| **Lưu trữ tệp** | Multer, Cloudinary | Tải lên và lưu trữ hình ảnh, video, tài liệu |
+| **Nhập/xuất dữ liệu** | SheetJS (XLSX) | Đọc, xử lý tệp Excel và tạo báo cáo |
+| **Giao tiếp HTTP** | Axios | Xử lý yêu cầu API thông qua interceptor |
+| **Triển khai** | Docker, Docker Compose | Đóng gói và triển khai ứng dụng bằng container |
 
 ---
 
-# 📂 Project Structure
+# 📂 Cấu trúc dự án
 
 ```text
 Edu-LMS
 │
-├── edulms-backend/               # Express REST API Server
+├── edulms-backend/               # Máy chủ Express REST API
 │   ├── src/
-│   │   ├── config/               # Database & Cloudinary configurations
-│   │   ├── controllers/          # Business logic controllers
-│   │   ├── middleware/           # Auth, RBAC & error handling middlewares
-│   │   ├── models/               # Mongoose schemas (User, Class, Grade, Subject, Gradebook...)
-│   │   ├── routes/               # API route definitions
-│   │   ├── services/             # Core service logic
-│   │   └── server.js             # Express app entry point
-│   ├── scripts/                  # Data seeding scripts
+│   │   ├── config/               # Cấu hình cơ sở dữ liệu và Cloudinary
+│   │   ├── controllers/          # Bộ điều khiển xử lý nghiệp vụ
+│   │   ├── middleware/           # Middleware xác thực, RBAC và xử lý lỗi
+│   │   ├── models/               # Mongoose schema (User, Class, Grade, Subject, Gradebook...)
+│   │   ├── routes/               # Khai báo các tuyến API
+│   │   ├── services/             # Xử lý logic dịch vụ cốt lõi
+│   │   └── server.js             # Điểm khởi chạy ứng dụng Express
+│   ├── scripts/                  # Các tập lệnh khởi tạo dữ liệu
 │   ├── package.json
 │   └── .env.example
 │
-├── edulms-frontend/              # React 19 + Vite Client Application
+├── edulms-frontend/              # Ứng dụng giao diện React 19 + Vite
 │   ├── src/
-│   │   ├── components/           # Common UI components (Header, Footer, Button, Modal...)
+│   │   ├── components/           # Thành phần giao diện dùng chung (Header, Footer, Button, Modal...)
 │   │   ├── context/              # React Context (AuthContext...)
-│   │   ├── features/             # Feature modules (Admin, Teacher, Student, Auth...)
-│   │   ├── pages/                # Public & Protected pages (EduPortal, SystemGuide, Terms...)
-│   │   ├── router/               # App Router & ProtectedRoute wrappers
-│   │   ├── services/             # API Axios client services
+│   │   ├── features/             # Các mô-đun chức năng (Admin, Teacher, Student, Auth...)
+│   │   ├── pages/                # Trang công khai và trang cần đăng nhập (EduPortal, SystemGuide, Terms...)
+│   │   ├── router/               # Bộ định tuyến và các thành phần bảo vệ tuyến
+│   │   ├── services/             # Các dịch vụ gọi API bằng Axios
 │   │   ├── main.jsx
 │   │   └── index.css
 │   ├── package.json
 │   └── vite.config.js
 │
-├── docker-compose.yml            # Docker orchestration configuration
-└── README.md                     # Project documentation
+├── docker-compose.yml            # Cấu hình điều phối các container bằng Docker
+└── README.md                     # Tài liệu dự án
 ```
 
 ---
 
-# 🔐 Authentication
+# 🔐 Xác thực và phân quyền
 
-EduLMS implements secure authentication using JSON Web Tokens (JWT).
+EduLMS triển khai cơ chế xác thực an toàn bằng JSON Web Token (JWT).
 
-- **Access Token Authentication**: Short-lived tokens attached via Authorization headers.
-- **Refresh Token Support**: Secure token refresh mechanism.
-- **Role-Based Authorization**: Protected endpoints restricted to specific user roles.
-- **Axios Interceptors**: Automatic token injection and session expiration handling.
+- **Xác thực bằng Access Token**: Mã thông báo có thời hạn ngắn, được gửi kèm trong tiêu đề `Authorization`.
+- **Hỗ trợ Refresh Token**: Cơ chế làm mới mã thông báo để duy trì phiên đăng nhập an toàn.
+- **Phân quyền truy cập theo vai trò**: Các API được bảo vệ và chỉ cho phép những vai trò phù hợp truy cập.
+- **Axios Interceptors**: Tự động thêm mã thông báo vào yêu cầu và xử lý khi phiên đăng nhập hết hạn.
 
-### Supported User Roles:
+### Các vai trò người dùng được hỗ trợ
 
-1. **Administrator** (`admin`): Full system control & academic configuration.
-2. **Teacher** (`teacher`): Subject teaching, grading, attendance & homeroom management.
-3. **Student** (`student`): Coursework, assignment submission & score tracking.
-4. **Parent** (`parent`): Academic monitoring & communication.
-
----
-
-# 📚 Main Modules
-
-## 1. User & Authentication Module
-
-- Login, Register & Password Management
-- User Profiles & Avatar Customization
-- Student Code (Mã Học Sinh) Activation Flow
-
-## 2. Academic Structure & Class Management
-
-- Grade Levels (Khối 10, 11, 12) & Class Tree Structure
-- Homeroom Teacher (GVCN) Assignment
-- Student Class Roster & Transfer Management
-
-## 3. Digital Gradebook & Evaluation (Sổ Điểm Điện Tử)
-
-- Automated GPA Calculations
-- Coefficient Rules: Coefficient 1 (Oral/15m), Coefficient 2 (1-period), Coefficient 3 (Semester)
-- Student Conduct & Attendance Ratings
-
-## 4. Assignment & Material System
-
-- Teacher Lesson & PDF/Video Material Uploads
-- Homework Assignment Creation & Submission Tracking
-- Online Grading & Student Feedback
-
-## 5. Public Education Portal & Guides
-
-- Official Department of Education Announcements
-- Direct Links to Authentic Educational News Articles
-- Role-Based Interactive System Usage Manuals
-- Production-Ready Privacy Policy & Terms of Service
+1. **Quản trị viên** (`admin`): Toàn quyền quản lý hệ thống và cấu hình học vụ.
+2. **Giáo viên** (`teacher`): Quản lý giảng dạy bộ môn, điểm số, điểm danh và công tác chủ nhiệm.
+3. **Học sinh** (`student`): Theo dõi môn học, nộp bài tập và xem điểm.
+4. **Phụ huynh** (`parent`): Theo dõi tình hình học tập và trao đổi thông tin với nhà trường.
 
 ---
 
-# ⚙️ Installation & Setup
+# 📚 Các mô-đun chính
 
-## Prerequisites
+## 1. Mô-đun người dùng và xác thực
 
-- **Node.js**: `v18.0.0` or higher
-- **MongoDB**: `v6.0` or higher (Local instance or MongoDB Atlas)
-- **npm**: `v9.0` or higher
+- Đăng nhập, đăng ký và quản lý mật khẩu.
+- Hồ sơ người dùng và tùy chỉnh ảnh đại diện.
+- Quy trình kích hoạt tài khoản bằng mã học sinh.
+
+## 2. Mô-đun cơ cấu học vụ và quản lý lớp
+
+- Quản lý khối lớp 10, 11, 12 và cấu trúc lớp học.
+- Phân công giáo viên chủ nhiệm (GVCN).
+- Quản lý danh sách học sinh và chuyển lớp.
+
+## 3. Mô-đun sổ điểm điện tử và đánh giá
+
+- Tự động tính điểm trung bình.
+- Quy tắc hệ số: hệ số 1 (điểm miệng/15 phút), hệ số 2 (bài kiểm tra một tiết), hệ số 3 (bài thi học kỳ).
+- Đánh giá hạnh kiểm và tình hình chuyên cần của học sinh.
+
+## 4. Mô-đun bài tập và tài liệu học tập
+
+- Giáo viên tải lên bài giảng, tài liệu PDF và video.
+- Tạo bài tập về nhà và theo dõi bài nộp.
+- Chấm bài trực tuyến và gửi nhận xét cho học sinh.
+
+## 5. Cổng thông tin giáo dục công khai và tài liệu hướng dẫn
+
+- Thông báo chính thức từ cơ quan quản lý giáo dục.
+- Liên kết trực tiếp đến các bài viết tin tức giáo dục đáng tin cậy.
+- Tài liệu hướng dẫn sử dụng hệ thống có nội dung tương tác theo vai trò.
+- Chính sách quyền riêng tư và điều khoản sử dụng dành cho môi trường triển khai thực tế.
 
 ---
 
-## 1. Clone Repository
+# ⚙️ Cài đặt và thiết lập
+
+## Yêu cầu môi trường
+
+- **Node.js**: phiên bản `v18.0.0` trở lên.
+- **MongoDB**: phiên bản `v6.0` trở lên (cài đặt trên máy hoặc sử dụng MongoDB Atlas).
+- **npm**: phiên bản `v9.0` trở lên.
+
+---
+
+## 1. Sao chép kho mã nguồn
 
 ```bash
 git clone https://github.com/minhchuong32/Edu-LMS.git
@@ -215,14 +215,14 @@ cd Edu-LMS
 
 ---
 
-## 2. Backend Setup
+## 2. Thiết lập Backend
 
 ```bash
 cd edulms-backend
 npm install
 ```
 
-Create a `.env` file inside `edulms-backend`:
+Tạo tệp `.env` bên trong thư mục `edulms-backend`:
 
 ```env
 PORT=5000
@@ -234,97 +234,97 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-Seed initial database data (optional):
+Khởi tạo dữ liệu ban đầu cho cơ sở dữ liệu (không bắt buộc):
 
 ```bash
 npm run seed
 ```
 
-Start the backend development server:
+Khởi chạy máy chủ Backend ở chế độ phát triển:
 
 ```bash
 npm run dev
 ```
 
-Backend API server will run at:
+Máy chủ API Backend sẽ chạy tại:
 
-```
+```text
 http://localhost:5000
 ```
 
 ---
 
-## 3. Frontend Setup
+## 3. Thiết lập Frontend
 
 ```bash
 cd ../edulms-frontend
 npm install
 ```
 
-Create a `.env` file inside `edulms-frontend`:
+Tạo tệp `.env` bên trong thư mục `edulms-frontend`:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Start the frontend development server:
+Khởi chạy máy chủ Frontend ở chế độ phát triển:
 
 ```bash
 npm run dev
 ```
 
-Frontend application will run at:
+Ứng dụng Frontend sẽ chạy tại:
 
-```
+```text
 http://localhost:5173
 ```
 
 ---
 
-# 🐳 Docker Deployment
+# 🐳 Triển khai bằng Docker
 
-You can deploy the complete stack (Frontend, Backend, and MongoDB) using Docker Compose:
+Có thể triển khai toàn bộ hệ thống (Frontend, Backend và MongoDB) bằng Docker Compose:
 
 ```bash
 docker compose up --build -d
 ```
 
-### Services Overview:
+### Thông tin các dịch vụ
 
-| Service         | Container Name    | URL / Port            |
-| --------------- | ----------------- | --------------------- |
-| **Frontend**    | `edulms-frontend` | http://localhost:5173 |
-| **Backend API** | `edulms-backend`  | http://localhost:5000 |
-| **Database**    | `mongodb`         | localhost:27017       |
-
----
-
-# 📡 API Endpoints Overview
-
-| Module          | HTTP Method    | Endpoint                 | Description                            |
-| --------------- | -------------- | ------------------------ | -------------------------------------- |
-| **Auth**        | `POST`         | `/api/auth/login`        | Authenticate user & receive tokens     |
-| **Auth**        | `POST`         | `/api/auth/refresh`      | Renew access token using refresh token |
-| **Users**       | `GET`          | `/api/users`             | List users with role filtering         |
-| **Grades**      | `GET` / `POST` | `/api/academic/grades`   | Manage grade levels                    |
-| **Classes**     | `GET` / `POST` | `/api/academic/classes`  | Manage classes & homeroom teachers     |
-| **Subjects**    | `GET` / `POST` | `/api/academic/subjects` | Manage curriculum subjects             |
-| **Assignments** | `GET` / `POST` | `/api/assignments`       | Manage homework & submissions          |
-| **Gradebook**   | `GET` / `PUT`  | `/api/gradebook`         | View & update digital gradebook scores |
+| Dịch vụ | Tên container | URL / Cổng |
+| --- | --- | --- |
+| **Frontend** | `edulms-frontend` | http://localhost:5173 |
+| **Backend API** | `edulms-backend` | http://localhost:5000 |
+| **Cơ sở dữ liệu** | `mongodb` | localhost:27017 |
 
 ---
 
-# 📈 Future Roadmap
+# 📡 Tổng quan các API Endpoint
 
-- 📱 Mobile App integration built with React Native.
-- 🤖 AI-assisted essay grading and student performance analytics.
-- 📹 Integrated Live Online Classroom & Video Conferencing.
-- 🔔 Firebase Cloud Messaging (FCM) push notifications.
-- 📊 Advanced PDF & Excel report export for school principals.
+| Mô-đun | Phương thức HTTP | Endpoint | Mô tả |
+| --- | --- | --- | --- |
+| **Xác thực** | `POST` | `/api/auth/login` | Xác thực người dùng và nhận token |
+| **Xác thực** | `POST` | `/api/auth/refresh` | Làm mới Access Token bằng Refresh Token |
+| **Người dùng** | `GET` | `/api/users` | Liệt kê người dùng, có lọc theo vai trò |
+| **Khối lớp** | `GET` / `POST` | `/api/academic/grades` | Quản lý khối lớp |
+| **Lớp học** | `GET` / `POST` | `/api/academic/classes` | Quản lý lớp học và giáo viên chủ nhiệm |
+| **Môn học** | `GET` / `POST` | `/api/academic/subjects` | Quản lý các môn học |
+| **Bài tập** | `GET` / `POST` | `/api/assignments` | Quản lý bài tập và bài nộp |
+| **Sổ điểm** | `GET` / `PUT` | `/api/gradebook` | Xem và cập nhật điểm trong sổ điểm điện tử |
 
 ---
 
-# 👨‍💻 Author
+# 📈 Định hướng phát triển trong tương lai
+
+- 📱 Tích hợp ứng dụng di động bằng React Native.
+- 🤖 Hỗ trợ chấm bài tự luận bằng AI và phân tích kết quả học tập của học sinh.
+- 📹 Tích hợp lớp học trực tuyến và hội nghị truyền hình.
+- 🔔 Gửi thông báo đẩy thông qua Firebase Cloud Messaging (FCM).
+- 📊 Bổ sung tính năng xuất báo cáo PDF và Excel nâng cao dành cho ban giám hiệu.
+
+---
+
+# 👨‍💻 Tác giả
 
 **Phạm Hàn Minh Chương**
 
@@ -333,6 +333,6 @@ docker compose up --build -d
 
 ---
 
-# 📄 License
+# 📄 Giấy phép
 
-This project is developed for educational and research purposes under the **MIT License**.
+Dự án được phát triển phục vụ mục đích giáo dục và nghiên cứu theo **giấy phép MIT**.
