@@ -1,5 +1,3 @@
-import React from 'react'
-
 export const LoadingSpinner = ({ fullScreen = false, text = 'Đang tải dữ liệu...' }) => {
   if (fullScreen) {
     return (

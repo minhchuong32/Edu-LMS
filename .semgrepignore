@@ -1,0 +1,9 @@
+node_modules/
+coverage/
+dist/
+build/
+tests/
+**/*.test.js
+**/*.test.jsx
+**/*.spec.js
+src/test/
