@@ -1,23 +1,23 @@
-import { Navigate, Outlet } from 'react-router-dom'
-import { useAuth } from './../../Context/useAuth'
-import LoadingSpinner from './LoadingSpinner'
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "./../../context/useAuth";
+import LoadingSpinner from "./LoadingSpinner";
 
 export const ProtectedRoute = ({ allowedRoles = [] }) => {
-  const { user, isAuthenticated, loading } = useAuth()
+  const { user, isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return <LoadingSpinner fullScreen />
+    return <LoadingSpinner fullScreen />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-    return <Navigate to="/unauthorized" replace />
+    return <Navigate to="/unauthorized" replace />;
   }
 
-  return <Outlet />
-}
+  return <Outlet />;
+};
 
-export default ProtectedRoute
+export default ProtectedRoute;
