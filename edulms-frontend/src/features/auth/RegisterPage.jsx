@@ -1,6 +1,5 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
 import { UserPlus, Mail, Lock, User, UserCheck, AlertCircle } from 'lucide-react'
 
 export const RegisterPage = () => {
@@ -15,7 +14,6 @@ export const RegisterPage = () => {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const { register } = useAuth()
   const navigate = useNavigate()
 
   const handleChange = (e) => {

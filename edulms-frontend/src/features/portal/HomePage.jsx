@@ -1,6 +1,5 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, ShieldCheck, Users, Award, ChevronRight, GraduationCap, ArrowRight } from 'lucide-react'
+import { ShieldCheck, Users, Award, ArrowRight } from 'lucide-react'
 
 export const HomePage = () => {
   return (

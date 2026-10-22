@@ -10,7 +10,7 @@ const notFound = (req, res, next) => {
 /**
  * Middleware xử lý lỗi tập trung toàn ứng dụng (Global Error Handler)
  */
-const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res) => {
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message || "Lỗi máy chủ nội bộ!";
 

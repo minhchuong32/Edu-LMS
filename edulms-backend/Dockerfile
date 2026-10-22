@@ -1,18 +1,9 @@
 FROM node:20-alpine
-
+RUN mkdir -p /app && chown node:node /app
 WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy source code
-COPY . .
-
-# Expose backend port
+USER node
+COPY --chown=node:node package*.json ./
+RUN npm ci
+COPY --chown=node:node . .
 EXPOSE 5000
-
-# Run backend in development mode with live reload
 CMD ["npm", "run", "dev"]
