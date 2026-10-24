@@ -1,4 +1,4 @@
-# 🎓 EduLMS – Learning Management System
+# 🎓 EduLMS – Hệ thống Quản lý Học tập
 
 ![CI](https://github.com/minhchuong32/Edu-LMS/actions/workflows/ci.yml/badge.svg?branch=dev)
 
@@ -93,18 +93,18 @@ EduLMS là hệ thống quản lý học tập (LMS) hiện đại, được thi
 
 # 🛠️ Công nghệ sử dụng
 
-| Hạng mục | Công nghệ | Mô tả |
-| --- | --- | --- |
-| **Thư viện giao diện** | React 19, Vite | Xây dựng ứng dụng SPA với khả năng cập nhật mô-đun nóng (HMR) nhanh |
-| **Giao diện và kiểu dáng** | Tailwind CSS, Lucide React | Thiết kế hiện đại, tương thích nhiều kích thước màn hình và bộ biểu tượng vector |
-| **Điều hướng và biểu mẫu** | React Router DOM v7, React Hook Form | Khai báo tuyến đường và xây dựng biểu mẫu có cấu trúc |
-| **Nền tảng máy chủ** | Node.js, Express 5 | Máy chủ REST API hiệu năng cao |
-| **Cơ sở dữ liệu** | MongoDB, Mongoose ODM | Cơ sở dữ liệu hướng tài liệu và mô hình hóa lược đồ |
-| **Xác thực** | JWT (`jsonwebtoken`), `bcryptjs` | Băm mật khẩu an toàn và xác thực mã thông báo |
-| **Lưu trữ tệp** | Multer, Cloudinary | Tải lên và lưu trữ hình ảnh, video, tài liệu |
-| **Nhập/xuất dữ liệu** | SheetJS (XLSX) | Đọc, xử lý tệp Excel và tạo báo cáo |
-| **Giao tiếp HTTP** | Axios | Xử lý yêu cầu API thông qua interceptor |
-| **Triển khai** | Docker, Docker Compose | Đóng gói và triển khai ứng dụng bằng container |
+| Hạng mục                   | Công nghệ                            | Mô tả                                                                            |
+| -------------------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
+| **Thư viện giao diện**     | React 19, Vite                       | Xây dựng ứng dụng SPA với khả năng cập nhật mô-đun nóng (HMR) nhanh              |
+| **Giao diện và kiểu dáng** | Tailwind CSS, Lucide React           | Thiết kế hiện đại, tương thích nhiều kích thước màn hình và bộ biểu tượng vector |
+| **Điều hướng và biểu mẫu** | React Router DOM v7, React Hook Form | Khai báo tuyến đường và xây dựng biểu mẫu có cấu trúc                            |
+| **Nền tảng máy chủ**       | Node.js, Express 5                   | Máy chủ REST API hiệu năng cao                                                   |
+| **Cơ sở dữ liệu**          | MongoDB, Mongoose ODM                | Cơ sở dữ liệu hướng tài liệu và mô hình hóa lược đồ                              |
+| **Xác thực**               | JWT (`jsonwebtoken`), `bcryptjs`     | Băm mật khẩu an toàn và xác thực mã thông báo                                    |
+| **Lưu trữ tệp**            | Multer, Cloudinary                   | Tải lên và lưu trữ hình ảnh, video, tài liệu                                     |
+| **Nhập/xuất dữ liệu**      | SheetJS (XLSX)                       | Đọc, xử lý tệp Excel và tạo báo cáo                                              |
+| **Giao tiếp HTTP**         | Axios                                | Xử lý yêu cầu API thông qua interceptor                                          |
+| **Triển khai**             | Docker, Docker Compose               | Đóng gói và triển khai ứng dụng bằng container                                   |
 
 ---
 
@@ -269,6 +269,8 @@ Tạo tệp `.env` bên trong thư mục `edulms-frontend`:
 VITE_API_URL=http://localhost:5000/api
 ```
 
+> **Lưu ý bảo mật:** Các biến `VITE_*` được nhúng vào bundle trong lúc build và có thể được đọc từ trình duyệt. Chỉ sử dụng chúng cho cấu hình công khai như URL API; không đặt mật khẩu, JWT secret, API key riêng tư hoặc bất kỳ secret nào trong frontend.
+
 Khởi chạy máy chủ Frontend ở chế độ phát triển:
 
 ```bash
@@ -283,6 +285,25 @@ http://localhost:5173
 
 ---
 
+# 🌐 Môi trường Staging
+
+Các URL staging hiện tại:
+
+| Thành phần       | URL staging                                       |
+| ---------------- | ------------------------------------------------- |
+| **Frontend**     | `https://edu-lms-n34z.vercel.app/`                |
+| **Backend API**  | `https://edulms-backend-709y.onrender.com/api/v1` |
+| **Health check** | `https://edulms-backend-709y.onrender.com/health` |
+
+
+## Quy trình deploy
+1. Tạo nhánh từ `dev`, làm việc, mở PR vào `dev`.
+2. Chờ CI xanh rồi merge.
+3. Render và Vercel tự deploy lên staging sau vài phút.
+4. Không push trực tiếp vào `dev` hoặc `main`.
+
+## Seed dữ liệu staging (env example)
+
 # 🐳 Triển khai bằng Docker
 
 Có thể triển khai toàn bộ hệ thống (Frontend, Backend và MongoDB) bằng Docker Compose:
@@ -293,28 +314,12 @@ docker compose up --build -d
 
 ### Thông tin các dịch vụ
 
-| Dịch vụ | Tên container | URL / Cổng |
-| --- | --- | --- |
-| **Frontend** | `edulms-frontend` | http://localhost:5173 |
-| **Backend API** | `edulms-backend` | http://localhost:5000 |
-| **Cơ sở dữ liệu** | `mongodb` | localhost:27017 |
+| Dịch vụ           | Tên container     | URL / Cổng            |
+| ----------------- | ----------------- | --------------------- |
+| **Frontend**      | `edulms-frontend` | http://localhost:5173 |
+| **Backend API**   | `edulms-backend`  | http://localhost:5000 |
+| **Cơ sở dữ liệu** | `mongodb`         | localhost:27017       |
 
----
-
-# 📡 Tổng quan các API Endpoint
-
-| Mô-đun | Phương thức HTTP | Endpoint | Mô tả |
-| --- | --- | --- | --- |
-| **Xác thực** | `POST` | `/api/auth/login` | Xác thực người dùng và nhận token |
-| **Xác thực** | `POST` | `/api/auth/refresh` | Làm mới Access Token bằng Refresh Token |
-| **Người dùng** | `GET` | `/api/users` | Liệt kê người dùng, có lọc theo vai trò |
-| **Khối lớp** | `GET` / `POST` | `/api/academic/grades` | Quản lý khối lớp |
-| **Lớp học** | `GET` / `POST` | `/api/academic/classes` | Quản lý lớp học và giáo viên chủ nhiệm |
-| **Môn học** | `GET` / `POST` | `/api/academic/subjects` | Quản lý các môn học |
-| **Bài tập** | `GET` / `POST` | `/api/assignments` | Quản lý bài tập và bài nộp |
-| **Sổ điểm** | `GET` / `PUT` | `/api/gradebook` | Xem và cập nhật điểm trong sổ điểm điện tử |
-
----
 
 # 📈 Định hướng phát triển trong tương lai
 
@@ -329,6 +334,7 @@ docker compose up --build -d
 # 👨‍💻 Tác giả
 
 **Phạm Hàn Minh Chương**
+**Nguyễn Nhựt Hào**
 
 - **GitHub**: [minhchuong32](https://github.com/minhchuong32)
 - **Email**: chuongminh3225@gmail.com

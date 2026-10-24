@@ -11,6 +11,7 @@ import {
   Bell,
   CheckSquare,
   Award,
+  FileSpreadsheet,
 } from 'lucide-react'
 
 export const Sidebar = () => {
@@ -21,6 +22,7 @@ export const Sidebar = () => {
     admin: [
       { label: 'Tổng quan hệ thống', path: '/admin/dashboard', icon: LayoutDashboard },
       { label: 'Quản lý người dùng', path: '/admin/users', icon: Users },
+      { label: 'Import tài khoản', path: '/admin/import-users', icon: FileSpreadsheet },
       { label: 'Cấu trúc khối & lớp', path: '/admin/classes', icon: BookOpen },
       { label: 'Phân công giảng dạy', path: '/admin/assignments', icon: Calendar },
       { label: 'Cấu hình hệ thống', path: '/admin/settings', icon: Settings },
