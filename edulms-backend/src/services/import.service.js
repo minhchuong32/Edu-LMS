@@ -29,7 +29,7 @@ const parseExcelBuffer = (buffer) => {
  * @param {number} rowIndex Số thứ tự dòng (hiển thị lỗi)
  * @returns {{ isValid: boolean, errors: string[], parsed: object }}
  */
-const validateRow = (row, role, rowIndex) => {
+const validateRow = (row, role) => {
   const errors = [];
 
   const fullName = String(row["Họ và Tên"] || row["fullName"] || "").trim();

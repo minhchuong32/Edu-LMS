@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "jest --runInBand",
-    "test:ci": "jest --coverage --runInBand --ci"
+    "test:ci": "jest --coverage --runInBand --ci",
+    "seed": "node src/scripts/seed.js"
   },
    "engines": { "node": ">=24" },
   "repository": {
