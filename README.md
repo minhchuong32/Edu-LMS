@@ -1,4 +1,4 @@
-# 🎓 EduLMS – Learning Management System
+# 🎓 EduLMS – Hệ thống Quản lý Học tập
 
 ![CI](https://github.com/minhchuong32/Edu-LMS/actions/workflows/ci.yml/badge.svg?branch=dev)
 

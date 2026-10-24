@@ -8,6 +8,7 @@ import ProtectedRoute from '@/components/common/ProtectedRoute'
 import LoginPage from '@/features/auth/LoginPage'
 import RegisterPage from '@/features/auth/RegisterPage'
 import AdminDashboard from '@/features/admin/AdminDashboard'
+import ImportUsersPage from '@/features/admin/ImportUsersPage'
 import TeacherDashboard from '@/features/teacher/TeacherDashboard'
 import StudentDashboard from '@/features/student/StudentDashboard'
 import ParentDashboard from '@/features/parent/ParentDashboard'
@@ -39,6 +40,7 @@ export const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route element={<DashboardLayout />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/import-users" element={<ImportUsersPage />} />
         </Route>
       </Route>
 
