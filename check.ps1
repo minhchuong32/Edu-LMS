@@ -6,7 +6,7 @@ param(
 function Run($label, $cmd) {
   Write-Host "`n=== $label ===" -ForegroundColor Cyan
   Invoke-Expression $cmd
-  if ($LASTEXITCODE -ne 0) { Write-Host "THẤT BẠI: $label" -ForegroundColor Red; exit 1 }
+  if ($LASTEXITCODE -ne 0) { Write-Host "That bai !: $label" -ForegroundColor Red; exit 1 }
 }
 
 $apps = @()

@@ -1,4 +1,4 @@
-const XLSX = require("xlsx");
+const ExcelJS = require("exceljs");
 const crypto = require("crypto");
 const User = require("../models/User");
 const { hashPassword } = require("../utils/password");
@@ -15,11 +15,29 @@ const generateTempPassword = () => {
  * @param {Buffer} buffer Dữ liệu file Excel
  * @returns {Array<object>} Mảng dữ liệu các dòng
  */
-const parseExcelBuffer = (buffer) => {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  return XLSX.utils.sheet_to_json(sheet, { defval: "" });
+const parseExcelBuffer = async (buffer) => {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) return [];
+
+
+  const headers = worksheet.getRow(1).values.slice(1).map(String);
+  const rows = [];
+
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+
+    const values = row.values.slice(1);
+    const parsedRow = {};
+    headers.forEach((header, index) => {
+      parsedRow[header] = values[index] ?? "";
+    });
+    rows.push(parsedRow);
+  });
+
+  return rows;
 };
 
 /**
@@ -36,7 +54,9 @@ const validateRow = (row, role) => {
   const userCode = String(
     row["Mã Học Sinh"] || row["Mã Giáo Viên"] || row["userCode"] || ""
   ).trim();
-  const email = String(row["Email"] || row["email"] || "").trim().toLowerCase();
+  const email = String(row["Email"] || row["email"] || "")
+    .trim()
+    .toLowerCase();
   const className = String(row["Lớp"] || row["className"] || "").trim();
 
   if (!fullName) errors.push("Thiếu Họ và Tên");
@@ -70,7 +90,7 @@ const validateRow = (row, role) => {
  * @returns {Promise<object>} Kết quả import chi tiết
  */
 const processImport = async (fileBuffer, role) => {
-  const rows = parseExcelBuffer(fileBuffer);
+  const rows = await parseExcelBuffer(fileBuffer);
 
   if (!rows || rows.length === 0) {
     return {

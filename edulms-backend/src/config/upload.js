@@ -4,13 +4,13 @@ const path = require("path");
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  const allowedExts = [".xlsx", ".xls"];
+  const allowedExts = [".xlsx"];
   const ext = path.extname(file.originalname).toLowerCase();
 
   if (allowedExts.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error("Chỉ hỗ trợ file Excel (.xlsx, .xls)"), false);
+    cb(new Error("Chỉ hỗ trợ file Excel (.xlsx)"), false);
   }
 };
 
