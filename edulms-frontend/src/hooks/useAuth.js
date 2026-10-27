@@ -1,4 +1,4 @@
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/context/useAuth'
 
 /**
  * Re-export useAuth hook từ AuthContext để dễ dàng truy cập từ @/hooks
