@@ -15,6 +15,16 @@ export const importApi = {
       timeout: 60000, // 60s cho file lớn
     })
   },
+
+  /**
+   * Tải file Excel mẫu (.xlsx)
+   * @param {'student' | 'teacher'} role
+   */
+  downloadTemplate: (role) => {
+    return axiosClient.get(`/v1/admin/import/template/${role}`, {
+      responseType: 'blob',
+    })
+  },
 }
 
 export default importApi

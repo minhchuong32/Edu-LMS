@@ -35,7 +35,7 @@ async function main() {
   for (const u of SAMPLE_USERS) {
     await User.updateOne(
       { email: u.email },
-      { $set: { ...u, password: hash, mustChangePassword: false } },
+      { $set: { ...u, password: hash, mustChangePassword: false, isActivated: true } },
       { upsert: true, runValidators: true }
     );
     console.log(`OK  ${u.userCode}  ${u.email}`);
