@@ -43,8 +43,8 @@ export const ImportUsersPage = () => {
     setResult(null)
     if (selectedFile) {
       const ext = selectedFile.name.split('.').pop().toLowerCase()
-      if (!['xlsx', 'xls'].includes(ext)) {
-        setError('Chỉ hỗ trợ file Excel (.xlsx, .xls)')
+      if (ext !== 'xlsx') {
+        setError('Chỉ hỗ trợ file Excel (.xlsx)')
         return
       }
       if (selectedFile.size > 5 * 1024 * 1024) {
@@ -80,18 +80,21 @@ export const ImportUsersPage = () => {
     }
   }
 
-  const handleDownloadTemplate = () => {
-    // Tạo file CSV mẫu để tải
-    const headers = config.headers.join(',')
-    const rows = config.sampleData.map((r) => r.join(',')).join('\n')
-    const csv = '\uFEFF' + headers + '\n' + rows
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `mau_import_${selectedRole}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await importApi.downloadTemplate(selectedRole)
+      const blob = new Blob([response], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `mau_import_${selectedRole}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setError('Không thể tải file mẫu. Vui lòng thử lại!')
+    }
   }
 
   const handleReset = () => {
@@ -195,7 +198,7 @@ export const ImportUsersPage = () => {
                     Kéo thả file Excel vào đây hoặc <span className="text-blue-600 font-semibold">nhấn để chọn</span>
                   </p>
                   <p className="text-xs text-slate-400 mt-1">
-                    Hỗ trợ .xlsx, .xls • Tối đa 5MB
+                    Hỗ trợ định dạng .xlsx • Tối đa 5MB
                   </p>
                 </div>
               </div>
@@ -269,7 +272,7 @@ export const ImportUsersPage = () => {
               className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-xs font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/40 transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              Tải file mẫu CSV
+              Tải file mẫu Excel
             </button>
           </div>
 

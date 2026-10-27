@@ -1,4 +1,4 @@
-const { processImport } = require("../services/import.service");
+const { processImport, generateTemplate } = require("../services/import.service");
 const { successResponse, errorResponse } = require("../utils/apiResponse");
 
 /**
@@ -37,6 +37,41 @@ const importUsers = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/v1/admin/import/template/:role
+ * Tải file Excel mẫu chuẩn (.xlsx) cho học sinh hoặc giáo viên
+ * @param {string} req.params.role - 'student' | 'teacher'
+ */
+const downloadTemplate = async (req, res, next) => {
+  try {
+    const { role } = req.params;
+
+    if (!["student", "teacher"].includes(role)) {
+      return errorResponse(
+        res,
+        "Vai trò không hợp lệ. Chỉ hỗ trợ 'student' hoặc 'teacher'",
+        400
+      );
+    }
+
+    const buffer = await generateTemplate(role);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=mau_import_${role}.xlsx`
+    );
+
+    return res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   importUsers,
+  downloadTemplate,
 };

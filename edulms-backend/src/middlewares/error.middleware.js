@@ -10,8 +10,8 @@ const notFound = (req, res, next) => {
 /**
  * Middleware xử lý lỗi tập trung toàn ứng dụng (Global Error Handler)
  */
-const errorHandler = (err, req, res) => {
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+const errorHandler = (err, req, res, _next) => {
+  let statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
   let message = err.message || "Lỗi máy chủ nội bộ!";
 
   // Lỗi Mongoose CastError (Sai ObjectID)
@@ -33,6 +33,16 @@ const errorHandler = (err, req, res) => {
     message = Object.values(err.errors)
       .map((val) => val.message)
       .join(", ");
+  }
+
+  // Lỗi Multer (Upload file quá giới hạn hoặc định dạng không đúng)
+  if (err.name === "MulterError") {
+    statusCode = 400;
+    if (err.code === "LIMIT_FILE_SIZE") {
+      message = "Kích thước tập tin vượt quá giới hạn tối đa cho phép (5MB)!";
+    }
+  } else if (err.message && err.message.includes("Chỉ hỗ trợ file Excel")) {
+    statusCode = 400;
   }
 
   res.status(statusCode).json({

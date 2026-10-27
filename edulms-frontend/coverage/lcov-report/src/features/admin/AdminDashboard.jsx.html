@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -145,15 +145,15 @@
 <a name='L80'></a><a href='#L80'>80</a>
 <a name='L81'></a><a href='#L81'>81</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -163,8 +163,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -225,15 +225,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Users, GraduationCap, BookOpen, CheckCircle2, FileSpreadsheet } from 'lucide-react'
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >AdminDashboard = () =&gt; {</span></span>
-  const stats = <span class="cstat-no" title="statement not covered" >[</span>
+export const AdminDashboard = () =&gt; {
+  const stats = [
     { title: 'Tổng số người dùng', count: '1,248', icon: Users, color: 'bg-blue-500' },
     { title: 'Số lượng giáo viên', count: '86', icon: GraduationCap, color: 'bg-emerald-500' },
     { title: 'Số lượng học sinh', count: '1,050', icon: BookOpen, color: 'bg-violet-500' },
     { title: 'Lớp học hoạt động', count: '32', icon: FileSpreadsheet, color: 'bg-amber-500' },
   ]
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return (</span>
+  return (
     &lt;div className="space-y-6"&gt;
       &lt;div&gt;
         &lt;h1 className="text-2xl font-bold text-slate-900 tracking-tight"&gt;Cổng Quản trị hệ thống (Admin)&lt;/h1&gt;
@@ -242,9 +242,9 @@ export const <span class="cstat-no" title="statement not covered" ><span class="
 &nbsp;
       {/* Stats Cards */}
       &lt;div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"&gt;
-        {stats.<span class="fstat-no" title="function not covered" >map((s</span>tat, i) =&gt; {
-          const Icon = <span class="cstat-no" title="statement not covered" >stat.icon</span>
-<span class="cstat-no" title="statement not covered" >          return (</span>
+        {stats.map((stat, i) =&gt; {
+          const Icon = stat.icon
+          return (
             &lt;div key={i} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between"&gt;
               &lt;div&gt;
                 &lt;p className="text-xs text-slate-500 font-medium"&gt;{stat.title}&lt;/p&gt;
@@ -310,7 +310,7 @@ export default AdminDashboard
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-24T05:04:38.159Z
+                at 2026-10-27T23:04:36.699Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

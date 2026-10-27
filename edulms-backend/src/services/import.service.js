@@ -96,7 +96,7 @@ const processImport = async (fileBuffer, role) => {
     return {
       totalRows: 0,
       successCount: 0,
-      failCount: 0,
+      failCount: 1,
       failures: [{ row: 0, errors: ["File Excel không có dữ liệu"] }],
       createdAccounts: [],
     };
@@ -191,6 +191,7 @@ const processImport = async (fileBuffer, role) => {
           className: row.parsed.className,
           password: hashedPassword,
           mustChangePassword: true,
+          isActivated: false,
         };
       })
     );
@@ -214,7 +215,70 @@ const processImport = async (fileBuffer, role) => {
   };
 };
 
+/**
+ * Tạo file Excel mẫu (.xlsx) để tải về
+ * @param {string} role 'student' | 'teacher'
+ * @returns {Promise<Buffer>}
+ */
+const generateTemplate = async (role) => {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Edu-LMS";
+  const sheetName = role === "student" ? "Danh sách học sinh" : "Danh sách giáo viên";
+  const worksheet = workbook.addWorksheet(sheetName);
+
+  if (role === "student") {
+    worksheet.columns = [
+      { header: "Họ và Tên", key: "fullName", width: 25 },
+      { header: "Mã Học Sinh", key: "userCode", width: 18 },
+      { header: "Email", key: "email", width: 28 },
+      { header: "Lớp", key: "className", width: 15 },
+    ];
+    worksheet.addRow({
+      fullName: "Nguyễn Văn A",
+      userCode: "HS001",
+      email: "nguyenvana@edu.vn",
+      className: "10A1",
+    });
+    worksheet.addRow({
+      fullName: "Trần Thị B",
+      userCode: "HS002",
+      email: "tranthib@edu.vn",
+      className: "10A2",
+    });
+  } else {
+    worksheet.columns = [
+      { header: "Họ và Tên", key: "fullName", width: 25 },
+      { header: "Mã Giáo Viên", key: "userCode", width: 18 },
+      { header: "Email", key: "email", width: 28 },
+    ];
+    worksheet.addRow({
+      fullName: "Lê Văn C",
+      userCode: "GV001",
+      email: "levanc@edu.vn",
+    });
+    worksheet.addRow({
+      fullName: "Phạm Thị D",
+      userCode: "GV002",
+      email: "phamthid@edu.vn",
+    });
+  }
+
+  // Header styling
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: "FF1E3A8A" } };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE0E7FF" },
+  };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+};
+
 module.exports = {
   processImport,
   parseExcelBuffer,
+  validateRow,
+  generateTemplate,
 };

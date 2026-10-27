@@ -1,12 +1,13 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import MainLayout from '@/layouts/MainLayout'
 import AuthLayout from '@/layouts/AuthLayout'
 import DashboardLayout from '@/layouts/DashboardLayout'
-import ProtectedRoute from '@/components/common/ProtectedRoute'
+import PrivateRoute from './PrivateRoute'
+import RoleRoute from './RoleRoute'
 
 // Feature Pages
 import LoginPage from '@/features/auth/LoginPage'
-import RegisterPage from '@/features/auth/RegisterPage'
+import ActivatePage from '@/features/auth/ActivatePage'
 import AdminDashboard from '@/features/admin/AdminDashboard'
 import ImportUsersPage from '@/features/admin/ImportUsersPage'
 import TeacherDashboard from '@/features/teacher/TeacherDashboard'
@@ -33,39 +34,44 @@ export const AppRoutes = () => {
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/activate" element={<ActivatePage />} />
+        <Route path="/register" element={<Navigate to="/activate" replace />} />
       </Route>
 
-      {/* Admin Protected Dashboard */}
-      <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-        <Route element={<DashboardLayout />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/import-users" element={<ImportUsersPage />} />
+      {/* Authenticated Routes Protected by PrivateRoute */}
+      <Route element={<PrivateRoute />}>
+        {/* Admin Protected Dashboard */}
+        <Route element={<RoleRoute allowedRoles={['admin']} />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/import-users" element={<ImportUsersPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* Teacher Protected Dashboard */}
-      <Route element={<ProtectedRoute allowedRoles={['teacher']} />}>
-        <Route element={<DashboardLayout />}>
-          <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+        {/* Teacher Protected Dashboard */}
+        <Route element={<RoleRoute allowedRoles={['teacher']} />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* Student Protected Dashboard */}
-      <Route element={<ProtectedRoute allowedRoles={['student']} />}>
-        <Route element={<DashboardLayout />}>
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
+        {/* Student Protected Dashboard */}
+        <Route element={<RoleRoute allowedRoles={['student']} />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/student/dashboard" element={<StudentDashboard />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* Parent Protected Dashboard */}
-      <Route element={<ProtectedRoute allowedRoles={['parent']} />}>
-        <Route element={<DashboardLayout />}>
-          <Route path="/parent/dashboard" element={<ParentDashboard />} />
+        {/* Parent Protected Dashboard */}
+        <Route element={<RoleRoute allowedRoles={['parent']} />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/parent/dashboard" element={<ParentDashboard />} />
+          </Route>
         </Route>
       </Route>
     </Routes>
   )
 }
 
+export const AppRouter = AppRoutes
 export default AppRoutes
