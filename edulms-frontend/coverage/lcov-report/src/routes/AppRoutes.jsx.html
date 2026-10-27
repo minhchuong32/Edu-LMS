@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -134,7 +134,13 @@
 <a name='L69'></a><a href='#L69'>69</a>
 <a name='L70'></a><a href='#L70'>70</a>
 <a name='L71'></a><a href='#L71'>71</a>
-<a name='L72'></a><a href='#L72'>72</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -154,9 +160,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -205,15 +211,22 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Routes, Route } from 'react-router-dom'
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Routes, Route, Navigate } from 'react-router-dom'
 import MainLayout from '@/layouts/MainLayout'
 import AuthLayout from '@/layouts/AuthLayout'
 import DashboardLayout from '@/layouts/DashboardLayout'
-import ProtectedRoute from '@/components/common/ProtectedRoute'
+import PrivateRoute from './PrivateRoute'
+import RoleRoute from './RoleRoute'
 &nbsp;
 // Feature Pages
 import LoginPage from '@/features/auth/LoginPage'
-import RegisterPage from '@/features/auth/RegisterPage'
+import ActivatePage from '@/features/auth/ActivatePage'
 import AdminDashboard from '@/features/admin/AdminDashboard'
 import ImportUsersPage from '@/features/admin/ImportUsersPage'
 import TeacherDashboard from '@/features/teacher/TeacherDashboard'
@@ -225,8 +238,8 @@ import GuidePage from '@/features/portal/GuidePage'
 import NotFoundPage from '@/features/portal/NotFoundPage'
 import UnauthorizedPage from '@/features/portal/UnauthorizedPage'
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >AppRoutes = () =&gt; {</span></span>
-<span class="cstat-no" title="statement not covered" >  return (</span>
+export const AppRoutes = () =&gt; {
+  return (
     &lt;Routes&gt;
       {/* Public Portal Routes */}
       &lt;Route element={&lt;MainLayout /&gt;}&gt;
@@ -240,41 +253,46 @@ export const <span class="cstat-no" title="statement not covered" ><span class="
       {/* Auth Routes */}
       &lt;Route element={&lt;AuthLayout /&gt;}&gt;
         &lt;Route path="/login" element={&lt;LoginPage /&gt;} /&gt;
-        &lt;Route path="/register" element={&lt;RegisterPage /&gt;} /&gt;
+        &lt;Route path="/activate" element={&lt;ActivatePage /&gt;} /&gt;
+        &lt;Route path="/register" element={&lt;Navigate to="/activate" replace /&gt;} /&gt;
       &lt;/Route&gt;
 &nbsp;
-      {/* Admin Protected Dashboard */}
-      &lt;Route element={&lt;ProtectedRoute allowedRoles={['admin']} /&gt;}&gt;
-        &lt;Route element={&lt;DashboardLayout /&gt;}&gt;
-          &lt;Route path="/admin/dashboard" element={&lt;AdminDashboard /&gt;} /&gt;
-          &lt;Route path="/admin/import-users" element={&lt;ImportUsersPage /&gt;} /&gt;
+      {/* Authenticated Routes Protected by PrivateRoute */}
+      &lt;Route element={&lt;PrivateRoute /&gt;}&gt;
+        {/* Admin Protected Dashboard */}
+        &lt;Route element={&lt;RoleRoute allowedRoles={['admin']} /&gt;}&gt;
+          &lt;Route element={&lt;DashboardLayout /&gt;}&gt;
+            &lt;Route path="/admin/dashboard" element={&lt;AdminDashboard /&gt;} /&gt;
+            &lt;Route path="/admin/import-users" element={&lt;ImportUsersPage /&gt;} /&gt;
+          &lt;/Route&gt;
         &lt;/Route&gt;
-      &lt;/Route&gt;
 &nbsp;
-      {/* Teacher Protected Dashboard */}
-      &lt;Route element={&lt;ProtectedRoute allowedRoles={['teacher']} /&gt;}&gt;
-        &lt;Route element={&lt;DashboardLayout /&gt;}&gt;
-          &lt;Route path="/teacher/dashboard" element={&lt;TeacherDashboard /&gt;} /&gt;
+        {/* Teacher Protected Dashboard */}
+        &lt;Route element={&lt;RoleRoute allowedRoles={['teacher']} /&gt;}&gt;
+          &lt;Route element={&lt;DashboardLayout /&gt;}&gt;
+            &lt;Route path="/teacher/dashboard" element={&lt;TeacherDashboard /&gt;} /&gt;
+          &lt;/Route&gt;
         &lt;/Route&gt;
-      &lt;/Route&gt;
 &nbsp;
-      {/* Student Protected Dashboard */}
-      &lt;Route element={&lt;ProtectedRoute allowedRoles={['student']} /&gt;}&gt;
-        &lt;Route element={&lt;DashboardLayout /&gt;}&gt;
-          &lt;Route path="/student/dashboard" element={&lt;StudentDashboard /&gt;} /&gt;
+        {/* Student Protected Dashboard */}
+        &lt;Route element={&lt;RoleRoute allowedRoles={['student']} /&gt;}&gt;
+          &lt;Route element={&lt;DashboardLayout /&gt;}&gt;
+            &lt;Route path="/student/dashboard" element={&lt;StudentDashboard /&gt;} /&gt;
+          &lt;/Route&gt;
         &lt;/Route&gt;
-      &lt;/Route&gt;
 &nbsp;
-      {/* Parent Protected Dashboard */}
-      &lt;Route element={&lt;ProtectedRoute allowedRoles={['parent']} /&gt;}&gt;
-        &lt;Route element={&lt;DashboardLayout /&gt;}&gt;
-          &lt;Route path="/parent/dashboard" element={&lt;ParentDashboard /&gt;} /&gt;
+        {/* Parent Protected Dashboard */}
+        &lt;Route element={&lt;RoleRoute allowedRoles={['parent']} /&gt;}&gt;
+          &lt;Route element={&lt;DashboardLayout /&gt;}&gt;
+            &lt;Route path="/parent/dashboard" element={&lt;ParentDashboard /&gt;} /&gt;
+          &lt;/Route&gt;
         &lt;/Route&gt;
       &lt;/Route&gt;
     &lt;/Routes&gt;
   )
 }
 &nbsp;
+export const AppRouter = AppRoutes
 export default AppRoutes
 &nbsp;</pre></td></tr></table></pre>
 
@@ -283,7 +301,7 @@ export default AppRoutes
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-24T05:04:38.159Z
+                at 2026-10-27T23:04:36.699Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
