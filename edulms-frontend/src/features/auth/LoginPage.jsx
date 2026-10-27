@@ -49,10 +49,25 @@ export const LoginPage = () => {
       const user = res.data?.user || res.user;
       const role = user?.role || "student";
 
-      // Chuyển hướng về trang trước đó nếu người dùng bị PrivateRoute chuyển đến login
+      // Kiểm tra xem vai trò hiện tại có được phép truy cập đường dẫn trước đó (fromPath) không
+      const isRoleAllowedForPath = (path, userRole) => {
+        if (!path || typeof path !== "string") return false;
+        if (path.startsWith("/admin") && userRole !== "admin") return false;
+        if (path.startsWith("/teacher") && userRole !== "teacher") return false;
+        if (path.startsWith("/student") && userRole !== "student") return false;
+        if (path.startsWith("/parent") && userRole !== "parent") return false;
+        return true;
+      };
+
+      // Chuyển hướng về trang trước đó nếu người dùng bị PrivateRoute chuyển đến login và vai trò hợp lệ
       const from = location.state?.from;
       const fromPath = typeof from === "string" ? from : from?.pathname;
-      if (fromPath && fromPath !== "/login" && fromPath !== "/unauthorized") {
+      if (
+        fromPath &&
+        fromPath !== "/login" &&
+        fromPath !== "/unauthorized" &&
+        isRoleAllowedForPath(fromPath, role)
+      ) {
         navigate(fromPath, { replace: true });
         return;
       }
