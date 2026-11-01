@@ -1,5 +1,4 @@
-import React from 'react'
-import { ClipboardList, CheckSquare, BookOpen, Clock, AlertCircle } from 'lucide-react'
+import { ClipboardList, CheckSquare, BookOpen } from 'lucide-react'
 
 export const TeacherDashboard = () => {
   return (

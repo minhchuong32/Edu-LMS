@@ -1,5 +1,4 @@
-import React from 'react'
-import { Newspaper, Calendar, ExternalLink } from 'lucide-react'
+import { Calendar, ExternalLink } from 'lucide-react'
 
 export const NewsPage = () => {
   const articles = [

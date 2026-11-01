@@ -1,5 +1,4 @@
-import React from 'react'
-import { Users, GraduationCap, BookOpen, ShieldAlert, CheckCircle2, FileSpreadsheet } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, CheckCircle2, FileSpreadsheet } from 'lucide-react'
 
 export const AdminDashboard = () => {
   const stats = [

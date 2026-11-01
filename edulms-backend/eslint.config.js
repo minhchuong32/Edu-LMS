@@ -19,6 +19,22 @@ module.exports = [
     },
     rules: {
       "no-console": "off",
+      "no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          caughtErrors: "none",
+        },
+      ],
+    },
+  },
+
+  {
+    files: ["tests/**/*.js", "**/*.test.js"],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
     },
   },
 ];

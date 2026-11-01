@@ -1,6 +1,3 @@
-import React from 'react'
-import { UserCheck, Award, Bell, ShieldCheck } from 'lucide-react'
-
 export const ParentDashboard = () => {
   return (
     <div className="space-y-6">

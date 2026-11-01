@@ -1,76 +1,154 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import AuthContext from './authContext.js'
 import authApi from '@/api/authApi'
 
-const AuthContext = createContext(null)
-
 export const AuthProvider = ({ children }) => {
+  // Khởi tạo thông tin user từ localStorage nếu có
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user')
-    return savedUser ? JSON.parse(savedUser) : null
+    try {
+      const savedUser = localStorage.getItem('user')
+      return savedUser ? JSON.parse(savedUser) : null
+    } catch {
+      localStorage.removeItem('user')
+      return null
+    }
   })
-  const [token, setToken] = useState(() => localStorage.getItem('token') || null)
-  const [loading, setLoading] = useState(true)
 
+  // Khởi tạo Access Token từ localStorage nếu có
+  const [token, setToken] = useState(
+    () => localStorage.getItem('token') || null,
+  )
+  const [loading, setLoading] = useState(true)
+  const initializedRef = useRef(false)
+
+  /**
+   * Đăng xuất: gọi API vô hiệu hóa Refresh Token trong CSDL, xóa cookie và reset state
+   */
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout()
+    } catch (err) {
+      console.warn('Logout API error:', err)
+    } finally {
+      setUser(null)
+      setToken(null)
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    }
+  }, [])
+
+  // Khôi phục phiên đăng nhập khi load lại trang
   useEffect(() => {
+    if (initializedRef.current) return
+    initializedRef.current = true
+
+    let active = true
+
     const initAuth = async () => {
-      if (token) {
-        try {
-          const res = await authApi.getMe()
-          if (res.user) {
-            setUser(res.user)
-            localStorage.setItem('user', JSON.stringify(res.user))
-          }
-        } catch (error) {
-          console.error('Failed to restore session:', error)
+      const storedToken = localStorage.getItem('token')
+      // Không có token -> không cần khôi phục session
+      if (!storedToken) {
+        if (active) setLoading(false)
+        return
+      }
+
+      try {
+        const res = await authApi.getMe()
+        const currentUser = res.data?.user || res.user
+
+        if (active && currentUser) {
+          setUser(currentUser)
+          localStorage.setItem('user', JSON.stringify(currentUser))
+        }
+      } catch (error) {
+        console.error('Failed to restore session:', error)
+
+        if (active) {
           logout()
         }
+      } finally {
+        if (active) {
+          setLoading(false)
+        }
       }
-      setLoading(false)
     }
 
-    initAuth()
-  }, [token])
+    void initAuth()
 
+    return () => {
+      active = false
+    }
+  }, [logout])
+
+  // Lắng nghe sự kiện 'auth:logout' phát ra từ Axios Interceptor khi Refresh Token không còn hợp lệ
+  useEffect(() => {
+    const handleAxiosAutoLogout = () => {
+      setUser(null)
+      setToken(null)
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    }
+
+    window.addEventListener('auth:logout', handleAxiosAutoLogout)
+    return () => {
+      window.removeEventListener('auth:logout', handleAxiosAutoLogout)
+    }
+  }, [])
+
+  /**
+   * Đăng nhập: Lưu thông tin người dùng và token vào state & localStorage
+   */
   const login = async (credentials) => {
     setLoading(true)
+
     try {
       const res = await authApi.login(credentials)
-      const { user: userData, token: jwtToken } = res.data || res
+      const data = res.data || res
+      const userData = data.user
+      const jwtToken = data.accessToken || data.token
+
       setUser(userData)
       setToken(jwtToken)
-      localStorage.setItem('token', jwtToken)
-      localStorage.setItem('user', JSON.stringify(userData))
+
+      if (jwtToken) {
+        localStorage.setItem('token', jwtToken)
+      }
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData))
+      }
+
       return res
     } finally {
       setLoading(false)
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    setToken(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+  /**
+   * Cập nhật thông tin người dùng trong state & localStorage
+   */
+  const updateUser = (updatedUserData) => {
+    setUser((prev) => {
+      const nextUser = { ...prev, ...updatedUserData }
+      localStorage.setItem('user', JSON.stringify(nextUser))
+      return nextUser
+    })
   }
 
   const value = {
     user,
     token,
     loading,
-    isAuthenticated: !!user && !!token,
+    isAuthenticated: Boolean(user && token),
     login,
     logout,
+    updateUser,
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export default AuthContext

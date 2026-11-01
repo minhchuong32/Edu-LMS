@@ -1,18 +1,9 @@
-FROM node:20-alpine
-
+FROM node:24-alpine
+RUN mkdir -p /app && chown node:node /app
 WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy source code
-COPY . .
-
-# Expose Vite frontend port
+USER node
+COPY --chown=node:node package*.json ./
+RUN npm ci
+COPY --chown=node:node . .
 EXPOSE 5173
-
-# Run Vite in development mode binding to all network interfaces
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

@@ -3,10 +3,10 @@ const jwt = require("jsonwebtoken");
 /**
  * Tạo Access Token
  * @param {object} payload Thông tin đưa vào token (userId, role...)
- * @param {string} expiresIn Thời gian hết hạn (mặc định '1d')
+ * @param {string} expiresIn Thời gian hết hạn (mặc định '15m')
  * @returns {string}
  */
-const generateAccessToken = (payload, expiresIn = process.env.JWT_EXPIRES_IN || "1d") => {
+const generateAccessToken = (payload, expiresIn = process.env.JWT_EXPIRES_IN || "15m") => {
   const secret = process.env.JWT_SECRET || "default_jwt_secret_key";
   return jwt.sign(payload, secret, { expiresIn });
 };

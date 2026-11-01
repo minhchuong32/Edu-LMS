@@ -1,5 +1,4 @@
-import React from 'react'
-import { FileText, Download, CheckCircle2 } from 'lucide-react'
+import { FileText, CheckCircle2 } from 'lucide-react'
 
 export const GuidePage = () => {
   return (

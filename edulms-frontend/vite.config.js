@@ -11,4 +11,20 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    globals: true,
+    clearMocks: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      include: ['src/**/*.{js,jsx}'],
+      exclude: [
+        'src/**/*.test.{js,jsx}',
+        'src/**/*.spec.{js,jsx}',
+        'src/main.jsx',
+      ],
+    },
+  }
 })
