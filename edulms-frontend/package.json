@@ -23,6 +23,9 @@
     "react-router-dom": "^7.18.4",
     "tailwindcss": "^4.3.3"
   },
+  "overrides": {
+    "follow-redirects": "^1.16.2"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "^7.0.1",
