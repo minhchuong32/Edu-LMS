@@ -8,6 +8,7 @@ const User = require("../models/User");
 const Grade = require("../models/Grade");
 const Class = require("../models/Class");
 const Subject = require("../models/Subject");
+const TeachingAssignment = require("../models/TeachingAssignment");
 
 // Danh sách Tài khoản mẫu
 const SAMPLE_USERS = [
@@ -353,6 +354,225 @@ async function main() {
     console.log(`[CLASS] ${c.name} | Năm: ${c.academicYear} | Khối ${c.gradeLevel} | Phòng ${c.room} | ${gvcnText}`);
   }
 
+  // 5. SEED TEACHING ASSIGNMENTS (PHÂN CÔNG GIẢNG DẠY)
+  console.log("\n--- 5. SEED TEACHING ASSIGNMENTS (PHÂN CÔNG BỘ MÔN) ---");
+  const SAMPLE_ASSIGNMENTS = [
+    // Lớp 10A1
+    {
+      className: "10A1",
+      subjectCode: "TOAN",
+      teacherCode: "GV001", // Thầy Toán
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 4,
+      schedules: [
+        { dayOfWeek: 2, startPeriod: 1, endPeriod: 2, room: "P.101" },
+        { dayOfWeek: 4, startPeriod: 3, endPeriod: 4, room: "P.101" },
+      ],
+      note: "Phân công dạy chính môn Toán",
+    },
+    {
+      className: "10A1",
+      subjectCode: "VAN",
+      teacherCode: "GV002", // Cô Văn
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 4,
+      schedules: [
+        { dayOfWeek: 3, startPeriod: 1, endPeriod: 2, room: "P.101" },
+        { dayOfWeek: 5, startPeriod: 1, endPeriod: 2, room: "P.101" },
+      ],
+      note: "Phân công dạy chính môn Ngữ văn",
+    },
+    {
+      className: "10A1",
+      subjectCode: "ANH",
+      teacherCode: "GV003", // Thầy Anh
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 3,
+      schedules: [
+        { dayOfWeek: 2, startPeriod: 3, endPeriod: 4, room: "P.101" },
+        { dayOfWeek: 6, startPeriod: 1, endPeriod: 1, room: "P.101" },
+      ],
+      note: "Tiếng Anh hệ 10 năm",
+    },
+    {
+      className: "10A1",
+      subjectCode: "LY",
+      teacherCode: "GV004", // Cô Lý
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 2,
+      schedules: [
+        { dayOfWeek: 3, startPeriod: 3, endPeriod: 4, room: "P.101" },
+      ],
+      note: "Vật lí cơ bản",
+    },
+    {
+      className: "10A1",
+      subjectCode: "HOA",
+      teacherCode: "GV005", // Thầy Hóa
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 2,
+      schedules: [
+        { dayOfWeek: 4, startPeriod: 1, endPeriod: 2, room: "P.101" },
+      ],
+      note: "Hóa học cơ bản",
+    },
+    {
+      className: "10A1",
+      subjectCode: "SINH",
+      teacherCode: "GV006", // Cô Sinh
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 2,
+      schedules: [
+        { dayOfWeek: 5, startPeriod: 3, endPeriod: 4, room: "P.101" },
+      ],
+      note: "Sinh học thực nghiệm",
+    },
+    {
+      className: "10A1",
+      subjectCode: "TIN",
+      teacherCode: "GV009", // Thầy Tin
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 2,
+      schedules: [
+        { dayOfWeek: 6, startPeriod: 2, endPeriod: 3, room: "Lab Tin 1" },
+      ],
+      note: "Thực hành phòng máy 1",
+    },
+
+    // Lớp 10A2
+    {
+      className: "10A2",
+      subjectCode: "TOAN",
+      teacherCode: "GV001", // Thầy Toán dạy thêm 10A2
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 4,
+      schedules: [
+        { dayOfWeek: 2, startPeriod: 3, endPeriod: 4, room: "P.102" },
+        { dayOfWeek: 5, startPeriod: 3, endPeriod: 4, room: "P.102" },
+      ],
+      note: "Toán học lớp 10A2",
+    },
+    {
+      className: "10A2",
+      subjectCode: "VAN",
+      teacherCode: "GV002", // Cô Văn
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 4,
+      schedules: [
+        { dayOfWeek: 4, startPeriod: 1, endPeriod: 2, room: "P.102" },
+        { dayOfWeek: 6, startPeriod: 1, endPeriod: 2, room: "P.102" },
+      ],
+      note: "Ngữ văn nâng cao lớp 10A2",
+    },
+    {
+      className: "10A2",
+      subjectCode: "SU",
+      teacherCode: "GV007", // Thầy Sử
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 2,
+      schedules: [
+        { dayOfWeek: 3, startPeriod: 1, endPeriod: 2, room: "P.102" },
+      ],
+      note: "Lịch sử Việt Nam và thế giới",
+    },
+    {
+      className: "10A2",
+      subjectCode: "DIA",
+      teacherCode: "GV008", // Cô Địa
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 2,
+      schedules: [
+        { dayOfWeek: 3, startPeriod: 3, endPeriod: 4, room: "P.102" },
+      ],
+      note: "Địa lí tự nhiên",
+    },
+
+    // Lớp 11A1
+    {
+      className: "11A1",
+      subjectCode: "ANH",
+      teacherCode: "GV003", // Thầy Anh
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 3,
+      schedules: [
+        { dayOfWeek: 3, startPeriod: 3, endPeriod: 4, room: "P.201" },
+      ],
+      note: "Tiếng Anh nâng cao 11A1",
+    },
+    {
+      className: "11A1",
+      subjectCode: "HOA",
+      teacherCode: "GV005", // Thầy Hóa
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 2,
+      schedules: [
+        { dayOfWeek: 2, startPeriod: 1, endPeriod: 2, room: "P.201" },
+      ],
+      note: "Hóa học vô cơ 11A1",
+    },
+
+    // Lớp 12A1
+    {
+      className: "12A1",
+      subjectCode: "LY",
+      teacherCode: "GV004", // Cô Lý
+      academicYear,
+      semester: "CaNam",
+      periodsPerWeek: 2,
+      schedules: [
+        { dayOfWeek: 4, startPeriod: 1, endPeriod: 2, room: "P.301" },
+      ],
+      note: "Vật lí 12 luyện thi",
+    },
+  ];
+
+  for (const a of SAMPLE_ASSIGNMENTS) {
+    const classDoc = classMap.get(a.className);
+    const subjectDoc = subjectMap.get(a.subjectCode);
+    const teacherDoc = userMap.get(a.teacherCode);
+
+    if (!classDoc || !subjectDoc || !teacherDoc) {
+      console.warn(`[WARN] Bỏ qua assignment không đủ dữ liệu: ${a.className} - ${a.subjectCode} - ${a.teacherCode}`);
+      continue;
+    }
+
+    await TeachingAssignment.findOneAndUpdate(
+      {
+        class: classDoc._id,
+        subject: subjectDoc._id,
+        academicYear: a.academicYear,
+        semester: a.semester,
+      },
+      {
+        $set: {
+          teacher: teacherDoc._id,
+          periodsPerWeek: a.periodsPerWeek,
+          schedules: a.schedules,
+          status: "active",
+          note: a.note,
+          isActive: true,
+          isDeleted: false,
+        },
+      },
+      { upsert: true, new: true, runValidators: true }
+    );
+    console.log(
+      `[ASSIGNMENT] Lớp ${a.className} | Môn ${a.subjectCode.padEnd(5)} | GV: ${teacherDoc.fullName} (${a.teacherCode}) | ${a.semester}`
+    );
+  }
 
   console.log("\n=================================");
   console.log(" TỔNG KẾT DỮ LIỆU ĐÃ SEED THÀNH CÔNG");
@@ -361,6 +581,7 @@ async function main() {
   console.log(`- Grades (Khối):       ${await Grade.countDocuments({ isDeleted: { $ne: true } })} khối`);
   console.log(`- Classes (Lớp học):   ${await Class.countDocuments({ isDeleted: { $ne: true } })} lớp`);
   console.log(`- Subjects (Môn học):  ${await Subject.countDocuments({ isDeleted: { $ne: true } })} môn`);
+  console.log(`- Assignments:         ${await TeachingAssignment.countDocuments({ isDeleted: { $ne: true } })} phân công`);
   console.log("\nMật khẩu chung cho tất cả tài khoản seed:", password);
   console.log("=================================\n");
 
