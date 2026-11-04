@@ -11,6 +11,42 @@ const generateTempPassword = () => {
 };
 
 /**
+ * Trích xuất chuỗi text từ giá trị ô Excel (hỗ trợ Hyperlink, RichText, Formula, Date)
+ * Tránh lỗi ô hyperlink bị biến thành chuỗi '[object Object]'
+ * @param {any} cellVal
+ * @returns {string}
+ */
+const getCellValue = (cellVal) => {
+  if (cellVal === null || cellVal === undefined) return "";
+  if (typeof cellVal === "object") {
+    // Hyperlink cell: { text: "...", hyperlink: "..." }
+    if (cellVal.text !== undefined && cellVal.text !== null) {
+      if (typeof cellVal.text === "object" && Array.isArray(cellVal.text.richText)) {
+        return cellVal.text.richText.map((item) => item.text || "").join("").trim();
+      }
+      return String(cellVal.text).trim();
+    }
+    // Khi ô chỉ có hyperlink
+    if (cellVal.hyperlink) {
+      return String(cellVal.hyperlink).replace(/^mailto:/i, "").trim();
+    }
+    // RichText cell: { richText: [{ text: "..." }] }
+    if (Array.isArray(cellVal.richText)) {
+      return cellVal.richText.map((item) => item.text || "").join("").trim();
+    }
+    // Formula cell: { formula: "...", result: "..." }
+    if (cellVal.result !== undefined && cellVal.result !== null) {
+      return String(cellVal.result).trim();
+    }
+    // Date
+    if (cellVal instanceof Date) {
+      return cellVal.toISOString();
+    }
+  }
+  return String(cellVal).trim();
+};
+
+/**
  * Đọc và parse dữ liệu từ buffer file Excel
  * @param {Buffer} buffer Dữ liệu file Excel
  * @returns {Array<object>} Mảng dữ liệu các dòng
@@ -22,7 +58,6 @@ const parseExcelBuffer = async (buffer) => {
   const worksheet = workbook.worksheets[0];
   if (!worksheet) return [];
 
-
   const headers = worksheet.getRow(1).values.slice(1).map(String);
   const rows = [];
 
@@ -32,7 +67,7 @@ const parseExcelBuffer = async (buffer) => {
     const values = row.values.slice(1);
     const parsedRow = {};
     headers.forEach((header, index) => {
-      parsedRow[header] = values[index] ?? "";
+      parsedRow[header] = getCellValue(values[index]);
     });
     rows.push(parsedRow);
   });
@@ -50,14 +85,12 @@ const parseExcelBuffer = async (buffer) => {
 const validateRow = (row, role) => {
   const errors = [];
 
-  const fullName = String(row["Họ và Tên"] || row["fullName"] || "").trim();
-  const userCode = String(
-    row["Mã Học Sinh"] || row["Mã Giáo Viên"] || row["userCode"] || ""
-  ).trim();
-  const email = String(row["Email"] || row["email"] || "")
-    .trim()
-    .toLowerCase();
-  const className = String(row["Lớp"] || row["className"] || "").trim();
+  const fullName = getCellValue(row["Họ và Tên"] || row["fullName"]);
+  const userCode = getCellValue(
+    row["Mã Học Sinh"] || row["Mã Giáo Viên"] || row["userCode"]
+  );
+  const email = getCellValue(row["Email"] || row["email"]).toLowerCase();
+  const className = getCellValue(row["Lớp"] || row["className"]);
 
   if (!fullName) errors.push("Thiếu Họ và Tên");
   if (!userCode) errors.push("Thiếu Mã định danh");
@@ -172,10 +205,18 @@ const processImport = async (fileBuffer, role) => {
   // 4. Tạo tài khoản hàng loạt
   const createdAccounts = [];
   if (toInsert.length > 0) {
+    const Class = require("../models/Class");
+    const classNames = [...new Set(toInsert.map((r) => r.parsed.className).filter(Boolean))];
+    const matchedClasses = classNames.length > 0
+      ? await Class.find({ name: { $in: classNames }, isDeleted: false }).select("_id name")
+      : [];
+    const classMap = new Map(matchedClasses.map((c) => [c.name, c._id]));
+
     const usersToCreate = await Promise.all(
       toInsert.map(async (row) => {
         const tempPassword = generateTempPassword();
         const hashedPassword = await hashPassword(tempPassword);
+        const classRef = row.parsed.className ? classMap.get(row.parsed.className) || null : null;
         createdAccounts.push({
           rowIndex: row.rowIndex,
           fullName: row.parsed.fullName,
@@ -189,6 +230,7 @@ const processImport = async (fileBuffer, role) => {
           userCode: row.parsed.userCode,
           role: row.parsed.role,
           className: row.parsed.className,
+          classRef,
           password: hashedPassword,
           mustChangePassword: true,
           isActivated: false,

@@ -4,7 +4,7 @@
   "description": "![React](https://img.shields.io/badge/React-19.0-blue)\r ![Node.js](https://img.shields.io/badge/Node.js-Express-green)\r ![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-green)\r ![JWT](https://img.shields.io/badge/Auth-JWT-orange)\r ![TailwindCSS](https://img.shields.io/badge/Styling-TailwindCSS-38B2AC)\r ![License](https://img.shields.io/badge/License-MIT-success)",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
+    "dev": "nodemon --watch src --watch .env src/server.js",
     "build": "node --check src/server.js",
     "start": "node src/server.js",
     "lint": "eslint .",

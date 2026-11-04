@@ -57,7 +57,8 @@ axiosClient.interceptors.response.use(
         originalRequest.url?.includes('/auth/activate') ||
         originalRequest.url?.includes('/auth/verify-activation') ||
         originalRequest.url?.includes('/auth/refresh') ||
-        originalRequest.url?.includes('/auth/logout')
+        originalRequest.url?.includes('/auth/logout') ||
+        originalRequest.url?.includes('/auth/me')
       ) {
         return Promise.reject(error.response?.data || error.message || 'Có lỗi xảy ra!')
       }
