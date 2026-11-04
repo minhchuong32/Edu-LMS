@@ -29,5 +29,9 @@ router.post(
   importUsers
 );
 
+// Quản lý Khối, Lớp, Môn học & Phân công giảng dạy
+const academicRoutes = require("./academic.routes");
+router.use("/academic", academicRoutes);
+
 module.exports = router;
 
