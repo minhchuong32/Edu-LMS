@@ -62,9 +62,12 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Failed to restore session:', error)
-
+        // Xóa token ngay lập tức — không cần gọi logout API (tránh thêm latency)
         if (active) {
-          logout()
+          setUser(null)
+          setToken(null)
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
         }
       } finally {
         if (active) {

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">73.17% </span>
+                <span class="strong">58.49% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>30/41</span>
+                <span class='fraction'>31/53</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">50% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>35/70</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">71.42% </span>
-                <span class="quiet">Branches</span>
-                <span class='fraction'>35/49</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">83.33% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/6</span>
+                <span class='fraction'>5/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">72.5% </span>
+                <span class="strong">63.82% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>29/40</span>
+                <span class='fraction'>30/47</span>
             </div>
         
             
@@ -312,7 +312,22 @@
 <a name='L247'></a><a href='#L247'>247</a>
 <a name='L248'></a><a href='#L248'>248</a>
 <a name='L249'></a><a href='#L249'>249</a>
-<a name='L250'></a><a href='#L250'>250</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -365,8 +380,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -612,10 +642,25 @@ export const LoginPage = () =&gt; {
       const user = res.data?.user || <span class="branch-1 cbranch-no" title="branch not covered" >res.user;</span>
       const role = user?.role || <span class="branch-1 cbranch-no" title="branch not covered" >"student";</span>
 &nbsp;
-      // Chuyển hướng về trang trước đó nếu người dùng bị PrivateRoute chuyển đến login
+      // Kiểm tra xem vai trò hiện tại có được phép truy cập đường dẫn trước đó (fromPath) không
+      const <span class="fstat-no" title="function not covered" >isRoleAllowedForPath = (p</span>ath, userRole) =&gt; {
+<span class="cstat-no" title="statement not covered" >        if (!path || typeof path !== "string") <span class="cstat-no" title="statement not covered" >return false;</span></span>
+<span class="cstat-no" title="statement not covered" >        if (path.startsWith("/admin") &amp;&amp; userRole !== "admin") <span class="cstat-no" title="statement not covered" >return false;</span></span>
+<span class="cstat-no" title="statement not covered" >        if (path.startsWith("/teacher") &amp;&amp; userRole !== "teacher") <span class="cstat-no" title="statement not covered" >return false;</span></span>
+<span class="cstat-no" title="statement not covered" >        if (path.startsWith("/student") &amp;&amp; userRole !== "student") <span class="cstat-no" title="statement not covered" >return false;</span></span>
+<span class="cstat-no" title="statement not covered" >        if (path.startsWith("/parent") &amp;&amp; userRole !== "parent") <span class="cstat-no" title="statement not covered" >return false;</span></span>
+<span class="cstat-no" title="statement not covered" >        return true;</span>
+      };
+&nbsp;
+      // Chuyển hướng về trang trước đó nếu người dùng bị PrivateRoute chuyển đến login và vai trò hợp lệ
       const from = location.state?.from;
       const fromPath = typeof from === "string" ? <span class="branch-0 cbranch-no" title="branch not covered" >from : f</span>rom?.pathname;
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (fromPath &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >fromPath !== "/login" &amp;&amp; <span class="branch-2 cbranch-no" title="branch not covered" >f</span>romPath !== "/unauthorized") {</span>
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (
+        fromPath &amp;&amp;
+<span class="branch-1 cbranch-no" title="branch not covered" >        fromPath !== "/login" &amp;&amp;</span>
+<span class="branch-2 cbranch-no" title="branch not covered" >        fromPath !== "/unauthorized" &amp;&amp;</span>
+<span class="branch-3 cbranch-no" title="branch not covered" >        isRoleAllowedForPath(fromPath, role)</span>
+      ) {
 <span class="cstat-no" title="statement not covered" >        navigate(fromPath, { replace: true });</span>
 <span class="cstat-no" title="statement not covered" >        return;</span>
       }
@@ -817,7 +862,7 @@ export default LoginPage;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-27T23:04:36.385Z
+                at 2026-11-01T09:56:36.434Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
