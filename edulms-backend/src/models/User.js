@@ -34,6 +34,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    classRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Class",
+      default: null,
+    },
     mustChangePassword: {
       type: Boolean,
       default: false,
@@ -45,5 +50,7 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.index({ classRef: 1, role: 1 });
 
 module.exports = mongoose.model("User", userSchema);

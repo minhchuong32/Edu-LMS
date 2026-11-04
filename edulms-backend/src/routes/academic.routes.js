@@ -5,6 +5,7 @@ const gradeController = require("../controllers/grade.controller");
 const subjectController = require("../controllers/subject.controller");
 const classController = require("../controllers/class.controller");
 const assignmentController = require("../controllers/assignment.controller");
+const studentAssignmentController = require("../controllers/studentAssignment.controller");
 
 const router = express.Router();
 
@@ -53,4 +54,16 @@ router.post("/assignments", authorize("admin"), assignmentController.createAssig
 router.put("/assignments/:id", authorize("admin"), assignmentController.updateAssignment);
 router.delete("/assignments/:id", authorize("admin"), assignmentController.deleteAssignment);
 
+/* ==========================================
+   5. XẾP LỚP & CHUYỂN LỚP HỌC SINH (STUDENT ASSIGNMENTS)
+========================================== */
+router.get("/students/unassigned", authorize("admin"), studentAssignmentController.getUnassignedStudents);
+router.get("/class-history", authorize("admin"), studentAssignmentController.getClassHistory);
+router.get("/classes/:id/students", studentAssignmentController.getStudentsByClass);
+router.post("/classes/:id/students", authorize("admin"), studentAssignmentController.addStudentsToClass);
+router.delete("/classes/:id/students/:studentId", authorize("admin"), studentAssignmentController.removeStudentFromClass);
+router.post("/classes/transfer-student", authorize("admin"), studentAssignmentController.transferStudent);
+router.get("/classes/:id/history", authorize("admin"), studentAssignmentController.getClassHistoryByClassId);
+
 module.exports = router;
+
