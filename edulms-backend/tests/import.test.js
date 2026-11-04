@@ -2,6 +2,7 @@ const request = require("supertest");
 const ExcelJS = require("exceljs");
 const app = require("../src/app");
 const User = require("../src/models/User");
+const Class = require("../src/models/Class");
 const { generateAccessToken } = require("../src/utils/jwt");
 const {
   validateRow,
@@ -10,10 +11,14 @@ const {
 } = require("../src/services/import.service");
 
 jest.mock("../src/models/User");
+jest.mock("../src/models/Class");
 
 describe("Import Users Service & Controller Tests", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    Class.find.mockReturnValue({
+      select: jest.fn().mockResolvedValue([]),
+    });
   });
 
   const adminToken = generateAccessToken({
