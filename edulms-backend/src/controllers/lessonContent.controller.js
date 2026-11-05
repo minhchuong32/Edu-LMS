@@ -6,7 +6,7 @@ const { successResponse, errorResponse } = require("../utils/apiResponse");
 /**
  * [POST] /api/v1/lessons
  * Tạo mới nội dung bài giảng
- * Quyền: Admin, Teacher
+ * Quyền: Admin, Teacher (được kiểm tra qua middleware canCreateLesson)
  */
 const createLessonContent = async (req, res, next) => {
   try {
@@ -29,50 +29,54 @@ const createLessonContent = async (req, res, next) => {
       return errorResponse(res, "Loại nội dung (contentType) là bắt buộc", 400);
     }
 
-    if (!teachingAssignment) {
-      return errorResponse(
-        res,
-        "Phân công giảng dạy (teachingAssignment) là bắt buộc",
-        400
-      );
-    }
-
-    // 2. Kiểm tra tính hợp lệ của ObjectId
-    if (!mongoose.Types.ObjectId.isValid(teachingAssignment)) {
-      return errorResponse(
-        res,
-        "Mã phân công giảng dạy (teachingAssignment) không hợp lệ",
-        400
-      );
-    }
-
-    // 3. Kiểm tra phân công giảng dạy có tồn tại trong hệ thống
-    const assignment = await TeachingAssignment.findOne({
-      _id: teachingAssignment,
-      isDeleted: false,
-    });
-
+    // 2. Xác thực phân công giảng dạy (TeachingAssignment) và quyền sở hữu
+    let assignment = req.targetAssignment;
     if (!assignment) {
-      return errorResponse(
-        res,
-        "Phân công giảng dạy không tồn tại hoặc đã bị xóa",
-        404
-      );
+      if (!teachingAssignment) {
+        return errorResponse(
+          res,
+          "Phân công giảng dạy (teachingAssignment) là bắt buộc",
+          400
+        );
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(teachingAssignment)) {
+        return errorResponse(
+          res,
+          "Mã phân công giảng dạy (teachingAssignment) không hợp lệ",
+          400
+        );
+      }
+
+      assignment = await TeachingAssignment.findOne({
+        _id: teachingAssignment,
+        isDeleted: false,
+      });
+
+      if (!assignment) {
+        return errorResponse(
+          res,
+          "Phân công giảng dạy không tồn tại hoặc đã bị xóa",
+          404
+        );
+      }
+
+      // Ngăn chặn IDOR: Giáo viên chỉ được tạo nội dung cho phân công của chính mình
+      if (
+        req.user.role === "teacher" &&
+        assignment.teacher.toString() !== req.user.userId
+      ) {
+        return errorResponse(
+          res,
+          "Bạn không được phân công giảng dạy lớp học này, không có quyền tạo nội dung bài giảng!",
+          403
+        );
+      }
+    } else {
+      teachingAssignment = assignment._id;
     }
 
-    // 4. Kiểm tra quyền sở hữu đối với giáo viên
-    if (
-      req.user.role === "teacher" &&
-      assignment.teacher.toString() !== req.user.userId
-    ) {
-      return errorResponse(
-        res,
-        "Bạn không có quyền tạo nội dung bài giảng cho phân công giảng dạy này",
-        403
-      );
-    }
-
-    // 5. Tự động tính số thứ tự (order) nếu client không truyền
+    // 3. Tự động tính số thứ tự (order) nếu client không truyền
     if (order === undefined || order === null) {
       const lastLesson = await LessonContent.findOne({
         teachingAssignment,
@@ -82,7 +86,7 @@ const createLessonContent = async (req, res, next) => {
       order = lastLesson && lastLesson.order ? lastLesson.order + 1 : 1;
     }
 
-    // 6. Khởi tạo và lưu nội dung bài giảng
+    // 4. Khởi tạo và lưu nội dung bài giảng
     const newLesson = new LessonContent({
       title: title.trim(),
       description: description ? description.trim() : "",
@@ -203,7 +207,7 @@ const getLessonContentById = async (req, res, next) => {
       );
     }
 
-    // Kiểm tra quyền đối với học sinh/phụ huynh nếu bài giảng đang ẩn
+    // Học sinh và phụ huynh không xem được bài học chưa kích hoạt
     if (
       (req.user.role === "student" || req.user.role === "parent") &&
       !lesson.isActive
@@ -228,7 +232,7 @@ const getLessonContentById = async (req, res, next) => {
 /**
  * [PUT/PATCH] /api/v1/lessons/:id
  * Cập nhật nội dung bài giảng
- * Quyền: Admin, Teacher
+ * Quyền: Admin, Teacher (được kiểm tra qua middleware canModifyLesson)
  */
 const updateLessonContent = async (req, res, next) => {
   try {
@@ -236,38 +240,42 @@ const updateLessonContent = async (req, res, next) => {
     const { title, description, contentType, resourceUrl, order, isActive } =
       req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return errorResponse(res, "Mã bài giảng không hợp lệ", 400);
-    }
-
-    const lesson = await LessonContent.findOne({
-      _id: id,
-      isDeleted: false,
-    });
-
+    // Lấy bài giảng đã xác thực quyền từ middleware
+    let lesson = req.targetLesson;
     if (!lesson) {
-      return errorResponse(
-        res,
-        "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
-        404
-      );
-    }
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return errorResponse(res, "Mã bài giảng không hợp lệ", 400);
+      }
 
-    // Kiểm tra quyền sở hữu đối với giáo viên
-    if (req.user.role === "teacher") {
-      const assignment = await TeachingAssignment.findById(
-        lesson.teachingAssignment
-      );
-      if (!assignment || assignment.teacher.toString() !== req.user.userId) {
+      lesson = await LessonContent.findOne({
+        _id: id,
+        isDeleted: false,
+      });
+
+      if (!lesson) {
         return errorResponse(
           res,
-          "Bạn không có quyền chỉnh sửa bài giảng này",
-          403
+          "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
+          404
         );
+      }
+
+      // Ngăn chặn IDOR: Giáo viên chỉ được sửa bài giảng thuộc phân công của mình
+      if (req.user.role === "teacher") {
+        const assignment = await TeachingAssignment.findById(
+          lesson.teachingAssignment
+        );
+        if (!assignment || assignment.teacher.toString() !== req.user.userId) {
+          return errorResponse(
+            res,
+            "Bạn không phải giáo viên phụ trách bài giảng này, không có quyền chỉnh sửa hoặc xóa!",
+            403
+          );
+        }
       }
     }
 
-    // Cập nhật các trường được phép
+    // Cập nhật các trường được phép (không cho phép sửa teachingAssignment qua body để ngăn chặn IDOR)
     if (title !== undefined) lesson.title = title.trim();
     if (description !== undefined) lesson.description = description.trim();
     if (contentType !== undefined) lesson.contentType = contentType;
@@ -290,40 +298,48 @@ const updateLessonContent = async (req, res, next) => {
 /**
  * [DELETE] /api/v1/lessons/:id
  * Xóa mềm nội dung bài giảng
- * Quyền: Admin, Teacher
+ * Quyền: Admin, Teacher (được kiểm tra qua middleware canModifyLesson)
  */
 const deleteLessonContent = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return errorResponse(res, "Mã bài giảng không hợp lệ", 400);
-    }
-
-    const lesson = await LessonContent.findOne({
-      _id: id,
-      isDeleted: false,
-    });
-
+    // Lấy bài giảng đã xác thực quyền từ middleware
+    let lesson = req.targetLesson;
     if (!lesson) {
-      return errorResponse(
-        res,
-        "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
-        404
-      );
-    }
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return errorResponse(res, "Mã bài giảng không hợp lệ", 400);
+      }
 
-    // Kiểm tra quyền sở hữu đối với giáo viên
-    if (req.user.role === "teacher") {
-      const assignment = await TeachingAssignment.findById(
-        lesson.teachingAssignment
-      );
-      if (!assignment || assignment.teacher.toString() !== req.user.userId) {
-        return errorResponse(res, "Bạn không có quyền xóa bài giảng này", 403);
+      lesson = await LessonContent.findOne({
+        _id: id,
+        isDeleted: false,
+      });
+
+      if (!lesson) {
+        return errorResponse(
+          res,
+          "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
+          404
+        );
+      }
+
+      // Ngăn chặn IDOR: Giáo viên chỉ được xóa bài giảng thuộc phân công của mình
+      if (req.user.role === "teacher") {
+        const assignment = await TeachingAssignment.findById(
+          lesson.teachingAssignment
+        );
+        if (!assignment || assignment.teacher.toString() !== req.user.userId) {
+          return errorResponse(
+            res,
+            "Bạn không phải giáo viên phụ trách bài giảng này, không có quyền chỉnh sửa hoặc xóa!",
+            403
+          );
+        }
       }
     }
 
-    // Thực hiện soft-delete theo chuẩn hệ thống
+    // Soft delete: Đánh dấu isDeleted = true
     lesson.isDeleted = true;
     await lesson.save();
 
