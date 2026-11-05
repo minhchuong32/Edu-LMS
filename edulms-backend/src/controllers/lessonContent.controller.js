@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
 const LessonContent = require("../models/LessonContent");
 const TeachingAssignment = require("../models/TeachingAssignment");
+const {
+  getStudentEnrolledClass,
+} = require("../middlewares/lessonPermission.middleware");
 const { successResponse, errorResponse } = require("../utils/apiResponse");
 
 /**
@@ -10,8 +13,15 @@ const { successResponse, errorResponse } = require("../utils/apiResponse");
  */
 const createLessonContent = async (req, res, next) => {
   try {
-    let { title, description, contentType, resourceUrl, order, teachingAssignment, isActive } =
-      req.body;
+    let {
+      title,
+      description,
+      contentType,
+      resourceUrl,
+      order,
+      teachingAssignment,
+      isActive,
+    } = req.body;
 
     // 1. Kiểm tra các trường dữ liệu bắt buộc
     if (!title || !title.trim()) {
@@ -26,11 +36,19 @@ const createLessonContent = async (req, res, next) => {
     let assignment = req.targetAssignment;
     if (!assignment) {
       if (!teachingAssignment) {
-        return errorResponse(res, "Phân công giảng dạy (teachingAssignment) là bắt buộc", 400);
+        return errorResponse(
+          res,
+          "Phân công giảng dạy (teachingAssignment) là bắt buộc",
+          400
+        );
       }
 
       if (!mongoose.Types.ObjectId.isValid(teachingAssignment)) {
-        return errorResponse(res, "Mã phân công giảng dạy (teachingAssignment) không hợp lệ", 400);
+        return errorResponse(
+          res,
+          "Mã phân công giảng dạy (teachingAssignment) không hợp lệ",
+          400
+        );
       }
 
       assignment = await TeachingAssignment.findOne({
@@ -39,11 +57,18 @@ const createLessonContent = async (req, res, next) => {
       });
 
       if (!assignment) {
-        return errorResponse(res, "Phân công giảng dạy không tồn tại hoặc đã bị xóa", 404);
+        return errorResponse(
+          res,
+          "Phân công giảng dạy không tồn tại hoặc đã bị xóa",
+          404
+        );
       }
 
       // Ngăn chặn IDOR: Giáo viên chỉ được tạo nội dung cho phân công của chính mình
-      if (req.user.role === "teacher" && assignment.teacher.toString() !== req.user.userId) {
+      if (
+        req.user.role === "teacher" &&
+        assignment.teacher.toString() !== req.user.userId
+      ) {
         return errorResponse(
           res,
           "Bạn không được phân công giảng dạy lớp học này, không có quyền tạo nội dung bài giảng!",
@@ -77,7 +102,12 @@ const createLessonContent = async (req, res, next) => {
 
     const savedLesson = await newLesson.save();
 
-    return successResponse(res, savedLesson, "Tạo nội dung bài giảng thành công", 201);
+    return successResponse(
+      res,
+      savedLesson,
+      "Tạo nội dung bài giảng thành công",
+      201
+    );
   } catch (error) {
     next(error);
   }
@@ -94,10 +124,35 @@ const getLessonContents = async (req, res, next) => {
 
     const filter = { isDeleted: false };
 
-    // Lọc theo phân công giảng dạy
-    if (teachingAssignment) {
+    // Học sinh và phụ huynh chỉ được xem nội dung đang được kích hoạt (isActive: true)
+    if (req.user.role === "student" || req.user.role === "parent") {
+      filter.isActive = true;
+    } else if (isActive !== undefined) {
+      filter.isActive = isActive === "true" || isActive === true;
+    }
+
+    // Nếu là Học sinh và có thông tin lớp được gán từ middleware:
+    if (req.user.role === "student" && req.studentClass) {
+      if (teachingAssignment) {
+        if (!mongoose.Types.ObjectId.isValid(teachingAssignment)) {
+          return errorResponse(res, "Mã phân công giảng dạy không hợp lệ", 400);
+        }
+        filter.teachingAssignment = teachingAssignment;
+      } else {
+        // Chỉ lấy các phân công của đúng lớp học của học sinh đó
+        const classAssignments = await TeachingAssignment.find({
+          class: req.studentClass._id,
+          isDeleted: false,
+        }).select("_id");
+        filter.teachingAssignment = { $in: classAssignments.map((a) => a._id) };
+      }
+    } else if (teachingAssignment) {
       if (!mongoose.Types.ObjectId.isValid(teachingAssignment)) {
-        return errorResponse(res, "Mã phân công giảng dạy (teachingAssignment) không hợp lệ", 400);
+        return errorResponse(
+          res,
+          "Mã phân công giảng dạy (teachingAssignment) không hợp lệ",
+          400
+        );
       }
       filter.teachingAssignment = teachingAssignment;
     }
@@ -105,13 +160,6 @@ const getLessonContents = async (req, res, next) => {
     // Lọc theo loại nội dung
     if (contentType) {
       filter.contentType = contentType.toLowerCase().trim();
-    }
-
-    // Học sinh và phụ huynh chỉ được xem nội dung đang được kích hoạt (isActive: true)
-    if (req.user.role === "student" || req.user.role === "parent") {
-      filter.isActive = true;
-    } else if (isActive !== undefined) {
-      filter.isActive = isActive === "true" || isActive === true;
     }
 
     // Tìm kiếm theo tiêu đề bài giảng
@@ -132,131 +180,10 @@ const getLessonContents = async (req, res, next) => {
       })
       .lean();
 
-    return successResponse(res, lessons, "Lấy danh sách nội dung bài giảng thành công");
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * [GET] /api/v1/lessons/by-class-subject
- * [GET] /api/v1/lessons/class/:classId/subject/:subjectId
- * Lấy danh sách LessonContent theo Lớp học và Môn học (hỗ trợ phân trang và sắp xếp theo order)
- * Quyền: Admin, Teacher, Student, Parent
- */
-const getLessonsByClassAndSubject = async (req, res, next) => {
-  try {
-    const classId = req.params.classId || req.query.classId || req.query.class;
-    const subjectId = req.params.subjectId || req.query.subjectId || req.query.subject;
-    const { academicYear, semester, contentType, isActive, page, limit } = req.query;
-
-    // 1. Kiểm tra tham số lớp học và môn học bắt buộc
-    if (!classId) {
-      return errorResponse(res, "Thông tin lớp học (classId) là bắt buộc", 400);
-    }
-    if (!subjectId) {
-      return errorResponse(res, "Thông tin môn học (subjectId) là bắt buộc", 400);
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(classId)) {
-      return errorResponse(res, "Mã lớp học (classId) không đúng định dạng ObjectId", 400);
-    }
-    if (!mongoose.Types.ObjectId.isValid(subjectId)) {
-      return errorResponse(res, "Mã môn học (subjectId) không đúng định dạng ObjectId", 400);
-    }
-
-    // 2. Tìm TeachingAssignment tương ứng với Lớp và Môn học
-    const assignmentFilter = {
-      class: classId,
-      subject: subjectId,
-      isDeleted: false,
-    };
-
-    if (academicYear && academicYear.trim()) {
-      assignmentFilter.academicYear = academicYear.trim();
-    }
-    if (semester && semester.trim()) {
-      assignmentFilter.semester = semester.trim();
-    }
-
-    const assignment = await TeachingAssignment.findOne(assignmentFilter)
-      .sort({ createdAt: -1 })
-      .populate("class", "name academicYear")
-      .populate("subject", "name code")
-      .populate("teacher", "fullName userCode email");
-
-    if (!assignment) {
-      return errorResponse(
-        res,
-        "Không tìm thấy phân công giảng dạy tương ứng cho lớp học và môn học này",
-        404
-      );
-    }
-
-    // 3. Xây dựng bộ lọc cho LessonContent
-    const lessonFilter = {
-      teachingAssignment: assignment._id,
-      isDeleted: false,
-    };
-
-    // Học sinh và phụ huynh chỉ được xem nội dung đã kích hoạt
-    if (req.user.role === "student" || req.user.role === "parent") {
-      lessonFilter.isActive = true;
-    } else if (isActive !== undefined) {
-      lessonFilter.isActive = isActive === "true" || isActive === true;
-    }
-
-    if (contentType) {
-      lessonFilter.contentType = contentType.toLowerCase().trim();
-    }
-
-    // 4. Đếm tổng số bài giảng phục vụ phân trang
-    const total = await LessonContent.countDocuments(lessonFilter);
-
-    // 5. Cấu hình phân trang (nếu client truyền page hoặc limit)
-    const isPaginationRequested = page !== undefined || limit !== undefined;
-    const pageNum = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
-    const limitNum = parseInt(limit, 10) > 0 ? parseInt(limit, 10) : 10;
-
-    let queryBuilder = LessonContent.find(lessonFilter)
-      .select("title description contentType resourceUrl order isActive createdAt updatedAt")
-      .sort({ order: 1, createdAt: 1 });
-
-    if (isPaginationRequested) {
-      const skip = (pageNum - 1) * limitNum;
-      queryBuilder = queryBuilder.skip(skip).limit(limitNum);
-    }
-
-    const lessons = await queryBuilder.lean();
-
-    // 6. Đóng gói dữ liệu phản hồi
-    const responseData = {
-      teachingAssignment: {
-        _id: assignment._id,
-        academicYear: assignment.academicYear,
-        semester: assignment.semester,
-        class: assignment.class,
-        subject: assignment.subject,
-        teacher: assignment.teacher,
-      },
-      lessons,
-    };
-
-    if (isPaginationRequested) {
-      responseData.pagination = {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum) || 1,
-      };
-    } else {
-      responseData.total = total;
-    }
-
     return successResponse(
       res,
-      responseData,
-      "Lấy danh sách nội dung bài giảng theo lớp và môn học thành công"
+      lessons,
+      "Lấy danh sách nội dung bài giảng thành công"
     );
   } catch (error) {
     next(error);
@@ -407,7 +334,7 @@ const getLessonsByClassAndSubject = async (req, res, next) => {
 /**
  * [GET] /api/v1/lessons/:id
  * Lấy chi tiết một nội dung bài giảng
- * Quyền: Admin, Teacher, Student, Parent
+ * Quyền: Admin, Teacher, Student, Parent (Học sinh được kiểm tra qua canViewLessonDetail)
  */
 const getLessonContentById = async (req, res, next) => {
   try {
@@ -417,32 +344,45 @@ const getLessonContentById = async (req, res, next) => {
       return errorResponse(res, "Mã bài giảng không hợp lệ", 400);
     }
 
-    const lesson = await LessonContent.findOne({
-      _id: id,
-      isDeleted: false,
-    }).populate({
-      path: "teachingAssignment",
-      select: "class subject teacher academicYear semester",
-      populate: [
-        { path: "class", select: "name academicYear" },
-        { path: "subject", select: "name code" },
-        { path: "teacher", select: "fullName userCode email" },
-      ],
-    });
-
+    let lesson = req.targetLesson;
     if (!lesson) {
-      return errorResponse(res, "Nội dung bài giảng không tồn tại hoặc đã bị xóa", 404);
+      lesson = await LessonContent.findOne({
+        _id: id,
+        isDeleted: false,
+      }).populate({
+        path: "teachingAssignment",
+        select: "class subject teacher academicYear semester",
+        populate: [
+          { path: "class", select: "name academicYear" },
+          { path: "subject", select: "name code" },
+          { path: "teacher", select: "fullName userCode email" },
+        ],
+      });
+
+      if (!lesson) {
+        return errorResponse(
+          res,
+          "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
+          404
+        );
+      }
+    } else if (typeof lesson.populate === "function") {
+      lesson = await lesson.populate({
+        path: "teachingAssignment",
+        select: "class subject teacher academicYear semester",
+        populate: [
+          { path: "class", select: "name academicYear" },
+          { path: "subject", select: "name code" },
+          { path: "teacher", select: "fullName userCode email" },
+        ],
+      });
     }
 
-    // Học sinh và phụ huynh không xem được bài học chưa kích hoạt
-    if (
-      (req.user.role === "student" || req.user.role === "parent") &&
-      !lesson.isActive
-    ) {
-      return errorResponse(res, "Nội dung bài giảng hiện chưa được công khai", 403);
-    }
-
-    return successResponse(res, lesson, "Lấy thông tin chi tiết bài giảng thành công");
+    return successResponse(
+      res,
+      lesson,
+      "Lấy thông tin chi tiết bài giảng thành công"
+    );
   } catch (error) {
     next(error);
   }
@@ -456,7 +396,8 @@ const getLessonContentById = async (req, res, next) => {
 const updateLessonContent = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, contentType, resourceUrl, order, isActive } = req.body;
+    const { title, description, contentType, resourceUrl, order, isActive } =
+      req.body;
 
     // Lấy bài giảng đã xác thực quyền từ middleware
     let lesson = req.targetLesson;
@@ -471,12 +412,18 @@ const updateLessonContent = async (req, res, next) => {
       });
 
       if (!lesson) {
-        return errorResponse(res, "Nội dung bài giảng không tồn tại hoặc đã bị xóa", 404);
+        return errorResponse(
+          res,
+          "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
+          404
+        );
       }
 
       // Ngăn chặn IDOR: Giáo viên chỉ được sửa bài giảng thuộc phân công của mình
       if (req.user.role === "teacher") {
-        const assignment = await TeachingAssignment.findById(lesson.teachingAssignment);
+        const assignment = await TeachingAssignment.findById(
+          lesson.teachingAssignment
+        );
         if (!assignment || assignment.teacher.toString() !== req.user.userId) {
           return errorResponse(
             res,
@@ -497,7 +444,11 @@ const updateLessonContent = async (req, res, next) => {
 
     const updatedLesson = await lesson.save();
 
-    return successResponse(res, updatedLesson, "Cập nhật nội dung bài giảng thành công");
+    return successResponse(
+      res,
+      updatedLesson,
+      "Cập nhật nội dung bài giảng thành công"
+    );
   } catch (error) {
     next(error);
   }
@@ -525,12 +476,18 @@ const deleteLessonContent = async (req, res, next) => {
       });
 
       if (!lesson) {
-        return errorResponse(res, "Nội dung bài giảng không tồn tại hoặc đã bị xóa", 404);
+        return errorResponse(
+          res,
+          "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
+          404
+        );
       }
 
       // Ngăn chặn IDOR: Giáo viên chỉ được xóa bài giảng thuộc phân công của mình
       if (req.user.role === "teacher") {
-        const assignment = await TeachingAssignment.findById(lesson.teachingAssignment);
+        const assignment = await TeachingAssignment.findById(
+          lesson.teachingAssignment
+        );
         if (!assignment || assignment.teacher.toString() !== req.user.userId) {
           return errorResponse(
             res,
