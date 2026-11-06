@@ -10,7 +10,7 @@
  *   ngay khi vượt ngưỡng (không đọc hết file vào RAM).
  * - Kiểm tra nội dung thật (magic bytes - lớp 3) nằm ở src/middlewares/upload.middleware.js.
  *
- * LƯU Ý: src/config/upload.js (import Excel) được giữ nguyên, không dùng chung cấu hình.
+ *  src/config/upload.js (import Excel) được giữ nguyên, không dùng chung cấu hình.
  */
 const multer = require("multer");
 const path = require("path");

@@ -40,4 +40,8 @@ router.use("/academic", academicRoutes);
 const lessonContentRoutes = require("./lessonContent.routes");
 router.use("/lessons", lessonContentRoutes);
 
+// Quản lý Upload tài liệu & media lên Cloudinary
+const uploadRoutes = require("./upload.routes");
+router.use("/upload", uploadRoutes);
+
 module.exports = router;
