@@ -12,7 +12,8 @@
     "format:check": "prettier --check .",
     "test": "jest --runInBand",
     "test:ci": "jest --coverage --runInBand --ci",
-    "seed": "node src/scripts/seed.js"
+    "seed": "node src/scripts/seed.js",
+    "test:cloudinary": "node src/scripts/test_cloudinary.js"
   },
   "engines": {
     "node": ">=24"
