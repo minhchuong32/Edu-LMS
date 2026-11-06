@@ -42,12 +42,30 @@ const RESOURCE_TYPES = Object.freeze({
 
 /** Thư mục + resource_type cho từng nhóm file */
 const CATEGORY_STORAGE = Object.freeze({
-  document: { folder: CLOUDINARY_FOLDERS.DOCUMENTS, resourceType: RESOURCE_TYPES.RAW },
-  spreadsheet: { folder: CLOUDINARY_FOLDERS.SPREADSHEETS, resourceType: RESOURCE_TYPES.RAW },
-  presentation: { folder: CLOUDINARY_FOLDERS.PRESENTATIONS, resourceType: RESOURCE_TYPES.RAW },
-  archive: { folder: CLOUDINARY_FOLDERS.ARCHIVES, resourceType: RESOURCE_TYPES.RAW },
-  image: { folder: CLOUDINARY_FOLDERS.IMAGES, resourceType: RESOURCE_TYPES.IMAGE },
-  video: { folder: CLOUDINARY_FOLDERS.VIDEOS, resourceType: RESOURCE_TYPES.VIDEO },
+  document: {
+    folder: CLOUDINARY_FOLDERS.DOCUMENTS,
+    resourceType: RESOURCE_TYPES.RAW,
+  },
+  spreadsheet: {
+    folder: CLOUDINARY_FOLDERS.SPREADSHEETS,
+    resourceType: RESOURCE_TYPES.RAW,
+  },
+  presentation: {
+    folder: CLOUDINARY_FOLDERS.PRESENTATIONS,
+    resourceType: RESOURCE_TYPES.RAW,
+  },
+  archive: {
+    folder: CLOUDINARY_FOLDERS.ARCHIVES,
+    resourceType: RESOURCE_TYPES.RAW,
+  },
+  image: {
+    folder: CLOUDINARY_FOLDERS.IMAGES,
+    resourceType: RESOURCE_TYPES.IMAGE,
+  },
+  video: {
+    folder: CLOUDINARY_FOLDERS.VIDEOS,
+    resourceType: RESOURCE_TYPES.VIDEO,
+  },
 });
 
 /**
@@ -60,11 +78,14 @@ const FILE_CATEGORIES = Object.freeze(
     result[category] = {
       ...CATEGORY_STORAGE[category],
       extensions: Object.fromEntries(
-        Object.entries(config.extensions).map(([ext, rule]) => [ext, rule.mimes]),
+        Object.entries(config.extensions).map(([ext, rule]) => [
+          ext,
+          rule.mimes,
+        ])
       ),
     };
     return result;
-  }, {}),
+  }, {})
 );
 
 /** Bảng tra nhanh: extension -> category */
@@ -123,6 +144,7 @@ const buildPublicId = (originalname, resourceType) => {
       .replace(/đ/g, "d")
       .replace(/Đ/g, "D")
       .replace(/[^a-zA-Z0-9-_]+/g, "-")
+      .replace(/-+/g, "-")
       .replace(/^-+|-+$/g, "")
       .toLowerCase()
       .slice(0, 80) || "file";
