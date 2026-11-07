@@ -12,6 +12,7 @@ import AdminDashboard from '@/features/admin/AdminDashboard'
 import ImportUsersPage from '@/features/admin/ImportUsersPage'
 import AcademicStructurePage from '@/features/admin/AcademicStructurePage'
 import TeacherDashboard from '@/features/teacher/TeacherDashboard'
+import TeacherLessonListPage from '@/features/teacher/TeacherLessonListPage'
 import StudentDashboard from '@/features/student/StudentDashboard'
 import ParentDashboard from '@/features/parent/ParentDashboard'
 import HomePage from '@/features/portal/HomePage'
@@ -54,6 +55,7 @@ export const AppRoutes = () => {
         <Route element={<RoleRoute allowedRoles={['teacher']} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+            <Route path="/teacher/lessons" element={<TeacherLessonListPage />} />
           </Route>
         </Route>
 

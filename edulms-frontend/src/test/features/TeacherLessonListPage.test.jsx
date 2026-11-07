@@ -1,0 +1,212 @@
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
+import { TeacherLessonListPage } from '@/features/teacher/TeacherLessonListPage'
+import lessonApi from '@/api/lessonApi'
+import academicApi from '@/api/academicApi'
+
+// Mock Auth Context
+const mockTeacherUser = {
+  _id: 'teacher_123',
+  userId: 'teacher_123',
+  fullName: 'Thầy Nguyễn Văn A',
+  role: 'teacher',
+  email: 'teacher@edulms.edu.vn',
+}
+
+vi.mock('@/context/useAuth', () => ({
+  useAuth: () => ({
+    user: mockTeacherUser,
+    isAuthenticated: true,
+  }),
+}))
+
+// Mock API
+vi.mock('@/api/academicApi', () => ({
+  default: {
+    getTeacherSchedule: vi.fn(),
+  },
+}))
+
+vi.mock('@/api/lessonApi', () => ({
+  default: {
+    getLessons: vi.fn(),
+    createLesson: vi.fn(),
+    updateLesson: vi.fn(),
+    deleteLesson: vi.fn(),
+    reorderLessons: vi.fn(),
+    uploadMedia: vi.fn(),
+  },
+}))
+
+const mockAssignments = [
+  {
+    _id: 'assignment_1',
+    academicYear: '2025-2026',
+    semester: 'HK1',
+    class: { _id: 'class_1', name: '10A1', room: 'P.101' },
+    subject: { _id: 'subject_1', name: 'Toán học', code: 'TOAN10' },
+  },
+  {
+    _id: 'assignment_2',
+    academicYear: '2025-2026',
+    semester: 'HK1',
+    class: { _id: 'class_2', name: '10A2', room: 'P.102' },
+    subject: { _id: 'subject_2', name: 'Vật lý', code: 'LY10' },
+  },
+]
+
+const mockLessons = [
+  {
+    _id: 'lesson_1',
+    title: 'Bài 1: Mệnh đề và Tập hợp',
+    description: 'Khái niệm mở đầu chương 1',
+    contentType: 'video',
+    resourceUrl: 'https://res.cloudinary.com/demo/video.mp4',
+    order: 1,
+    isActive: true,
+    createdAt: '2026-11-01T08:00:00Z',
+  },
+  {
+    _id: 'lesson_2',
+    title: 'Bài 2: Bất phương trình bậc nhất hai ẩn',
+    description: 'Tài liệu lý thuyết và bài tập',
+    contentType: 'pdf',
+    resourceUrl: 'https://res.cloudinary.com/demo/tailieu.pdf',
+    order: 2,
+    isActive: true,
+    createdAt: '2026-11-02T08:00:00Z',
+  },
+]
+
+describe('TeacherLessonListPage Component Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    academicApi.getTeacherSchedule.mockResolvedValue({ data: mockAssignments })
+    lessonApi.getLessons.mockResolvedValue({ data: mockLessons })
+  })
+
+  it('render tiêu đề và danh sách phân công lớp học của giáo viên', async () => {
+    render(
+      <MemoryRouter>
+        <TeacherLessonListPage />
+      </MemoryRouter>
+    )
+
+    // Kiểm tra tiêu đề chính
+    expect(screen.getByText('Quản lý bài giảng & Nội dung học tập')).toBeInTheDocument()
+
+    // Chờ danh sách phân công xuất hiện
+    await waitFor(() => {
+      expect(screen.getByText('Toán học')).toBeInTheDocument()
+      expect(screen.getByText('Vật lý')).toBeInTheDocument()
+      expect(screen.getByText('Lớp 10A1')).toBeInTheDocument()
+      expect(screen.getByText('Lớp 10A2')).toBeInTheDocument()
+    })
+  })
+
+  it('hiển thị danh sách bài giảng với đầy đủ thông tin: tên, loại, thứ tự, ngày tạo', async () => {
+    render(
+      <MemoryRouter>
+        <TeacherLessonListPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Bài 1: Mệnh đề và Tập hợp')).toBeInTheDocument()
+      expect(screen.getByText('Bài 2: Bất phương trình bậc nhất hai ẩn')).toBeInTheDocument()
+      expect(screen.getByText('#1')).toBeInTheDocument()
+      expect(screen.getByText('#2')).toBeInTheDocument()
+      expect(screen.getAllByText('Video bài giảng').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Tài liệu PDF').length).toBeGreaterThan(0)
+    })
+  })
+
+  it('lọc danh sách bài giảng theo từ khóa tìm kiếm', async () => {
+    render(
+      <MemoryRouter>
+        <TeacherLessonListPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Bài 1: Mệnh đề và Tập hợp')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByPlaceholderText('Tìm kiếm bài giảng theo tên, mô tả...')
+    fireEvent.change(searchInput, { target: { value: 'Bất phương trình' } })
+
+    expect(screen.getByText('Bài 2: Bất phương trình bậc nhất hai ẩn')).toBeInTheDocument()
+    expect(screen.queryByText('Bài 1: Mệnh đề và Tập hợp')).not.toBeInTheDocument()
+  })
+
+  it('mở modal tạo bài giảng mới và đóng modal thành công', async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <TeacherLessonListPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Thêm bài giảng mới')).toBeInTheDocument()
+    })
+
+    // Mở modal
+    await user.click(screen.getByText('Thêm bài giảng mới'))
+
+    expect(screen.getByRole('heading', { name: 'Thêm bài giảng mới' })).toBeInTheDocument()
+    expect(screen.getByLabelText(/Tiêu đề bài giảng/)).toBeInTheDocument()
+
+    // Bấm nút Hủy bỏ
+    await user.click(screen.getByText('Hủy bỏ'))
+
+    expect(screen.queryByRole('heading', { name: 'Thêm bài giảng mới' })).not.toBeInTheDocument()
+  })
+
+  it('mở modal xác nhận xóa bài giảng và gọi API delete', async () => {
+    const user = userEvent.setup()
+    lessonApi.deleteLesson.mockResolvedValue({ success: true })
+
+    render(
+      <MemoryRouter>
+        <TeacherLessonListPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Bài 1: Mệnh đề và Tập hợp')).toBeInTheDocument()
+    })
+
+    // Tìm các nút xóa
+    const deleteButtons = screen.getAllByLabelText('Xóa')
+    await user.click(deleteButtons[0])
+
+    // Kiểm tra hộp thoại xác nhận xóa xuất hiện
+    expect(screen.getByText('Xóa bài giảng?')).toBeInTheDocument()
+    expect(screen.getAllByText(/Bài 1: Mệnh đề và Tập hợp/).length).toBeGreaterThan(0)
+
+    // Bấm nút xác nhận xóa
+    await user.click(screen.getByText('Xác nhận xóa'))
+
+    await waitFor(() => {
+      expect(lessonApi.deleteLesson).toHaveBeenCalledWith('lesson_1')
+    })
+  })
+
+  it('hiển thị trạng thái empty khi giáo viên chưa được phân công lớp nào', async () => {
+    academicApi.getTeacherSchedule.mockResolvedValue({ data: [] })
+
+    render(
+      <MemoryRouter>
+        <TeacherLessonListPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Chưa có phân công giảng dạy')).toBeInTheDocument()
+      expect(screen.queryByText('Thêm bài giảng mới')).not.toBeInTheDocument()
+    })
+  })
+})

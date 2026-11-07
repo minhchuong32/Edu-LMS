@@ -53,6 +53,11 @@ export const ROLE_NAVIGATION_MENU = {
       icon: LayoutDashboard,
     },
     {
+      label: 'Quản lý bài giảng',
+      path: '/teacher/lessons',
+      icon: BookOpen,
+    },
+    {
       label: 'Lớp của tôi',
       path: '/teacher/classes',
       icon: BookOpen,
