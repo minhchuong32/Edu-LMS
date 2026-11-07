@@ -19,13 +19,10 @@ describe("PROMPT 2 - Verification of Seed Data & Student Lesson RBAC/IDOR", () =
 
   // Mock ID các thực thể
   const student10A1Id = new mongoose.Types.ObjectId().toString();
-  const student10A2Id = new mongoose.Types.ObjectId().toString();
   const class10A1Id = new mongoose.Types.ObjectId().toString();
   const class10A2Id = new mongoose.Types.ObjectId().toString();
 
   const subjectMathId = new mongoose.Types.ObjectId().toString();
-  const subjectPhysicsId = new mongoose.Types.ObjectId().toString();
-  const subjectInformaticsId = new mongoose.Types.ObjectId().toString();
 
   const assignment10A1MathId = new mongoose.Types.ObjectId().toString();
   const assignment10A2MathId = new mongoose.Types.ObjectId().toString();

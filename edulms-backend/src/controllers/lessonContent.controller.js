@@ -1,9 +1,6 @@
 const mongoose = require("mongoose");
 const LessonContent = require("../models/LessonContent");
 const TeachingAssignment = require("../models/TeachingAssignment");
-const {
-  getStudentEnrolledClass,
-} = require("../middlewares/lessonPermission.middleware");
 const { successResponse, errorResponse } = require("../utils/apiResponse");
 
 /**

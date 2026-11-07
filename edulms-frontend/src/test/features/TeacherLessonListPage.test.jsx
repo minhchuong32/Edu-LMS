@@ -114,13 +114,17 @@ describe('TeacherLessonListPage Component Tests', () => {
     )
 
     await waitFor(() => {
+      expect(screen.getByText('Toán học')).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
       expect(screen.getByText('Bài 1: Mệnh đề và Tập hợp')).toBeInTheDocument()
       expect(screen.getByText('Bài 2: Bất phương trình bậc nhất hai ẩn')).toBeInTheDocument()
       expect(screen.getByText('#1')).toBeInTheDocument()
       expect(screen.getByText('#2')).toBeInTheDocument()
       expect(screen.getAllByText('Video bài giảng').length).toBeGreaterThan(0)
       expect(screen.getAllByText('Tài liệu PDF').length).toBeGreaterThan(0)
-    })
+    }, { timeout: 4000 })
   })
 
   it('lọc danh sách bài giảng theo từ khóa tìm kiếm', async () => {

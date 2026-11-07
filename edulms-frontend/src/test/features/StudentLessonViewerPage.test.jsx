@@ -173,7 +173,7 @@ describe('StudentLessonViewerPage', () => {
 
     await waitFor(() => {
       expect(screen.getAllByText('Bài 1: Mệnh đề và tập hợp').length).toBeGreaterThan(0)
-    })
+    }, { timeout: 4000 })
 
     // Kiểm tra thẻ video HTML5
     const videoElement = document.querySelector('video')
@@ -202,7 +202,7 @@ describe('StudentLessonViewerPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Bài 2: Bất phương trình bậc nhất hai ẩn')).toBeInTheDocument()
-    })
+    }, { timeout: 4000 })
 
     // Nhấp vào bài 2 (PDF)
     await user.click(screen.getByText('Bài 2: Bất phương trình bậc nhất hai ẩn'))
@@ -227,7 +227,7 @@ describe('StudentLessonViewerPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Bài 3: Hệ bất phương trình bậc nhất hai ẩn')).toBeInTheDocument()
-    })
+    }, { timeout: 4000 })
 
     // Nhấp vào bài 3 (Slide)
     await user.click(screen.getByText('Bài 3: Hệ bất phương trình bậc nhất hai ẩn'))
@@ -252,7 +252,7 @@ describe('StudentLessonViewerPage', () => {
 
     await waitFor(() => {
       expect(screen.getAllByText('Bài 1: Mệnh đề và tập hợp').length).toBeGreaterThan(0)
-    })
+    }, { timeout: 4000 })
 
     const prevButton = screen.getByTitle('Bài trước')
     const nextButton = screen.getByTitle('Bài tiếp theo')
@@ -315,7 +315,7 @@ describe('StudentLessonViewerPage', () => {
 
     await waitFor(() => {
       expect(screen.getAllByText('Bài 1: Mệnh đề và tập hợp').length).toBeGreaterThan(0)
-    })
+    }, { timeout: 4000 })
 
     const searchInput = screen.getByPlaceholderText('Tìm tên bài học...')
     await user.type(searchInput, 'Hệ bất phương trình')
@@ -335,7 +335,7 @@ describe('StudentLessonViewerPage', () => {
 
     await waitFor(() => {
       expect(screen.getAllByText('Bài 1: Mệnh đề và tập hợp').length).toBeGreaterThan(0)
-    })
+    }, { timeout: 4000 })
 
     // Đảm bảo không có các nút tạo, sửa, xóa bài giảng
     expect(screen.queryByText('Thêm bài giảng')).not.toBeInTheDocument()

@@ -39,7 +39,6 @@ jest.mock("../src/config/cloudinary", () => {
         err.statusCode = 415;
         throw err;
       }
-      const isRaw = storageConfig.resourceType === "raw";
       const safePublicId = actual.buildPublicId(
         file.originalname,
         storageConfig.resourceType

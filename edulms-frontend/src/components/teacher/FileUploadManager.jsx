@@ -9,7 +9,6 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   AlertCircle,
-  X,
   RotateCw,
   Trash2,
   ExternalLink,

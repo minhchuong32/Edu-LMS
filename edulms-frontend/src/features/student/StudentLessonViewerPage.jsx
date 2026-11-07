@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   BookOpen,
   Video,
@@ -30,7 +30,7 @@ import academicApi from '@/api/academicApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 
 // Cấu hình hiển thị theo từng loại nội dung học tập
-export const STUDENT_CONTENT_TYPES = {
+const STUDENT_CONTENT_TYPES = {
   video: {
     label: 'Video bài giảng',
     icon: Video,
@@ -138,100 +138,106 @@ export const StudentLessonViewerPage = () => {
   // State phát video lỗi
   const [videoError, setVideoError] = useState(false)
 
+  // State tải lại dữ liệu khi nhấn nút thử lại
+  const [reloadKey, setReloadKey] = useState(0)
+
   /**
    * 1. Khởi tạo: Lấy thông tin lớp học của học sinh và danh sách phân công môn học
    */
-  const fetchStudentCurriculum = useCallback(async () => {
-    setLoadingInitial(true)
-    setLessonError(null)
+  useEffect(() => {
+    let ignore = false
 
-    try {
-      // 1. Xác định lớp học của học sinh
-      let classId = user?.classRef || (typeof user?.class === 'object' ? user?.class?._id : user?.class)
-      let className = user?.className
+    const loadCurriculum = async () => {
+      try {
+        // 1. Xác định lớp học của học sinh
+        let classId = user?.classRef || (typeof user?.class === 'object' ? user?.class?._id : user?.class)
+        let className = user?.className
 
-      // Nếu chỉ có className mà chưa có classId, tìm qua academicApi.getClasses()
-      if (!classId && className) {
-        try {
-          const resClasses = await academicApi.getClasses({ name: className })
-          const classList = resClasses.data || resClasses || []
-          const foundClass = Array.isArray(classList)
-            ? classList.find((c) => c.name?.toLowerCase() === className.toLowerCase())
-            : classList
-          if (foundClass) {
-            classId = foundClass._id
-            setStudentClassInfo(foundClass)
+        // Nếu chỉ có className mà chưa có classId, tìm qua academicApi.getClasses()
+        if (!classId && className) {
+          try {
+            const resClasses = await academicApi.getClasses({ name: className })
+            const classList = resClasses.data || resClasses || []
+            const foundClass = Array.isArray(classList)
+              ? classList.find((c) => c.name?.toLowerCase() === className.toLowerCase())
+              : classList
+            if (foundClass && !ignore) {
+              classId = foundClass._id
+              setStudentClassInfo(foundClass)
+            }
+          } catch (err) {
+            console.warn('Không thể tải chi tiết lớp học theo tên:', err)
           }
-        } catch (err) {
-          console.warn('Không thể tải chi tiết lớp học theo tên:', err)
+        }
+
+        // 2. Tải danh sách phân công giảng dạy thuộc lớp học của học sinh
+        const params = classId ? { class: classId } : {}
+        const res = await academicApi.getAssignments(params)
+        const rawAssignments = res.data || res || []
+        const classAssignments = Array.isArray(rawAssignments) ? rawAssignments : []
+
+        // Lọc danh sách phân công nếu có classId hoặc className
+        let filteredAssignments = classAssignments
+        if (classId) {
+          filteredAssignments = classAssignments.filter((item) => {
+            const itemClassId = item.class?._id || item.class
+            return itemClassId?.toString() === classId.toString()
+          })
+        } else if (className) {
+          filteredAssignments = classAssignments.filter((item) => {
+            const itemClassName = item.class?.name || item.className
+            return itemClassName?.toLowerCase() === className.toLowerCase()
+          })
+        }
+
+        if (!ignore) {
+          setAssignments(filteredAssignments)
+
+          // Cập nhật thông tin lớp hiển thị
+          if (filteredAssignments.length > 0 && filteredAssignments[0].class) {
+            setStudentClassInfo(filteredAssignments[0].class)
+          } else if (className) {
+            setStudentClassInfo((prev) => prev || { name: className })
+          }
+
+          // Tự động chọn môn học đầu tiên
+          if (filteredAssignments.length > 0) {
+            setSelectedAssignment((prev) => prev || filteredAssignments[0])
+          }
+        }
+      } catch (err) {
+        if (!ignore) {
+          console.error('Lỗi khi tải thông tin môn học:', err)
+          setLessonError(
+            err.response?.data?.message ||
+              'Không thể tải thông tin môn học của lớp. Vui lòng kiểm tra lại kết nối mạng!'
+          )
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingInitial(false)
         }
       }
-
-      // 2. Tải danh sách phân công giảng dạy thuộc lớp học của học sinh
-      const params = classId ? { class: classId } : {}
-      const res = await academicApi.getAssignments(params)
-      const rawAssignments = res.data || res || []
-      const classAssignments = Array.isArray(rawAssignments) ? rawAssignments : []
-
-      // Lọc danh sách phân công nếu có classId hoặc className
-      let filteredAssignments = classAssignments
-      if (classId) {
-        filteredAssignments = classAssignments.filter((item) => {
-          const itemClassId = item.class?._id || item.class
-          return itemClassId?.toString() === classId.toString()
-        })
-      } else if (className) {
-        filteredAssignments = classAssignments.filter((item) => {
-          const itemClassName = item.class?.name || item.className
-          return itemClassName?.toLowerCase() === className.toLowerCase()
-        })
-      }
-
-      setAssignments(filteredAssignments)
-
-      // Cập nhật thông tin lớp hiển thị
-      if (filteredAssignments.length > 0 && filteredAssignments[0].class) {
-        setStudentClassInfo(filteredAssignments[0].class)
-      } else if (className) {
-        setStudentClassInfo((prev) => prev || { name: className })
-      }
-
-      // Tự động chọn môn học đầu tiên
-      if (filteredAssignments.length > 0) {
-        setSelectedAssignment((prev) => prev || filteredAssignments[0])
-      }
-    } catch (err) {
-      console.error('Lỗi khi tải thông tin môn học:', err)
-      setLessonError(
-        err.response?.data?.message ||
-          'Không thể tải thông tin môn học của lớp. Vui lòng kiểm tra lại kết nối mạng!'
-      )
-    } finally {
-      setLoadingInitial(false)
     }
-  }, [user?.userId, user?.classRef, user?.className])
 
-  useEffect(() => {
-    fetchStudentCurriculum()
-  }, [fetchStudentCurriculum])
+    loadCurriculum()
+
+    return () => {
+      ignore = true
+    }
+  }, [user?.classRef, user?.class, user?.className, reloadKey])
 
   /**
    * 2. Tải danh sách bài giảng khi học sinh chọn môn học khác
    */
   useEffect(() => {
+    let isMounted = true
+
     if (!selectedAssignment) {
-      setLessons([])
-      setSelectedLesson(null)
       return
     }
 
-    let isMounted = true
-
     const fetchLessonsBySubject = async () => {
-      setLoadingLessons(true)
-      setLessonError(null)
-      setVideoError(false)
-
       try {
         const classId =
           selectedAssignment.class?._id ||
@@ -296,12 +302,7 @@ export const StudentLessonViewerPage = () => {
     return () => {
       isMounted = false
     }
-  }, [selectedAssignment])
-
-  // Reset video error khi đổi bài giảng
-  useEffect(() => {
-    setVideoError(false)
-  }, [selectedLesson])
+  }, [selectedAssignment, user?.classRef])
 
   /**
    * Danh sách bài giảng được lọc theo từ khóa và loại nội dung
@@ -333,12 +334,14 @@ export const StudentLessonViewerPage = () => {
   const handlePrevLesson = () => {
     if (currentLessonIndex > 0) {
       setSelectedLesson(filteredLessons[currentLessonIndex - 1])
+      setVideoError(false)
     }
   }
 
   const handleNextLesson = () => {
     if (currentLessonIndex >= 0 && currentLessonIndex < filteredLessons.length - 1) {
       setSelectedLesson(filteredLessons[currentLessonIndex + 1])
+      setVideoError(false)
     }
   }
 
@@ -513,6 +516,7 @@ export const StudentLessonViewerPage = () => {
                 key={lesson._id}
                 onClick={() => {
                   setSelectedLesson(lesson)
+                  setVideoError(false)
                   setIsMobileSidebarOpen(false)
                 }}
                 className={`w-full text-left p-3 rounded-xl transition-all border flex items-start space-x-3 group ${
@@ -829,7 +833,10 @@ export const StudentLessonViewerPage = () => {
             Lớp học của bạn ({studentClassInfo?.name || user?.className || 'Chưa xếp lớp'}) hiện chưa có môn học hoặc bài giảng nào được giáo viên kích hoạt. Vui lòng liên hệ ban cán sự lớp hoặc giáo viên phụ trách để biết thêm chi tiết.
           </p>
           <button
-            onClick={fetchStudentCurriculum}
+            onClick={() => {
+              setLoadingInitial(true)
+              setReloadKey((k) => k + 1)
+            }}
             className="mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold inline-flex items-center space-x-1.5 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -885,7 +892,10 @@ export const StudentLessonViewerPage = () => {
             <span>{lessonError}</span>
           </div>
           <button
-            onClick={fetchStudentCurriculum}
+            onClick={() => {
+              setLoadingInitial(true)
+              setReloadKey((k) => k + 1)
+            }}
             className="underline font-semibold hover:text-red-900 ml-3 shrink-0"
           >
             Thử lại

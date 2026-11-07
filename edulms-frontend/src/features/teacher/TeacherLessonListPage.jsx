@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useId, useCallback } from 'react'
+import { useState, useEffect, useMemo, useId } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -25,7 +25,6 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
-  Upload,
   GripVertical,
   Video,
   FileText,
@@ -35,7 +34,6 @@ import {
   Sparkles,
   ExternalLink,
   Filter,
-  Check,
   RefreshCw,
 } from 'lucide-react'
 import { useAuth } from '@/context/useAuth'
@@ -45,7 +43,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner'
 import FileUploadManager from '@/components/teacher/FileUploadManager'
 
 // Danh sách các loại nội dung hỗ trợ
-export const CONTENT_TYPE_CONFIG = {
+const CONTENT_TYPE_CONFIG = {
   video: {
     label: 'Video bài giảng',
     icon: Video,
@@ -258,7 +256,6 @@ export const TeacherLessonListPage = () => {
 
   // Upload file state
   const [uploadingFile, setUploadingFile] = useState(false)
-  const [uploadProgressMsg, setUploadProgressMsg] = useState('')
 
   // Cảm biến kéo thả dnd-kit
   const sensors = useSensors(
@@ -272,67 +269,91 @@ export const TeacherLessonListPage = () => {
     })
   )
 
+  // State kích hoạt tải lại
+  const [assignmentsReloadKey, setAssignmentsReloadKey] = useState(0)
+  const [lessonsReloadKey, setLessonsReloadKey] = useState(0)
+
   // Tải danh sách phân công giảng dạy của giáo viên
-  const fetchTeacherAssignments = useCallback(async () => {
-    try {
-      setLoadingAssignments(true)
-      setError(null)
-      const teacherId = user?.userId || user?._id
-
-      if (!teacherId) {
-        setAssignments([])
-        return
-      }
-
-      const res = await academicApi.getTeacherSchedule(teacherId)
-      const data = res.data || res || []
-      setAssignments(data)
-
-      // Mặc định chọn phân công đầu tiên nếu có
-      if (data.length > 0 && !selectedAssignmentId) {
-        setSelectedAssignmentId(data[0]._id)
-      }
-    } catch (err) {
-      console.error('Lỗi tải phân công giảng dạy:', err)
-      setError(err?.message || 'Không thể tải danh sách phân công giảng dạy.')
-    } finally {
-      setLoadingAssignments(false)
-    }
-  }, [user, selectedAssignmentId])
-
   useEffect(() => {
-    fetchTeacherAssignments()
-  }, [fetchTeacherAssignments])
+    let ignore = false
+    const teacherId = user?.userId || user?._id
 
-  // Tải danh sách bài giảng theo phân công được chọn
-  const fetchLessons = useCallback(async (assignmentId) => {
-    if (!assignmentId) {
-      setLessons([])
+    if (!teacherId) {
       return
     }
 
-    try {
-      setLoadingLessons(true)
-      setError(null)
+    const loadAssignments = async () => {
+      try {
+        const res = await academicApi.getTeacherSchedule(teacherId)
+        if (!ignore) {
+          const data = res.data || res || []
+          setAssignments(data)
 
-      const res = await lessonApi.getLessons({ teachingAssignment: assignmentId })
-      const data = res.data || res || []
-      // Sắp xếp tăng dần theo order
-      const sorted = [...data].sort((a, b) => (a.order || 0) - (b.order || 0))
-      setLessons(sorted)
-    } catch (err) {
-      console.error('Lỗi tải bài giảng:', err)
-      setError(err?.message || 'Không thể tải danh sách bài giảng.')
-    } finally {
-      setLoadingLessons(false)
+          // Mặc định chọn phân công đầu tiên nếu có
+          if (data.length > 0 && !selectedAssignmentId) {
+            setSelectedAssignmentId(data[0]._id)
+          }
+        }
+      } catch (err) {
+        if (!ignore) {
+          console.error('Lỗi tải phân công giảng dạy:', err)
+          setError(err?.message || 'Không thể tải danh sách phân công giảng dạy.')
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingAssignments(false)
+        }
+      }
     }
-  }, [])
 
+    loadAssignments()
+
+    return () => {
+      ignore = true
+    }
+  }, [user, selectedAssignmentId, assignmentsReloadKey])
+
+  // Tải danh sách bài giảng theo phân công được chọn
   useEffect(() => {
-    if (selectedAssignmentId) {
-      fetchLessons(selectedAssignmentId)
+    let ignore = false
+
+    if (!selectedAssignmentId) {
+      return
     }
-  }, [selectedAssignmentId, fetchLessons])
+
+    const loadLessons = async () => {
+      try {
+        const res = await lessonApi.getLessons({ teachingAssignment: selectedAssignmentId })
+        if (!ignore) {
+          const data = res.data || res || []
+          // Sắp xếp tăng dần theo order
+          const sorted = [...data].sort((a, b) => (a.order || 0) - (b.order || 0))
+          setLessons(sorted)
+        }
+      } catch (err) {
+        if (!ignore) {
+          console.error('Lỗi tải bài giảng:', err)
+          setError(err?.message || 'Không thể tải danh sách bài giảng.')
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingLessons(false)
+        }
+      }
+    }
+
+    loadLessons()
+
+    return () => {
+      ignore = true
+    }
+  }, [selectedAssignmentId, lessonsReloadKey])
+
+  // Hàm kích hoạt tải lại danh sách bài giảng sau khi tạo, sửa, xóa, kéo thả
+  const reloadLessons = () => {
+    setLoadingLessons(true)
+    setLessonsReloadKey((k) => k + 1)
+  }
 
   // Phân công đang chọn hiện tại
   const currentAssignment = useMemo(() => {
@@ -390,7 +411,7 @@ export const TeacherLessonListPage = () => {
       console.error('Lỗi đồng bộ thứ tự bài giảng:', err)
       setError('Không thể lưu thứ tự bài giảng mới, vui lòng thử lại!')
       // Rollback lại danh sách cũ nếu lỗi
-      fetchLessons(selectedAssignmentId)
+      reloadLessons()
     } finally {
       setIsReordering(false)
     }
@@ -439,36 +460,6 @@ export const TeacherLessonListPage = () => {
     setFormError(null)
     setFormSubmitting(false)
     setUploadingFile(false)
-    setUploadProgressMsg('')
-  }
-
-  // Xử lý upload tài liệu/video lên Cloudinary
-  const handleFileUpload = async (event) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    try {
-      setUploadingFile(true)
-      setUploadProgressMsg(`Đang tải lên '${file.name}' lên Cloudinary...`)
-      setFormError(null)
-
-      const res = await lessonApi.uploadMedia(file)
-      const uploadedData = res.data || res
-
-      if (uploadedData?.url) {
-        setFormData((prev) => ({
-          ...prev,
-          resourceUrl: uploadedData.url,
-        }))
-        setUploadProgressMsg(`Tải lên thành công! Định dạng: ${uploadedData.format || uploadedData.fileType}`)
-      }
-    } catch (err) {
-      console.error('Lỗi tải file:', err)
-      setFormError(err?.message || 'Không thể upload tập tin lên Cloudinary!')
-      setUploadProgressMsg('')
-    } finally {
-      setUploadingFile(false)
-    }
   }
 
   // Submit form thêm hoặc sửa bài giảng
@@ -514,7 +505,7 @@ export const TeacherLessonListPage = () => {
       }
 
       handleCloseModal()
-      fetchLessons(selectedAssignmentId)
+      reloadLessons()
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
       console.error('Lỗi lưu bài giảng:', err)
@@ -535,7 +526,7 @@ export const TeacherLessonListPage = () => {
       await lessonApi.deleteLesson(activeLesson._id)
       setSuccessMsg(`Đã xóa bài giảng '${activeLesson.title}' thành công!`)
       handleCloseModal()
-      fetchLessons(selectedAssignmentId)
+      reloadLessons()
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
       console.error('Lỗi xóa bài giảng:', err)
@@ -611,7 +602,10 @@ export const TeacherLessonListPage = () => {
           </div>
           <button
             type="button"
-            onClick={fetchTeacherAssignments}
+            onClick={() => {
+              setLoadingAssignments(true)
+              setAssignmentsReloadKey((k) => k + 1)
+            }}
             disabled={loadingAssignments}
             className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors"
           >
