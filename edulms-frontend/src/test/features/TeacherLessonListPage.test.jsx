@@ -37,6 +37,10 @@ vi.mock('@/api/lessonApi', () => ({
     deleteLesson: vi.fn(),
     reorderLessons: vi.fn(),
     uploadMedia: vi.fn(),
+    deleteLessonFile: vi.fn(),
+    replaceLessonFile: vi.fn(),
+    addLessonFile: vi.fn(),
+    deleteUploadedMedia: vi.fn(),
   },
 }))
 
@@ -267,6 +271,65 @@ describe('TeacherLessonListPage Component Tests', () => {
           resourceUrl: expect.stringContaining('dQw4w9WgXcQ'),
         })
       )
+    })
+  })
+
+  it('cho phép giáo viên click trực tiếp vào ô bài học để mở giao diện chỉnh sửa', async () => {
+    render(
+      <MemoryRouter>
+        <TeacherLessonListPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Bài 1: Mệnh đề và Tập hợp')).toBeInTheDocument()
+    })
+
+    // Click trực tiếp vào ô/thẻ bài học
+    const lessonCards = screen.getAllByTitle('Nhấp vào thẻ bài học để chỉnh sửa', {
+      exact: false,
+    })
+    fireEvent.click(lessonCards[0])
+
+    // Modal chỉnh sửa phải được mở ra
+    expect(screen.getByRole('heading', { name: 'Chỉnh sửa bài giảng' })).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Bài 1: Mệnh đề và Tập hợp')).toBeInTheDocument()
+  })
+
+  it('hiển thị đầy đủ tệp đính kèm trong bài học và cho phép thao tác xóa tệp', async () => {
+    const user = userEvent.setup()
+    lessonApi.deleteLessonFile.mockResolvedValue({ success: true })
+
+    render(
+      <MemoryRouter>
+        <TeacherLessonListPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Bài 2: Bất phương trình bậc nhất hai ẩn')).toBeInTheDocument()
+    })
+
+    // Click vào thẻ Bài 2 (dạng pdf)
+    const cards = screen.getAllByTitle('Nhấp vào thẻ bài học để chỉnh sửa', { exact: false })
+    fireEvent.click(cards[1])
+
+    expect(screen.getByRole('heading', { name: 'Chỉnh sửa bài giảng' })).toBeInTheDocument()
+
+    // Phải hiển thị tệp đính kèm hiện có của bài học
+    await waitFor(() => {
+      expect(screen.getByText(/Tệp bài giảng hiện có/)).toBeInTheDocument()
+      expect(screen.getByText('tailieu.pdf')).toBeInTheDocument()
+      expect(screen.getAllByText('Mở xem').length).toBeGreaterThan(0)
+      expect(screen.getByText('Thay thế')).toBeInTheDocument()
+    })
+
+    // Click nút xóa tệp
+    const deleteFileBtn = screen.getByLabelText('Xóa tệp tailieu.pdf')
+    await user.click(deleteFileBtn)
+
+    await waitFor(() => {
+      expect(lessonApi.deleteLessonFile).toHaveBeenCalledWith('lesson_2', expect.anything())
     })
   })
 })

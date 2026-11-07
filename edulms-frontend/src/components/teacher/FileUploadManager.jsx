@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import {
   Upload,
   FileText,
@@ -13,6 +13,7 @@ import {
   Trash2,
   ExternalLink,
   Loader2,
+  Paperclip,
 } from 'lucide-react'
 import lessonApi from '@/api/lessonApi'
 import {
@@ -52,13 +53,78 @@ const getFileIcon = (filename) => {
 export const FileUploadManager = ({
   onUploadSuccess,
   currentResourceUrl = '',
+  attachments = [],
+  onDeleteAttachment,
+  onReplaceAttachment,
   accept,
   title = 'Tải lên tài liệu hoặc video bài giảng',
   helperText,
 }) => {
   const [selectedFiles, setSelectedFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
+  const [replacingFileId, setReplacingFileId] = useState(null)
   const fileInputRef = useRef(null)
+
+  // Danh sách tệp bài giảng hiện có
+  const attachedFiles = useMemo(() => {
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      return attachments
+    }
+    if (currentResourceUrl) {
+      const cleanName =
+        decodeURIComponent(currentResourceUrl.split('/').pop().split('?')[0]) ||
+        'Tài nguyên bài giảng'
+      return [
+        {
+          _id: 'primary',
+          id: 'primary',
+          name: cleanName,
+          url: currentResourceUrl,
+          format: '',
+          fileSize: 0,
+        },
+      ]
+    }
+    return []
+  }, [attachments, currentResourceUrl])
+
+  // Xử lý thay thế tệp
+  const handleTriggerReplace = async (fileItem, newFile) => {
+    if (!newFile) return
+    const validation = validateUploadFile(newFile)
+    if (!validation.valid) {
+      alert(validation.error || 'Tập tin không hợp lệ!')
+      return
+    }
+
+    if (onReplaceAttachment) {
+      onReplaceAttachment(fileItem, newFile)
+      return
+    }
+
+    try {
+      setReplacingFileId(fileItem._id || fileItem.id || fileItem.url)
+      const res = await lessonApi.uploadMedia(newFile)
+      const data = res.data || res
+      if (onUploadSuccess && data.url) {
+        onUploadSuccess(data.url, data)
+      }
+    } catch (err) {
+      console.error('Lỗi khi thay thế tệp:', err)
+      alert(err?.message || 'Không thể thay thế tệp. Vui lòng thử lại!')
+    } finally {
+      setReplacingFileId(null)
+    }
+  }
+
+  // Xử lý xóa tệp
+  const handleTriggerDelete = (fileItem) => {
+    if (onDeleteAttachment) {
+      onDeleteAttachment(fileItem)
+    } else if (onUploadSuccess) {
+      onUploadSuccess('', null)
+    }
+  }
 
   // Xử lý khi thêm các file mới vào hàng đợi
   const handleAddFiles = (fileList) => {
@@ -190,6 +256,115 @@ export const FileUploadManager = ({
 
   return (
     <div className="space-y-4">
+      {/* 1. Danh sách tệp bài giảng đã gắn vào bài học */}
+      {attachedFiles.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <Paperclip className="w-3.5 h-3.5 text-blue-600" />
+              <span>Tệp bài giảng hiện có ({attachedFiles.length})</span>
+            </span>
+            <span className="text-[11px] text-slate-500">
+              Xem, thay thế hoặc xóa từng tệp
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {attachedFiles.map((fileItem) => {
+              const fileKey = fileItem._id || fileItem.id || fileItem.url
+              const { icon: FileIconComponent, color } = getFileIcon(
+                fileItem.name || fileItem.url
+              )
+              const isReplacing = replacingFileId === fileKey
+
+              return (
+                <div
+                  key={fileKey}
+                  className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-blue-300 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`p-2 rounded-lg border shrink-0 ${color}`}>
+                      <FileIconComponent className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p
+                        className="text-xs font-semibold text-slate-800 truncate"
+                        title={fileItem.name}
+                      >
+                        {fileItem.name}
+                      </p>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                        <span className="uppercase font-semibold text-slate-500">
+                          {fileItem.format || 'Tài liệu'}
+                        </span>
+                        {fileItem.fileSize > 0 && (
+                          <span>• {formatFileSize(fileItem.fileSize)}</span>
+                        )}
+                        <span className="text-emerald-600 font-medium flex items-center gap-0.5">
+                          <CheckCircle2 className="w-3 h-3" /> Đã gắn
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0 justify-end">
+                    {/* Mở xem */}
+                    <a
+                      href={fileItem.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1 text-slate-700 hover:text-blue-600 hover:bg-blue-50 border border-slate-200 rounded-lg text-xs font-medium transition-colors inline-flex items-center gap-1"
+                      title="Mở xem tài liệu trong tab mới"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Mở xem</span>
+                    </a>
+
+                    {/* Thay thế */}
+                    <label
+                      className={`cursor-pointer px-2.5 py-1 text-slate-700 hover:text-amber-700 hover:bg-amber-50 border border-slate-200 rounded-lg text-xs font-medium transition-colors inline-flex items-center gap-1 ${
+                        isReplacing ? 'opacity-50 pointer-events-none' : ''
+                      }`}
+                      title="Thay thế tệp này bằng một tệp mới"
+                    >
+                      {isReplacing ? (
+                        <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                      ) : (
+                        <RotateCw className="w-3 h-3 text-amber-600" />
+                      )}
+                      <span>{isReplacing ? 'Đang đổi...' : 'Thay thế'}</span>
+                      <input
+                        type="file"
+                        accept={accept}
+                        className="hidden"
+                        disabled={isReplacing}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleTriggerReplace(fileItem, e.target.files[0])
+                            e.target.value = ''
+                          }
+                        }}
+                      />
+                    </label>
+
+                    {/* Xóa tệp */}
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerDelete(fileItem)}
+                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Xóa tệp khỏi bài giảng"
+                      aria-label={`Xóa tệp ${fileItem.name}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Vùng Dropzone Upload */}
       <div
         onDragOver={handleDragOver}

@@ -74,6 +74,38 @@ export const lessonApi = {
       },
     })
   },
+
+  /**
+   * Xóa một tệp đính kèm trong bài giảng và đồng bộ Cloudinary
+   * @param {string} lessonId
+   * @param {string} fileId
+   */
+  deleteLessonFile: (lessonId, fileId) =>
+    axiosClient.delete(`/v1/lessons/${lessonId}/files/${fileId}`),
+
+  /**
+   * Thay thế một tệp đính kèm trong bài giảng bằng tệp mới và xóa tệp cũ trên Cloudinary
+   * @param {string} lessonId
+   * @param {string} fileId
+   * @param {Object} fileData
+   */
+  replaceLessonFile: (lessonId, fileId, fileData) =>
+    axiosClient.put(`/v1/lessons/${lessonId}/files/${fileId}`, fileData),
+
+  /**
+   * Thêm một tệp đính kèm mới vào bài giảng
+   * @param {string} lessonId
+   * @param {Object} fileData
+   */
+  addLessonFile: (lessonId, fileData) =>
+    axiosClient.post(`/v1/lessons/${lessonId}/files`, fileData),
+
+  /**
+   * Xóa trực tiếp tệp trên Cloudinary
+   * @param {Object} params - { publicId, url, resourceType }
+   */
+  deleteUploadedMedia: (params) =>
+    axiosClient.delete('/v1/upload', { data: params }),
 }
 
 export default lessonApi

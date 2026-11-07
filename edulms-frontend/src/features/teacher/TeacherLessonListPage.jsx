@@ -35,6 +35,7 @@ import {
   ExternalLink,
   Filter,
   RefreshCw,
+  Paperclip,
 } from 'lucide-react'
 import { useAuth } from '@/context/useAuth'
 import lessonApi from '@/api/lessonApi'
@@ -104,14 +105,23 @@ const SortableLessonItem = ({ lesson, onEdit, onDelete }) => {
   const typeConfig = CONTENT_TYPE_CONFIG[lesson.contentType] || CONTENT_TYPE_CONFIG.document
   const IconComponent = typeConfig.icon
 
+  const attachmentCount =
+    Array.isArray(lesson.attachments) && lesson.attachments.length > 0
+      ? lesson.attachments.length
+      : lesson.resourceUrl && lesson.contentType !== 'text' && lesson.contentType !== 'video'
+      ? 1
+      : 0
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`group bg-white border rounded-2xl p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+      onClick={() => onEdit(lesson)}
+      title="Nhấp vào thẻ bài học để chỉnh sửa"
+      className={`group relative bg-white border rounded-2xl p-4 transition-all duration-200 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4 ${
         isDragging
           ? 'shadow-xl border-blue-500 bg-blue-50/40 z-20 opacity-90 scale-[1.01]'
-          : 'border-slate-200 hover:border-slate-300 hover:shadow-xs'
+          : 'border-slate-200 hover:border-blue-400 hover:shadow-md hover:bg-blue-50/20 active:scale-[0.998]'
       }`}
     >
       <div className="flex items-start md:items-center gap-3.5 min-w-0">
@@ -120,6 +130,7 @@ const SortableLessonItem = ({ lesson, onEdit, onDelete }) => {
           type="button"
           {...attributes}
           {...listeners}
+          onClick={(e) => e.stopPropagation()}
           aria-label={`Kéo thả để sắp xếp bài giảng: ${lesson.title}`}
           className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg cursor-grab active:cursor-grabbing transition-colors shrink-0"
         >
@@ -164,24 +175,35 @@ const SortableLessonItem = ({ lesson, onEdit, onDelete }) => {
             </p>
           )}
 
-          <div className="flex items-center gap-4 text-[11px] text-slate-400 mt-1.5">
+          <div className="flex items-center gap-4 text-[11px] text-slate-400 mt-1.5 flex-wrap">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />
               {lesson.createdAt
                 ? new Date(lesson.createdAt).toLocaleDateString('vi-VN')
                 : 'Mới tạo'}
             </span>
+            {attachmentCount > 0 && (
+              <span className="flex items-center gap-1 text-slate-500 font-medium">
+                <Paperclip className="w-3.5 h-3.5 text-blue-500" />
+                <span>{attachmentCount} tệp đính kèm</span>
+              </span>
+            )}
             {lesson.resourceUrl && (
               <a
                 href={lesson.resourceUrl}
                 target="_blank"
                 rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
                 className="text-blue-600 hover:underline flex items-center gap-1 truncate max-w-xs"
               >
                 <ExternalLink className="w-3 h-3" />
                 Xem tài nguyên
               </a>
             )}
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Edit2 className="w-3 h-3" />
+              Nhấp để chỉnh sửa
+            </span>
           </div>
         </div>
       </div>
@@ -190,7 +212,10 @@ const SortableLessonItem = ({ lesson, onEdit, onDelete }) => {
       <div className="flex items-center justify-end gap-1.5 shrink-0 border-t md:border-t-0 pt-2 md:pt-0 border-slate-100">
         <button
           type="button"
-          onClick={() => onEdit(lesson)}
+          onClick={(e) => {
+            e.stopPropagation()
+            onEdit(lesson)
+          }}
           className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
           title="Chỉnh sửa bài giảng"
           aria-label="Chỉnh sửa"
@@ -199,7 +224,10 @@ const SortableLessonItem = ({ lesson, onEdit, onDelete }) => {
         </button>
         <button
           type="button"
-          onClick={() => onDelete(lesson)}
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete(lesson)
+          }}
           className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
           title="Xóa bài giảng"
           aria-label="Xóa"
@@ -429,6 +457,7 @@ export const TeacherLessonListPage = () => {
       description: '',
       contentType: 'video',
       resourceUrl: '',
+      attachments: [],
       order: lessons.length + 1,
       isActive: true,
     })
@@ -439,15 +468,212 @@ export const TeacherLessonListPage = () => {
   const handleOpenEditModal = (lesson) => {
     setActiveLesson(lesson)
     setFormError(null)
+
+    // Chuẩn bị attachments từ lesson
+    let initialAttachments = []
+    if (Array.isArray(lesson.attachments) && lesson.attachments.length > 0) {
+      initialAttachments = lesson.attachments.map((a) => ({
+        _id: a._id ? a._id.toString() : a.id,
+        name:
+          a.name ||
+          decodeURIComponent(a.url.split('/').pop().split('?')[0]) ||
+          'Tài liệu',
+        url: a.url,
+        publicId: a.publicId || '',
+        resourceType: a.resourceType || 'raw',
+        fileType: a.fileType || lesson.contentType,
+        fileSize: a.fileSize || 0,
+        format: a.format || '',
+      }))
+    } else if (
+      lesson.resourceUrl &&
+      lesson.contentType !== 'text' &&
+      lesson.contentType !== 'video'
+    ) {
+      const cleanName =
+        decodeURIComponent(lesson.resourceUrl.split('/').pop().split('?')[0]) ||
+        lesson.title
+      initialAttachments = [
+        {
+          _id: 'primary',
+          id: 'primary',
+          name: cleanName,
+          url: lesson.resourceUrl,
+          publicId: '',
+          resourceType: 'raw',
+          fileType: lesson.contentType,
+          fileSize: 0,
+          format: '',
+        },
+      ]
+    }
+
     setFormData({
       title: lesson.title || '',
       description: lesson.description || '',
       contentType: lesson.contentType || 'document',
       resourceUrl: lesson.resourceUrl || '',
+      attachments: initialAttachments,
       order: lesson.order || 1,
       isActive: lesson.isActive !== undefined ? lesson.isActive : true,
     })
     setModalType('edit')
+  }
+
+  // Xóa một tệp đính kèm riêng lẻ
+  const handleDeleteAttachment = async (fileItem) => {
+    try {
+      setFormError(null)
+      if (modalType === 'edit' && activeLesson?._id) {
+        const fileId = fileItem._id || fileItem.id || 'primary'
+        await lessonApi.deleteLessonFile(activeLesson._id, fileId)
+      } else if (
+        fileItem.url?.includes('res.cloudinary.com') ||
+        fileItem.publicId
+      ) {
+        try {
+          await lessonApi.deleteUploadedMedia({
+            publicId: fileItem.publicId,
+            url: fileItem.url,
+            resourceType: fileItem.resourceType || 'raw',
+          })
+        } catch (mediaErr) {
+          console.warn('Lỗi dọn tệp Cloudinary tạm:', mediaErr)
+        }
+      }
+
+      const nextAttachments = (formData.attachments || []).filter(
+        (a) => a !== fileItem && a._id !== fileItem._id && a.url !== fileItem.url
+      )
+      const nextResourceUrl =
+        formData.resourceUrl === fileItem.url
+          ? nextAttachments.length > 0
+            ? nextAttachments[0].url
+            : ''
+          : formData.resourceUrl
+
+      setFormData((prev) => ({
+        ...prev,
+        attachments: nextAttachments,
+        resourceUrl: nextResourceUrl,
+      }))
+
+      setSuccessMsg('Đã xóa tệp trên Cloudinary và cập nhật bài giảng thành công!')
+      if (modalType === 'edit') {
+        reloadLessons()
+      }
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('Lỗi xóa tệp:', err)
+      setFormError(err?.message || 'Không thể xóa tệp, vui lòng thử lại!')
+    }
+  }
+
+  // Thay thế một tệp đính kèm riêng lẻ
+  const handleReplaceAttachment = async (fileItem, newFile) => {
+    try {
+      setFormError(null)
+      setUploadingFile(true)
+      const res = await lessonApi.uploadMedia(newFile)
+      const uploadData = res.data || res
+
+      const newFileData = {
+        name: newFile.name,
+        url: uploadData.url,
+        publicId: uploadData.publicId || '',
+        resourceType: uploadData.resourceType || 'raw',
+        fileType: uploadData.fileType || formData.contentType || 'document',
+        fileSize: newFile.size,
+        format: uploadData.format || '',
+      }
+
+      if (modalType === 'edit' && activeLesson?._id) {
+        const fileId = fileItem._id || fileItem.id || 'primary'
+        await lessonApi.replaceLessonFile(activeLesson._id, fileId, newFileData)
+      } else if (
+        fileItem.url?.includes('res.cloudinary.com') ||
+        fileItem.publicId
+      ) {
+        try {
+          await lessonApi.deleteUploadedMedia({
+            publicId: fileItem.publicId,
+            url: fileItem.url,
+            resourceType: fileItem.resourceType || 'raw',
+          })
+        } catch (mediaErr) {
+          console.warn('Lỗi dọn tệp Cloudinary cũ:', mediaErr)
+        }
+      }
+
+      const nextAttachments = (formData.attachments || []).map((a) =>
+        a === fileItem || a._id === fileItem._id || a.url === fileItem.url
+          ? newFileData
+          : a
+      )
+      const nextResourceUrl =
+        formData.resourceUrl === fileItem.url
+          ? newFileData.url
+          : formData.resourceUrl || newFileData.url
+
+      setFormData((prev) => ({
+        ...prev,
+        attachments: nextAttachments,
+        resourceUrl: nextResourceUrl,
+      }))
+
+      setSuccessMsg('Đã thay thế tệp và xóa tệp cũ trên Cloudinary thành công!')
+      if (modalType === 'edit') {
+        reloadLessons()
+      }
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('Lỗi thay thế tệp:', err)
+      setFormError(err?.message || 'Không thể thay thế tệp, vui lòng thử lại!')
+    } finally {
+      setUploadingFile(false)
+    }
+  }
+
+  // Thêm tệp mới tải lên vào bài giảng
+  const handleAddUploadedFile = async (url, uploadData) => {
+    try {
+      const newFileData = {
+        name:
+          uploadData?.originalName ||
+          uploadData?.fileName ||
+          decodeURIComponent(url.split('/').pop().split('?')[0]) ||
+          'Tài liệu',
+        url,
+        publicId: uploadData?.publicId || '',
+        resourceType: uploadData?.resourceType || 'raw',
+        fileType: uploadData?.fileType || formData.contentType || 'document',
+        fileSize: uploadData?.fileSize || 0,
+        format: uploadData?.format || '',
+      }
+
+      if (modalType === 'edit' && activeLesson?._id) {
+        await lessonApi.addLessonFile(activeLesson._id, newFileData)
+      }
+
+      setFormData((prev) => {
+        const nextAttachments = [...(prev.attachments || []), newFileData]
+        const nextResourceUrl = prev.resourceUrl ? prev.resourceUrl : url
+        return {
+          ...prev,
+          attachments: nextAttachments,
+          resourceUrl: nextResourceUrl,
+        }
+      })
+
+      setSuccessMsg('Đã tải tệp lên Cloudinary và lưu vào bài giảng thành công!')
+      if (modalType === 'edit') {
+        reloadLessons()
+      }
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('Lỗi thêm tệp:', err)
+      setFormError(err?.message || 'Không thể lưu tệp vào bài giảng!')
+    }
   }
 
   // Mở modal xóa
@@ -476,7 +702,9 @@ export const TeacherLessonListPage = () => {
     }
 
     if (formData.contentType !== 'text' && !formData.resourceUrl?.trim()) {
-      setFormError(`Loại nội dung '${CONTENT_TYPE_CONFIG[formData.contentType]?.label}' bắt buộc phải có đường dẫn tài nguyên (resourceUrl)!`)
+      setFormError(
+        `Loại nội dung '${CONTENT_TYPE_CONFIG[formData.contentType]?.label}' bắt buộc phải có đường dẫn tài nguyên (resourceUrl)!`
+      )
       return
     }
 
@@ -490,6 +718,7 @@ export const TeacherLessonListPage = () => {
           title: formData.title.trim(),
           description: formData.description?.trim() || '',
           resourceUrl: formData.resourceUrl?.trim() || '',
+          attachments: formData.attachments || [],
           order: Number(formData.order) || 1,
           teachingAssignment: selectedAssignmentId,
         }
@@ -501,6 +730,7 @@ export const TeacherLessonListPage = () => {
           description: formData.description?.trim() || '',
           contentType: formData.contentType,
           resourceUrl: formData.resourceUrl?.trim() || '',
+          attachments: formData.attachments || [],
           order: Number(formData.order) || 1,
           isActive: formData.isActive,
         }
@@ -513,13 +743,15 @@ export const TeacherLessonListPage = () => {
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
       console.error('Lỗi lưu bài giảng:', err)
-      setFormError(err?.message || 'Có lỗi xảy ra trong quá trình lưu bài giảng!')
+      setFormError(
+        err?.message || 'Có lỗi xảy ra trong quá trình lưu bài giảng!'
+      )
     } finally {
       setFormSubmitting(false)
     }
   }
 
-  // Xác nhận xóa bài giảng
+  // Xác nhận xóa bài giảng (xóa cả trên Cloudinary và DB)
   const handleDeleteConfirm = async () => {
     if (!activeLesson) return
 
@@ -528,7 +760,9 @@ export const TeacherLessonListPage = () => {
       setFormError(null)
 
       await lessonApi.deleteLesson(activeLesson._id)
-      setSuccessMsg(`Đã xóa bài giảng '${activeLesson.title}' thành công!`)
+      setSuccessMsg(
+        `Đã xóa bài giảng '${activeLesson.title}' và toàn bộ tệp đính kèm trên Cloudinary thành công!`
+      )
       handleCloseModal()
       reloadLessons()
       setTimeout(() => setSuccessMsg(null), 3000)
@@ -894,11 +1128,11 @@ export const TeacherLessonListPage = () => {
                     <FileUploadManager
                       title="Tải lên tệp tài nguyên cho bài giảng"
                       accept={CONTENT_TYPE_CONFIG[formData.contentType]?.accept}
+                      attachments={formData.attachments}
                       currentResourceUrl={formData.resourceUrl}
-                      onUploadSuccess={(url) => {
-                        setFormData((prev) => ({ ...prev, resourceUrl: url }))
-                        setSuccessMsg('Đã tải tệp lên Cloudinary và liên kết thành công!')
-                      }}
+                      onDeleteAttachment={handleDeleteAttachment}
+                      onReplaceAttachment={handleReplaceAttachment}
+                      onUploadSuccess={handleAddUploadedFile}
                     />
                   </div>
                 )

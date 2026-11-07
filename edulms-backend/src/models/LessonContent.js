@@ -1,5 +1,45 @@
 const mongoose = require("mongoose");
 
+const lessonAttachmentSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    url: {
+      type: String,
+      required: [true, "Đường dẫn tệp đính kèm (url) là bắt buộc"],
+      trim: true,
+    },
+    publicId: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    resourceType: {
+      type: String,
+      trim: true,
+      default: "raw", // 'raw' | 'image' | 'video'
+    },
+    fileType: {
+      type: String,
+      trim: true,
+      default: "document", // 'document' | 'spreadsheet' | 'presentation' | 'archive' | 'image' | 'video'
+    },
+    fileSize: {
+      type: Number,
+      default: 0,
+    },
+    format: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+  },
+  { _id: true, timestamps: true }
+);
+
 const lessonContentSchema = new mongoose.Schema(
   {
     title: {
@@ -75,6 +115,10 @@ const lessonContentSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: null,
+    },
+    attachments: {
+      type: [lessonAttachmentSchema],
+      default: [],
     },
     teachingAssignment: {
       type: mongoose.Schema.Types.ObjectId,

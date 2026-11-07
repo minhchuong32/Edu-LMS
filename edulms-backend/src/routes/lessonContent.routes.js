@@ -58,4 +58,23 @@ router.delete(
   lessonContentController.deleteLessonContent
 );
 
+// 7. Quản lý từng tệp đính kèm riêng lẻ trong bài giảng
+router.post(
+  "/:id/files",
+  canModifyLesson,
+  lessonContentController.addLessonFile
+);
+
+router.put(
+  "/:id/files/:fileId",
+  canModifyLesson,
+  lessonContentController.replaceLessonFile
+);
+
+router.delete(
+  "/:id/files/:fileId",
+  canModifyLesson,
+  lessonContentController.deleteLessonFile
+);
+
 module.exports = router;

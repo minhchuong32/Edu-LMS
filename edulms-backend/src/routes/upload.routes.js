@@ -6,7 +6,10 @@ const {
   uploadVideo,
   uploadImage,
 } = require("../middlewares");
-const { uploadSingleFile } = require("../controllers/upload.controller");
+const {
+  uploadSingleFile,
+  deleteUploadedFile,
+} = require("../controllers/upload.controller");
 
 const router = express.Router();
 
@@ -27,6 +30,13 @@ router.use(protect);
  * - Video: MP4, MOV, WEBM (tối đa 30MB)
  */
 router.post("/", uploadFile, uploadSingleFile);
+
+/**
+ * [DELETE] /api/v1/upload và [POST] /api/v1/upload/delete
+ * Xóa tài nguyên trên Cloudinary theo publicId hoặc url
+ */
+router.delete("/", deleteUploadedFile);
+router.post("/delete", deleteUploadedFile);
 
 /**
  * Các endpoint tiện ích chuyên dụng (tùy chọn) khi client muốn ràng buộc chặt theo loại file:

@@ -1,3 +1,4 @@
+const path = require("path");
 const mongoose = require("mongoose");
 const LessonContent = require("../models/LessonContent");
 const TeachingAssignment = require("../models/TeachingAssignment");
@@ -6,6 +7,52 @@ const {
   extractYouTubeVideoId,
   formatYouTubeEmbedUrl,
 } = require("../utils/youtubeHelper");
+const { safeDeleteFromCloudinary } = require("../config/cloudinary");
+
+/**
+ * Xóa an toàn toàn bộ file Cloudinary liên quan đến một bài giảng
+ * @param {object} lesson
+ * @param {string[]} [excludeUrls=[]]
+ */
+const deleteLessonCloudinaryFiles = async (lesson, excludeUrls = []) => {
+  if (!lesson) return;
+  const deleteTasks = [];
+
+  // 1. Duyệt qua mảng attachments
+  if (Array.isArray(lesson.attachments)) {
+    for (const att of lesson.attachments) {
+      if (att && att.url && !excludeUrls.includes(att.url)) {
+        if (att.url.includes("res.cloudinary.com") || att.publicId) {
+          deleteTasks.push(
+            safeDeleteFromCloudinary(att.publicId || att.url, att.resourceType)
+          );
+        }
+      }
+    }
+  }
+
+  // 2. Duyệt qua resourceUrl (nếu là Cloudinary và không nằm trong excludeUrls)
+  if (
+    lesson.resourceUrl &&
+    lesson.resourceUrl.includes("res.cloudinary.com") &&
+    !excludeUrls.includes(lesson.resourceUrl)
+  ) {
+    const isAlreadyQueued = lesson.attachments?.some(
+      (a) => a.url === lesson.resourceUrl || a.publicId === lesson.resourceUrl
+    );
+    if (!isAlreadyQueued) {
+      deleteTasks.push(safeDeleteFromCloudinary(lesson.resourceUrl));
+    }
+  }
+
+  if (deleteTasks.length > 0) {
+    try {
+      await Promise.allSettled(deleteTasks);
+    } catch (err) {
+      console.error("[LessonContent] Lỗi khi xóa tệp Cloudinary:", err.message);
+    }
+  }
+};
 
 /**
  * [POST] /api/v1/lessons
@@ -132,12 +179,35 @@ const createLessonContent = async (req, res, next) => {
       }
     }
 
-    // 5. Khởi tạo và lưu nội dung bài giảng
+    // 5. Chuẩn bị danh sách attachments
+    let attachments = Array.isArray(req.body.attachments) ? req.body.attachments : [];
+    if (attachments.length === 0 && resourceUrl && contentType !== "text" && contentType !== "video") {
+      const cleanFileName =
+        req.body.fileName ||
+        decodeURIComponent(path.basename(resourceUrl.split("?")[0].split("#")[0])) ||
+        title.trim();
+      attachments.push({
+        name: cleanFileName,
+        url: resourceUrl.trim(),
+        publicId: req.body.publicId || "",
+        resourceType: req.body.resourceType || "raw",
+        fileType: req.body.fileType || contentType,
+        fileSize: req.body.fileSize || 0,
+        format: req.body.format || "",
+      });
+    }
+
+    if (!resourceUrl && attachments.length > 0 && contentType !== "text") {
+      resourceUrl = attachments[0].url;
+    }
+
+    // 6. Khởi tạo và lưu nội dung bài giảng
     const newLesson = new LessonContent({
       title: title.trim(),
       description: description ? description.trim() : "",
       contentType,
       resourceUrl: resourceUrl ? resourceUrl.trim() : "",
+      attachments,
       videoProvider,
       videoId,
       originalVideoUrl,
@@ -487,6 +557,35 @@ const updateLessonContent = async (req, res, next) => {
     if (order !== undefined) lesson.order = order;
     if (isActive !== undefined) lesson.isActive = isActive;
 
+    // Cập nhật attachments nếu được truyền lên
+    if (req.body.attachments !== undefined && Array.isArray(req.body.attachments)) {
+      const newAttachments = req.body.attachments;
+      const newUrls = newAttachments.map((a) => a.url);
+
+      // Tìm những file cũ bị loại bỏ để xóa an toàn khỏi Cloudinary
+      if (Array.isArray(lesson.attachments)) {
+        for (const oldAtt of lesson.attachments) {
+          if (oldAtt && oldAtt.url && !newUrls.includes(oldAtt.url)) {
+            if (oldAtt.url.includes("res.cloudinary.com") || oldAtt.publicId) {
+              safeDeleteFromCloudinary(
+                oldAtt.publicId || oldAtt.url,
+                oldAtt.resourceType
+              );
+            }
+          }
+        }
+      }
+      lesson.attachments = newAttachments;
+
+      // Nếu resourceUrl chưa có hoặc bị xóa khỏi attachments, tự động đồng bộ
+      if (
+        lesson.attachments.length > 0 &&
+        (!lesson.resourceUrl || !newUrls.includes(lesson.resourceUrl))
+      ) {
+        lesson.resourceUrl = lesson.attachments[0].url;
+      }
+    }
+
     // Xử lý cập nhật video YouTube Embed hoặc giữ tương thích video Cloudinary
     const targetType = contentType !== undefined ? contentType : lesson.contentType;
     if (targetType === "video" && (resourceUrl !== undefined || req.body.videoUrl !== undefined)) {
@@ -517,7 +616,21 @@ const updateLessonContent = async (req, res, next) => {
         }
       }
     } else if (resourceUrl !== undefined) {
-      lesson.resourceUrl = resourceUrl.trim();
+      const trimmedUrl = resourceUrl.trim();
+      const oldResourceUrl = lesson.resourceUrl;
+      if (
+        oldResourceUrl &&
+        oldResourceUrl !== trimmedUrl &&
+        oldResourceUrl.includes("res.cloudinary.com")
+      ) {
+        const isStillInAttachments = lesson.attachments?.some(
+          (a) => a.url === oldResourceUrl
+        );
+        if (!isStillInAttachments) {
+          safeDeleteFromCloudinary(oldResourceUrl);
+        }
+      }
+      lesson.resourceUrl = trimmedUrl;
     }
 
     const updatedLesson = await lesson.save();
@@ -534,7 +647,7 @@ const updateLessonContent = async (req, res, next) => {
 
 /**
  * [DELETE] /api/v1/lessons/:id
- * Xóa mềm nội dung bài giảng
+ * Xóa mềm nội dung bài giảng và đồng bộ dọn dẹp file đính kèm trên Cloudinary
  * Quyền: Admin, Teacher (được kiểm tra qua middleware canModifyLesson)
  */
 const deleteLessonContent = async (req, res, next) => {
@@ -576,11 +689,243 @@ const deleteLessonContent = async (req, res, next) => {
       }
     }
 
+    // Xóa an toàn toàn bộ file đính kèm trên Cloudinary trước khi soft-delete
+    await deleteLessonCloudinaryFiles(lesson);
+
     // Soft delete: Đánh dấu isDeleted = true
     lesson.isDeleted = true;
     await lesson.save();
 
     return successResponse(res, null, "Xóa nội dung bài giảng thành công");
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * [DELETE] /api/v1/lessons/:id/files/:fileId
+ * Xóa một tệp đính kèm riêng lẻ khỏi bài giảng và xóa khỏi Cloudinary
+ * Quyền: Admin, Teacher (phụ trách)
+ */
+const deleteLessonFile = async (req, res, next) => {
+  try {
+    const { id, fileId } = req.params;
+    let lesson = req.targetLesson;
+
+    if (!lesson) {
+      lesson = await LessonContent.findOne({ _id: id, isDeleted: false });
+      if (!lesson) {
+        return errorResponse(
+          res,
+          "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
+          404
+        );
+      }
+    }
+
+    let targetIndex = -1;
+    if (Array.isArray(lesson.attachments)) {
+      targetIndex = lesson.attachments.findIndex(
+        (a) => a._id?.toString() === fileId || a.id === fileId
+      );
+    }
+
+    let targetFile = targetIndex !== -1 ? lesson.attachments[targetIndex] : null;
+
+    if (!targetFile && (fileId === "primary" || lesson.resourceUrl?.includes(fileId))) {
+      targetFile = {
+        url: lesson.resourceUrl,
+        publicId: "",
+        resourceType: "raw",
+      };
+    }
+
+    if (!targetFile) {
+      return errorResponse(
+        res,
+        "Không tìm thấy tệp đính kèm cần xóa trong bài giảng",
+        404
+      );
+    }
+
+    // 1. Xóa tệp trên Cloudinary (nếu là Cloudinary URL hoặc có publicId)
+    if (targetFile.url?.includes("res.cloudinary.com") || targetFile.publicId) {
+      await safeDeleteFromCloudinary(
+        targetFile.publicId || targetFile.url,
+        targetFile.resourceType
+      );
+    }
+
+    // 2. Gỡ bỏ tệp khỏi mảng attachments trong Database
+    if (targetIndex !== -1) {
+      lesson.attachments.splice(targetIndex, 1);
+    }
+
+    // 3. Nếu tệp bị xóa trùng với resourceUrl chính
+    if (lesson.resourceUrl === targetFile.url) {
+      lesson.resourceUrl =
+        lesson.attachments.length > 0 ? lesson.attachments[0].url : "";
+    }
+
+    await lesson.save();
+
+    return successResponse(
+      res,
+      lesson,
+      "Đã xóa tệp đính kèm khỏi bài giảng và Cloudinary thành công"
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * [PUT] /api/v1/lessons/:id/files/:fileId
+ * Thay thế một tệp đính kèm trong bài giảng bằng tệp mới, xóa tệp cũ khỏi Cloudinary
+ * Quyền: Admin, Teacher (phụ trách)
+ */
+const replaceLessonFile = async (req, res, next) => {
+  try {
+    const { id, fileId } = req.params;
+    const { name, url, publicId, resourceType, fileType, fileSize, format } =
+      req.body || {};
+
+    if (!url || !url.trim()) {
+      return errorResponse(res, "Đường dẫn tệp mới (url) là bắt buộc", 400);
+    }
+
+    let lesson = req.targetLesson;
+    if (!lesson) {
+      lesson = await LessonContent.findOne({ _id: id, isDeleted: false });
+      if (!lesson) {
+        return errorResponse(
+          res,
+          "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
+          404
+        );
+      }
+    }
+
+    let targetIndex = -1;
+    if (Array.isArray(lesson.attachments)) {
+      targetIndex = lesson.attachments.findIndex(
+        (a) => a._id?.toString() === fileId || a.id === fileId
+      );
+    }
+
+    let oldFile = targetIndex !== -1 ? lesson.attachments[targetIndex] : null;
+
+    if (!oldFile && (fileId === "primary" || lesson.resourceUrl?.includes(fileId))) {
+      oldFile = {
+        url: lesson.resourceUrl,
+        publicId: "",
+        resourceType: "raw",
+      };
+    }
+
+    // 1. Xóa tệp cũ trên Cloudinary
+    if (oldFile && (oldFile.url?.includes("res.cloudinary.com") || oldFile.publicId)) {
+      await safeDeleteFromCloudinary(
+        oldFile.publicId || oldFile.url,
+        oldFile.resourceType
+      );
+    }
+
+    const newFileData = {
+      name:
+        name ||
+        decodeURIComponent(path.basename(url.split("?")[0].split("#")[0])),
+      url: url.trim(),
+      publicId: publicId || "",
+      resourceType: resourceType || "raw",
+      fileType: fileType || lesson.contentType || "document",
+      fileSize: fileSize || 0,
+      format: format || "",
+    };
+
+    // 2. Cập nhật trong mảng attachments
+    if (targetIndex !== -1) {
+      lesson.attachments[targetIndex] = {
+        ...lesson.attachments[targetIndex].toObject?.(),
+        ...newFileData,
+      };
+    } else {
+      lesson.attachments.push(newFileData);
+    }
+
+    // 3. Cập nhật resourceUrl nếu là tệp chính hoặc rỗng
+    if (!lesson.resourceUrl || lesson.resourceUrl === oldFile?.url) {
+      lesson.resourceUrl = newFileData.url;
+    }
+
+    await lesson.save();
+
+    return successResponse(
+      res,
+      lesson,
+      "Đã thay thế tệp và đồng bộ Cloudinary thành công"
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * [POST] /api/v1/lessons/:id/files
+ * Thêm một tệp đính kèm mới vào bài giảng
+ * Quyền: Admin, Teacher (phụ trách)
+ */
+const addLessonFile = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, url, publicId, resourceType, fileType, fileSize, format } =
+      req.body || {};
+
+    if (!url || !url.trim()) {
+      return errorResponse(res, "Đường dẫn tệp (url) là bắt buộc", 400);
+    }
+
+    let lesson = req.targetLesson;
+    if (!lesson) {
+      lesson = await LessonContent.findOne({ _id: id, isDeleted: false });
+      if (!lesson) {
+        return errorResponse(
+          res,
+          "Nội dung bài giảng không tồn tại hoặc đã bị xóa",
+          404
+        );
+      }
+    }
+
+    const newFileData = {
+      name:
+        name ||
+        decodeURIComponent(path.basename(url.split("?")[0].split("#")[0])),
+      url: url.trim(),
+      publicId: publicId || "",
+      resourceType: resourceType || "raw",
+      fileType: fileType || lesson.contentType || "document",
+      fileSize: fileSize || 0,
+      format: format || "",
+    };
+
+    if (!Array.isArray(lesson.attachments)) {
+      lesson.attachments = [];
+    }
+
+    lesson.attachments.push(newFileData);
+
+    if (!lesson.resourceUrl && lesson.contentType !== "text") {
+      lesson.resourceUrl = newFileData.url;
+    }
+
+    await lesson.save();
+
+    return successResponse(
+      res,
+      lesson,
+      "Đã thêm tệp đính kèm vào bài giảng thành công"
+    );
   } catch (error) {
     next(error);
   }
@@ -593,4 +938,7 @@ module.exports = {
   getLessonContentById,
   updateLessonContent,
   deleteLessonContent,
+  deleteLessonFile,
+  replaceLessonFile,
+  addLessonFile,
 };

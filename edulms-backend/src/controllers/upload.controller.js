@@ -1,9 +1,10 @@
 const path = require("path");
 const {
   uploadFileToCloudinary,
+  safeDeleteFromCloudinary,
   isCloudinaryConfigured,
 } = require("../config/cloudinary");
-const { errorResponse } = require("../utils/apiResponse");
+const { successResponse, errorResponse } = require("../utils/apiResponse");
 
 /**
  * Controller xử lý upload tập tin (tài liệu, bảng tính, trình chiếu, nén, hình ảnh, video)
@@ -65,6 +66,37 @@ const uploadSingleFile = async (req, res, next) => {
   }
 };
 
+/**
+ * Xóa tập tin đã tải lên từ Cloudinary
+ * @route DELETE /api/v1/upload
+ * @access Private
+ */
+const deleteUploadedFile = async (req, res, next) => {
+  try {
+    const { publicId, url, resourceType } = req.body || {};
+    const target = publicId || url;
+
+    if (!target) {
+      return errorResponse(
+        res,
+        "Vui lòng cung cấp publicId hoặc url của tệp cần xóa",
+        400
+      );
+    }
+
+    const result = await safeDeleteFromCloudinary(target, resourceType);
+
+    return successResponse(
+      res,
+      result,
+      "Yêu cầu xóa tệp trên Cloudinary đã được xử lý"
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   uploadSingleFile,
+  deleteUploadedFile,
 };

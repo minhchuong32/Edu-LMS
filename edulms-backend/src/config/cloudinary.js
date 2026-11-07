@@ -285,6 +285,80 @@ const deleteFromCloudinary = async (publicId, resourceType = "image") => {
   return cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
 };
 
+/**
+ * Trích xuất public_id và resource_type từ Cloudinary URL
+ * @param {string} url - Đường dẫn Cloudinary
+ * @returns {{ publicId: string, resourceType: string } | null}
+ */
+const parseCloudinaryUrl = (url) => {
+  if (!url || typeof url !== "string" || !url.includes("res.cloudinary.com")) {
+    return null;
+  }
+  try {
+    // Regex tìm pattern: /res.cloudinary.com/<cloud>/<resource_type>/upload/(v\d+/)?<public_id>
+    const regex = /res\.cloudinary\.com\/[^/]+\/(image|video|raw)\/upload\/(?:v\d+\/)?(.+)$/i;
+    const match = url.match(regex);
+    if (!match) return null;
+
+    const resourceType = match[1].toLowerCase();
+    let publicId = match[2].split("?")[0].split("#")[0];
+
+    // Với image và video, public_id trong Cloudinary API destroy không có phần mở rộng
+    if (resourceType !== "raw") {
+      const extIndex = publicId.lastIndexOf(".");
+      if (extIndex !== -1) {
+        publicId = publicId.substring(0, extIndex);
+      }
+    }
+
+    return { publicId, resourceType };
+  } catch (err) {
+    return null;
+  }
+};
+
+/**
+ * Xóa an toàn tệp từ Cloudinary bằng publicId hoặc URL
+ * - Tự động nhận diện resource_type
+ * - Bắt lỗi an toàn, không làm ngắt quãng luồng xử lý chính khi Cloudinary mất kết nối
+ * @param {string} publicIdOrUrl
+ * @param {string} [preferredResourceType]
+ * @returns {Promise<{ success: boolean, reason?: string, error?: string, result?: object }>}
+ */
+const safeDeleteFromCloudinary = async (publicIdOrUrl, preferredResourceType) => {
+  if (!publicIdOrUrl) {
+    return { success: false, reason: "empty_identifier" };
+  }
+
+  if (!isCloudinaryConfigured()) {
+    console.warn("[Cloudinary] Chưa cấu hình biến môi trường Cloudinary, bỏ qua xóa từ xa.");
+    return { success: false, reason: "not_configured" };
+  }
+
+  let publicId = publicIdOrUrl;
+  let resourceType = preferredResourceType || "raw";
+
+  if (typeof publicIdOrUrl === "string" && publicIdOrUrl.includes("res.cloudinary.com")) {
+    const parsed = parseCloudinaryUrl(publicIdOrUrl);
+    if (parsed) {
+      publicId = parsed.publicId;
+      resourceType = preferredResourceType || parsed.resourceType;
+    }
+  }
+
+  try {
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+      invalidate: true,
+    });
+    return { success: true, result };
+  } catch (error) {
+    const reason = error?.message || (error?.error && error?.error?.message) || "Lỗi xóa Cloudinary";
+    console.error(`[Cloudinary] Lỗi khi xóa tệp ${publicId} (${resourceType}):`, reason);
+    return { success: false, error: reason };
+  }
+};
+
 module.exports = {
   cloudinary,
   CLOUDINARY_FOLDERS,
@@ -298,4 +372,6 @@ module.exports = {
   uploadStreamToCloudinary,
   uploadFileToCloudinary,
   deleteFromCloudinary,
+  parseCloudinaryUrl,
+  safeDeleteFromCloudinary,
 };
