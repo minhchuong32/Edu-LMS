@@ -53,15 +53,24 @@ export const lessonApi = {
   },
 
   /**
-   * Upload tài liệu hoặc media lên Cloudinary
+   * Upload tài liệu hoặc media lên Cloudinary có hỗ trợ onUploadProgress
    * @param {File} file
+   * @param {Function} [onProgress] - Callback nhận số % tiến độ (0 -> 100)
    */
-  uploadMedia: (file) => {
+  uploadMedia: (file, onProgress) => {
     const formData = new FormData()
     formData.append('file', file)
     return axiosClient.post('/v1/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          )
+          onProgress(percentCompleted)
+        }
       },
     })
   },

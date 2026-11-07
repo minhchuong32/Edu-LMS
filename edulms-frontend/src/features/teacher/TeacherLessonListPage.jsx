@@ -42,6 +42,7 @@ import { useAuth } from '@/context/useAuth'
 import lessonApi from '@/api/lessonApi'
 import academicApi from '@/api/academicApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
+import FileUploadManager from '@/components/teacher/FileUploadManager'
 
 // Danh sách các loại nội dung hỗ trợ
 export const CONTENT_TYPE_CONFIG = {
@@ -875,30 +876,16 @@ export const TeacherLessonListPage = () => {
 
               {/* Tải tệp lên Cloudinary (nếu là video, pdf, slide, document) */}
               {CONTENT_TYPE_CONFIG[formData.contentType]?.accept && (
-                <div className="space-y-1.5 p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl">
-                  <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                    <Upload className="w-3.5 h-3.5 text-blue-600" />
-                    Tải tệp từ máy tính lên Cloudinary
-                  </span>
-                  <p className="text-[11px] text-slate-500">
-                    Hệ thống sẽ lưu trữ và tự động điền đường dẫn an toàn vào ô bên dưới.
-                  </p>
-                  <label className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-blue-200 hover:border-blue-300 text-blue-700 text-xs font-semibold rounded-xl cursor-pointer transition-colors shadow-2xs">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{uploadingFile ? 'Đang xử lý...' : 'Chọn file từ thiết bị'}</span>
-                    <input
-                      type="file"
-                      disabled={uploadingFile}
-                      accept={CONTENT_TYPE_CONFIG[formData.contentType].accept}
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  {uploadProgressMsg && (
-                    <p className="text-[11px] text-blue-600 font-medium animate-fadeIn">
-                      {uploadProgressMsg}
-                    </p>
-                  )}
+                <div className="space-y-1.5 p-3.5 bg-blue-50/40 border border-blue-100 rounded-2xl">
+                  <FileUploadManager
+                    title="Tải lên tệp tài nguyên cho bài giảng"
+                    accept={CONTENT_TYPE_CONFIG[formData.contentType]?.accept}
+                    currentResourceUrl={formData.resourceUrl}
+                    onUploadSuccess={(url) => {
+                      setFormData((prev) => ({ ...prev, resourceUrl: url }))
+                      setSuccessMsg('Đã tải tệp lên Cloudinary và liên kết thành công!')
+                    }}
+                  />
                 </div>
               )}
 
