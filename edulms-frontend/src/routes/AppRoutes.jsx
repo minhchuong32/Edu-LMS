@@ -14,6 +14,7 @@ import AcademicStructurePage from '@/features/admin/AcademicStructurePage'
 import TeacherDashboard from '@/features/teacher/TeacherDashboard'
 import TeacherLessonListPage from '@/features/teacher/TeacherLessonListPage'
 import StudentDashboard from '@/features/student/StudentDashboard'
+import StudentLessonViewerPage from '@/features/student/StudentLessonViewerPage'
 import ParentDashboard from '@/features/parent/ParentDashboard'
 import HomePage from '@/features/portal/HomePage'
 import NewsPage from '@/features/portal/NewsPage'
@@ -63,6 +64,7 @@ export const AppRoutes = () => {
         <Route element={<RoleRoute allowedRoles={['student']} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/student/lessons" element={<StudentLessonViewerPage />} />
           </Route>
         </Route>
 
