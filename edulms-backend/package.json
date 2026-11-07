@@ -13,6 +13,7 @@
     "test": "jest --runInBand",
     "test:ci": "jest --coverage --runInBand --ci",
     "seed": "node src/scripts/seed.js",
+    "seed:lesson": "node src/seeds/lesson.seed.js",
     "test:cloudinary": "node src/scripts/test_cloudinary.js"
   },
   "engines": {

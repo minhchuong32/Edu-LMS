@@ -37,4 +37,3 @@ export const API_ENDPOINTS = {
   UPLOAD: '/upload',
   NOTIFICATIONS: '/notifications',
 }
-
