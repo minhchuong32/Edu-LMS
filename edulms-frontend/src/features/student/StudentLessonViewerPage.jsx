@@ -28,6 +28,7 @@ import { useAuth } from '@/context/useAuth'
 import lessonApi from '@/api/lessonApi'
 import academicApi from '@/api/academicApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
+import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '@/utils/youtubeUtils'
 
 // Cấu hình hiển thị theo từng loại nội dung học tập
 const STUDENT_CONTENT_TYPES = {
@@ -584,9 +585,18 @@ export const StudentLessonViewerPage = () => {
   const renderMediaViewer = () => {
     if (!selectedLesson) return null
 
-    const { contentType, resourceUrl } = selectedLesson
+    const { contentType, resourceUrl, videoProvider, videoId } = selectedLesson
     const isVideo = contentType === 'video' || currentFileInfo?.isVideo
     const isPdf = contentType === 'pdf' || currentFileInfo?.isPdf
+
+    // Kiểm tra xem bài giảng video là YouTube Embed hay video Cloudinary cũ
+    const youTubeId =
+      videoId ||
+      (resourceUrl ? extractYouTubeVideoId(resourceUrl) : null)
+    const isYouTubeVideo =
+      Boolean(youTubeId) ||
+      videoProvider === 'youtube' ||
+      (resourceUrl && (resourceUrl.includes('youtube.com') || resourceUrl.includes('youtu.be')))
 
     // 1. Trường hợp không có tài nguyên đính kèm (hoặc chỉ có nội dung chữ)
     if (!resourceUrl) {
@@ -603,7 +613,83 @@ export const StudentLessonViewerPage = () => {
       )
     }
 
-    // 2. Video Player trực tiếp (HTML5 Video)
+    // 2.A. Trình phát Video YouTube Embed
+    if (isVideo && isYouTubeVideo) {
+      const cleanVideoId = youTubeId || (resourceUrl ? extractYouTubeVideoId(resourceUrl) : '')
+      const embedUrl = cleanVideoId
+        ? getYouTubeEmbedUrl(cleanVideoId)
+        : (resourceUrl?.includes('/embed/') ? resourceUrl : '')
+      const watchUrl = cleanVideoId ? `https://www.youtube.com/watch?v=${cleanVideoId}` : resourceUrl
+
+      return (
+        <div className="space-y-3">
+          <div className="relative rounded-2xl overflow-hidden bg-black shadow-md aspect-video w-full">
+            {videoError ? (
+              <div className="w-full h-full flex flex-col items-center justify-center py-12 px-6 text-center text-white bg-slate-900">
+                <AlertTriangle className="w-12 h-12 mx-auto text-amber-400 mb-3" />
+                <h4 className="text-base font-semibold">
+                  Không thể phát video YouTube trực tiếp
+                </h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                  Video có thể đã được chủ sở hữu đặt quyền riêng tư hoặc chặn nhúng bên ngoài. Bạn có thể mở trực tiếp trên YouTube.
+                </p>
+                <div className="mt-4 flex items-center justify-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setVideoError(false)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-medium inline-flex items-center space-x-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Thử tải lại</span>
+                  </button>
+                  <a
+                    href={watchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-medium inline-flex items-center space-x-1.5"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Xem trên YouTube</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <iframe
+                key={embedUrl}
+                title={selectedLesson.title}
+                src={embedUrl}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                onError={() => setVideoError(true)}
+              />
+            )}
+          </div>
+
+          {/* Thanh công cụ phụ cho YouTube Video */}
+          <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span className="flex items-center space-x-1.5 font-medium">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse" />
+              <Video className="w-4 h-4 text-red-600" />
+              <span>Video bài giảng YouTube</span>
+            </span>
+            <div className="flex items-center space-x-2">
+              <a
+                href={watchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium inline-flex items-center space-x-1.5 transition-colors shadow-xs"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Mở trên YouTube</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // 2.B. Video Player trực tiếp (HTML5 Video - Cho video Cloudinary cũ)
     if (isVideo) {
       return (
         <div className="space-y-3">

@@ -213,4 +213,60 @@ describe('TeacherLessonListPage Component Tests', () => {
       expect(screen.queryByText('Thêm bài giảng mới')).not.toBeInTheDocument()
     })
   })
+
+  it('nhúng video bài giảng YouTube và tạo bài giảng thành công', async () => {
+    const user = userEvent.setup()
+    lessonApi.createLesson.mockResolvedValue({
+      data: {
+        _id: 'new_video_lesson',
+        title: 'Video Bài Giảng Toán 10',
+        contentType: 'video',
+        resourceUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&rel=0&modestbranding=1',
+      },
+    })
+
+    render(
+      <MemoryRouter>
+        <TeacherLessonListPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Thêm bài giảng mới')).toBeInTheDocument()
+    })
+
+    // Mở modal tạo bài giảng
+    await user.click(screen.getByText('Thêm bài giảng mới'))
+
+    // Nhập tiêu đề
+    const titleInput = screen.getByLabelText(/Tiêu đề bài giảng/)
+    await user.type(titleInput, 'Video Bài Giảng Toán 10')
+
+    // Chọn loại nội dung video
+    const typeSelect = screen.getByLabelText(/Loại nội dung/)
+    await user.selectOptions(typeSelect, 'video')
+
+    // Nhập đường dẫn YouTube
+    const ytInput = screen.getByLabelText(/Đường dẫn Video YouTube/)
+    fireEvent.change(ytInput, { target: { value: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' } })
+
+    // Kiểm tra hiển thị iframe preview
+    await waitFor(() => {
+      expect(screen.getByTitle('YouTube Preview - dQw4w9WgXcQ')).toBeInTheDocument()
+    })
+
+    // Bấm nút Tạo bài giảng
+    const saveButton = screen.getByRole('button', { name: /Tạo bài giảng/i })
+    await user.click(saveButton)
+
+    await waitFor(() => {
+      expect(lessonApi.createLesson).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Video Bài Giảng Toán 10',
+          contentType: 'video',
+          resourceUrl: expect.stringContaining('dQw4w9WgXcQ'),
+        })
+      )
+    })
+  })
 })

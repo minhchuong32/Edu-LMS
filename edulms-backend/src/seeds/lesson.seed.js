@@ -55,6 +55,24 @@ const TARGET_ASSIGNMENTS = [
     semester: "CaNam",
     note: "Tin học lớp 11A1 - Thầy Ngô Văn Tin",
   },
+  {
+    className: "10A1",
+    gradeLevel: 10,
+    subjectCode: "VAN",
+    teacherCode: "GV002",
+    academicYear: "2025-2026",
+    semester: "CaNam",
+    note: "Ngữ văn lớp 10A1 - Cô Trần Thị Vân",
+  },
+  {
+    className: "10A2",
+    gradeLevel: 10,
+    subjectCode: "VAN",
+    teacherCode: "GV002",
+    academicYear: "2025-2026",
+    semester: "CaNam",
+    note: "Ngữ văn lớp 10A2 - Cô Trần Thị Vân",
+  },
 ];
 
 // 2. Danh mục bài giảng chuẩn chương trình GDPT THPT (Toán 10, Vật lí 10, Tin học 11)
@@ -267,6 +285,103 @@ const SAMPLE_LESSONS = {
       resourceUrl:
         "https://filesamples.com/samples/archive/rar/sample.rar",
       order: 7,
+      isActive: true,
+    },
+  ],
+
+  // --- MÔN NGỮ VĂN - LỚP 10A1 (CÔ TRẦN THỊ VÂN - GV002) ---
+  VAN_10A1: [
+    {
+      title: "Bài 1: Chiến thắng Mtao Mxây (Trích Sử thi Đăm Săn)",
+      description:
+        "Hình tượng người anh hùng Đăm Săn dũng cảm, trọng danh dự và khát vọng cuộc sống phồn vinh của cộng đồng người Ê-đê. Nghệ thuật miêu tả và thủ pháp so sánh phóng đại.",
+      contentType: "video",
+      resourceUrl:
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      order: 1,
+      isActive: true,
+    },
+    {
+      title: "Bài 2: Văn bản Chữ người tử tù (Tác giả Nguyễn Tuân)",
+      description:
+        "Tài liệu toàn văn tác phẩm Chữ người tử tù, chân dung nhân vật Huấn Cao – người nghệ sĩ tài hoa, khí phách thiên lương và cảnh cho chữ xưa nay chưa từng có.",
+      contentType: "pdf",
+      resourceUrl:
+        "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      order: 2,
+      isActive: true,
+    },
+    {
+      title: "Bài 3: Bài trình chiếu Kỹ năng viết bài văn nghị luận xã hội",
+      description:
+        "Hệ thống slide hướng dẫn các bước lập dàn ý bài văn nghị luận 600 chữ: giải thích, phân tích chứng minh, bình luận mở rộng và bài học nhận thức hành động.",
+      contentType: "slide",
+      resourceUrl:
+        "https://view.officeapps.live.com/op/view.aspx?src=https://filesamples.com/samples/document/pptx/sample1.pptx",
+      order: 3,
+      isActive: true,
+    },
+    {
+      title: "Bài 4: Đề cương ôn tập & Phiếu bài tập Ngữ văn Học kỳ 1",
+      description:
+        "Tập tin văn bản docx tổng hợp các tác phẩm văn học trung đại và văn học hiện đại trọng tâm phục vụ kỳ thi học kỳ 1.",
+      contentType: "document",
+      resourceUrl:
+        "https://calibre-ebook.com/downloads/demos/demo.docx",
+      order: 4,
+      isActive: true,
+    },
+    {
+      title: "Bài 5: Hướng dẫn đọc hiểu văn bản thông tin và văn bản nhật dụng",
+      description:
+        "Khám phá cấu trúc, cách thức trình bày thông tin, sơ đồ tư duy và biện pháp tu từ trong các bản tin thời sự hiện đại.",
+      contentType: "text",
+      resourceUrl: "",
+      order: 5,
+      isActive: true,
+    },
+  ],
+
+  // --- MÔN NGỮ VĂN - LỚP 10A2 (CÔ TRẦN THỊ VÂN - GV002) ---
+  VAN_10A2: [
+    {
+      title: "Bài 1: Truyện Kiều - Nỗi thương mình & Nghệ thuật miêu tả nội tâm",
+      description:
+        "Video bài giảng phân tích diễn biến tâm trạng Thúy Kiều qua ngôn ngữ độc thoại nội tâm và nghệ thuật tả cảnh ngụ tình bậc thầy của Nguyễn Du.",
+      contentType: "video",
+      resourceUrl:
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      order: 1,
+      isActive: true,
+    },
+    {
+      title: "Bài 2: Tài liệu đọc hiểu Thơ Duyên (Xuân Diệu) & Thơ mới",
+      description:
+        "Văn bản thơ và hệ thống câu hỏi định hướng cảm thụ vẻ đẹp giao cảm tinh tế của thiên nhiên và tình yêu tuổi trẻ trong phong trào Thơ mới.",
+      contentType: "pdf",
+      resourceUrl:
+        "https://raw.githubusercontent.com/mozilla/pdf.js/master/web/compressed.tracemonkey-pldi-09.pdf",
+      order: 2,
+      isActive: true,
+    },
+    {
+      title: "Bài 3: Bài trình chiếu Chuyên đề Biện pháp tu từ & Tiếng Việt",
+      description:
+        "Slide PPTX tổng hợp các biện pháp tu từ: ẩn dụ, hoán dụ, điệp từ, chêm xen và ứng dụng nhận diện trong các đề thi tuyển sinh, học kỳ.",
+      contentType: "slide",
+      resourceUrl:
+        "https://view.officeapps.live.com/op/view.aspx?src=https://filesamples.com/samples/document/pptx/sample2.pptx",
+      order: 3,
+      isActive: true,
+    },
+    {
+      title: "Bài 4: Gói tài liệu tham khảo các bài văn mẫu đạt giải Quốc gia (File ZIP)",
+      description:
+        "Tập tin nén chứa tuyển tập 30 bài văn nghị luận văn học và nghị luận xã hội đặc sắc của học sinh giỏi toàn quốc.",
+      contentType: "document",
+      resourceUrl:
+        "https://filesamples.com/samples/archive/zip/sample.zip",
+      order: 4,
       isActive: true,
     },
   ],

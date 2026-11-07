@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 const LessonContent = require("../models/LessonContent");
 const TeachingAssignment = require("../models/TeachingAssignment");
 const { successResponse, errorResponse } = require("../utils/apiResponse");
+const {
+  extractYouTubeVideoId,
+  formatYouTubeEmbedUrl,
+} = require("../utils/youtubeHelper");
 
 /**
  * [POST] /api/v1/lessons
@@ -86,12 +90,57 @@ const createLessonContent = async (req, res, next) => {
       order = lastLesson && lastLesson.order ? lastLesson.order + 1 : 1;
     }
 
-    // 4. Khởi tạo và lưu nội dung bài giảng
+    // 4. Xử lý video YouTube Embed hoặc video Cloudinary kế thừa
+    let videoProvider = req.body.videoProvider || null;
+    let videoId = req.body.videoId || null;
+    let originalVideoUrl = null;
+
+    if (contentType === "video") {
+      const inputUrl = resourceUrl || req.body.videoUrl || "";
+      if (!inputUrl || !inputUrl.trim()) {
+        return errorResponse(
+          res,
+          "Đường dẫn video YouTube là bắt buộc đối với bài giảng video",
+          400
+        );
+      }
+
+      // Kiểm tra có phải YouTube URL
+      const extractedId = extractYouTubeVideoId(inputUrl);
+      if (extractedId) {
+        videoId = extractedId;
+        videoProvider = "youtube";
+        originalVideoUrl = inputUrl.trim();
+        resourceUrl = formatYouTubeEmbedUrl(extractedId);
+      } else {
+        // Tương thích ngược: Cho phép giữ nguyên video Cloudinary cũ nếu có
+        const isLegacyCloudinary =
+          inputUrl.includes("res.cloudinary.com") ||
+          inputUrl.startsWith("/uploads/") ||
+          inputUrl.startsWith("uploads/");
+
+        if (isLegacyCloudinary) {
+          videoProvider = "cloudinary";
+          resourceUrl = inputUrl.trim();
+        } else {
+          return errorResponse(
+            res,
+            "Đường dẫn video YouTube không hợp lệ. Vui lòng cung cấp liên kết YouTube chuẩn (dạng https://www.youtube.com/watch?v=... hoặc https://youtu.be/...)!",
+            400
+          );
+        }
+      }
+    }
+
+    // 5. Khởi tạo và lưu nội dung bài giảng
     const newLesson = new LessonContent({
       title: title.trim(),
       description: description ? description.trim() : "",
       contentType,
       resourceUrl: resourceUrl ? resourceUrl.trim() : "",
+      videoProvider,
+      videoId,
+      originalVideoUrl,
       order,
       teachingAssignment,
       isActive: isActive !== undefined ? isActive : true,
@@ -283,7 +332,7 @@ const getLessonsByClassAndSubject = async (req, res, next) => {
 
     let queryBuilder = LessonContent.find(lessonFilter)
       .select(
-        "title description contentType resourceUrl order isActive createdAt updatedAt"
+        "title description contentType resourceUrl videoProvider videoId originalVideoUrl order isActive createdAt updatedAt"
       )
       .sort({ order: 1, createdAt: 1 });
 
@@ -435,9 +484,41 @@ const updateLessonContent = async (req, res, next) => {
     if (title !== undefined) lesson.title = title.trim();
     if (description !== undefined) lesson.description = description.trim();
     if (contentType !== undefined) lesson.contentType = contentType;
-    if (resourceUrl !== undefined) lesson.resourceUrl = resourceUrl.trim();
     if (order !== undefined) lesson.order = order;
     if (isActive !== undefined) lesson.isActive = isActive;
+
+    // Xử lý cập nhật video YouTube Embed hoặc giữ tương thích video Cloudinary
+    const targetType = contentType !== undefined ? contentType : lesson.contentType;
+    if (targetType === "video" && (resourceUrl !== undefined || req.body.videoUrl !== undefined)) {
+      const inputUrl = resourceUrl !== undefined ? resourceUrl : req.body.videoUrl;
+      if (inputUrl && inputUrl.trim()) {
+        const extractedId = extractYouTubeVideoId(inputUrl);
+        if (extractedId) {
+          lesson.videoId = extractedId;
+          lesson.videoProvider = "youtube";
+          lesson.originalVideoUrl = inputUrl.trim();
+          lesson.resourceUrl = formatYouTubeEmbedUrl(extractedId);
+        } else {
+          const isLegacyCloudinary =
+            inputUrl.includes("res.cloudinary.com") ||
+            inputUrl.startsWith("/uploads/") ||
+            inputUrl.startsWith("uploads/");
+
+          if (isLegacyCloudinary) {
+            lesson.videoProvider = "cloudinary";
+            lesson.resourceUrl = inputUrl.trim();
+          } else {
+            return errorResponse(
+              res,
+              "Đường dẫn video YouTube không hợp lệ. Vui lòng cung cấp liên kết YouTube chuẩn (dạng https://www.youtube.com/watch?v=... hoặc https://youtu.be/...)!",
+              400
+            );
+          }
+        }
+      }
+    } else if (resourceUrl !== undefined) {
+      lesson.resourceUrl = resourceUrl.trim();
+    }
 
     const updatedLesson = await lesson.save();
 

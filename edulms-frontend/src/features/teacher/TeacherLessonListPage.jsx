@@ -41,6 +41,7 @@ import lessonApi from '@/api/lessonApi'
 import academicApi from '@/api/academicApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import FileUploadManager from '@/components/teacher/FileUploadManager'
+import YouTubeEmbedManager from '@/components/teacher/YouTubeEmbedManager'
 
 // Danh sách các loại nội dung hỗ trợ
 const CONTENT_TYPE_CONFIG = {
@@ -48,7 +49,7 @@ const CONTENT_TYPE_CONFIG = {
     label: 'Video bài giảng',
     icon: Video,
     color: 'bg-rose-50 text-rose-700 border-rose-200',
-    accept: 'video/mp4,video/quicktime,video/webm',
+    accept: null,
   },
   pdf: {
     label: 'Tài liệu PDF',
@@ -276,13 +277,16 @@ export const TeacherLessonListPage = () => {
   // Tải danh sách phân công giảng dạy của giáo viên
   useEffect(() => {
     let ignore = false
-    const teacherId = user?.userId || user?._id
-
-    if (!teacherId) {
-      return
-    }
+    const teacherId = user?._id || user?.id || user?.userId || user?.userCode
 
     const loadAssignments = async () => {
+      if (!teacherId) {
+        if (!ignore) {
+          setLoadingAssignments(false)
+        }
+        return
+      }
+
       try {
         const res = await academicApi.getTeacherSchedule(teacherId)
         if (!ignore) {
@@ -290,8 +294,8 @@ export const TeacherLessonListPage = () => {
           setAssignments(data)
 
           // Mặc định chọn phân công đầu tiên nếu có
-          if (data.length > 0 && !selectedAssignmentId) {
-            setSelectedAssignmentId(data[0]._id)
+          if (data.length > 0) {
+            setSelectedAssignmentId((prev) => prev || data[0]._id)
           }
         }
       } catch (err) {
@@ -311,7 +315,7 @@ export const TeacherLessonListPage = () => {
     return () => {
       ignore = true
     }
-  }, [user, selectedAssignmentId, assignmentsReloadKey])
+  }, [user, assignmentsReloadKey])
 
   // Tải danh sách bài giảng theo phân công được chọn
   useEffect(() => {
@@ -634,7 +638,12 @@ export const TeacherLessonListPage = () => {
                 <button
                   type="button"
                   key={assignment._id}
-                  onClick={() => setSelectedAssignmentId(assignment._id)}
+                  onClick={() => {
+                    if (assignment._id !== selectedAssignmentId) {
+                      setLoadingLessons(true)
+                      setSelectedAssignmentId(assignment._id)
+                    }
+                  }}
                   className={`text-left p-3.5 rounded-xl border transition-all ${
                     isSelected
                       ? 'bg-blue-50/70 border-blue-500 shadow-xs ring-1 ring-blue-500'
@@ -868,23 +877,35 @@ export const TeacherLessonListPage = () => {
                 </select>
               </div>
 
-              {/* Tải tệp lên Cloudinary (nếu là video, pdf, slide, document) */}
-              {CONTENT_TYPE_CONFIG[formData.contentType]?.accept && (
-                <div className="space-y-1.5 p-3.5 bg-blue-50/40 border border-blue-100 rounded-2xl">
-                  <FileUploadManager
-                    title="Tải lên tệp tài nguyên cho bài giảng"
-                    accept={CONTENT_TYPE_CONFIG[formData.contentType]?.accept}
-                    currentResourceUrl={formData.resourceUrl}
-                    onUploadSuccess={(url) => {
-                      setFormData((prev) => ({ ...prev, resourceUrl: url }))
-                      setSuccessMsg('Đã tải tệp lên Cloudinary và liên kết thành công!')
+              {/* A. Nếu là Video: Nhúng Video bài giảng YouTube Embed */}
+              {formData.contentType === 'video' ? (
+                <div className="space-y-1">
+                  <YouTubeEmbedManager
+                    value={formData.resourceUrl}
+                    onChange={(embedUrl) => {
+                      setFormData((prev) => ({ ...prev, resourceUrl: embedUrl }))
                     }}
                   />
                 </div>
+              ) : (
+                /* B. Tài liệu bài giảng: Tải tệp lên Cloudinary (PDF, PPTX, DOCX,...) */
+                CONTENT_TYPE_CONFIG[formData.contentType]?.accept && (
+                  <div className="space-y-1.5 p-3.5 bg-blue-50/40 border border-blue-100 rounded-2xl">
+                    <FileUploadManager
+                      title="Tải lên tệp tài nguyên cho bài giảng"
+                      accept={CONTENT_TYPE_CONFIG[formData.contentType]?.accept}
+                      currentResourceUrl={formData.resourceUrl}
+                      onUploadSuccess={(url) => {
+                        setFormData((prev) => ({ ...prev, resourceUrl: url }))
+                        setSuccessMsg('Đã tải tệp lên Cloudinary và liên kết thành công!')
+                      }}
+                    />
+                  </div>
+                )
               )}
 
-              {/* Đường dẫn tài nguyên (resourceUrl) */}
-              {formData.contentType !== 'text' && (
+              {/* Đường dẫn tài nguyên (resourceUrl) cho các loại tài liệu không phải video và không phải text */}
+              {formData.contentType !== 'text' && formData.contentType !== 'video' && (
                 <div className="space-y-1">
                   <label htmlFor={resourceId} className="text-xs font-semibold text-slate-700">
                     Đường dẫn tài nguyên (URL) <span className="text-red-500">*</span>

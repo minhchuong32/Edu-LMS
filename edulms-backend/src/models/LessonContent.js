@@ -56,6 +56,26 @@ const lessonContentSchema = new mongoose.Schema(
       default: 1,
       min: [1, "Thứ tự hiển thị phải lớn hơn hoặc bằng 1"],
     },
+    videoProvider: {
+      type: String,
+      enum: {
+        values: ["youtube", "cloudinary", "custom", null],
+        message: "Nhà cung cấp video '{VALUE}' không hợp lệ",
+      },
+      default: null,
+      lowercase: true,
+      trim: true,
+    },
+    videoId: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    originalVideoUrl: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     teachingAssignment: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TeachingAssignment",

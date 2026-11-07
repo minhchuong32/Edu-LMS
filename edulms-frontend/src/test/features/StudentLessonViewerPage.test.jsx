@@ -91,6 +91,18 @@ const mockLessonsMath = [
     isActive: true,
     createdAt: '2026-11-03T08:00:00Z',
   },
+  {
+    _id: 'lesson_math_4',
+    title: 'Bài 4: Video bài giảng YouTube Ôn tập',
+    description: 'Video bài giảng nhúng từ YouTube tổng hợp kiến thức trọng tâm.',
+    contentType: 'video',
+    videoProvider: 'youtube',
+    videoId: 'dQw4w9WgXcQ',
+    resourceUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&rel=0&modestbranding=1',
+    order: 4,
+    isActive: true,
+    createdAt: '2026-11-04T08:00:00Z',
+  },
 ]
 
 // Dữ liệu mẫu bài giảng Vật lí 10
@@ -357,6 +369,30 @@ describe('StudentLessonViewerPage', () => {
       expect(
         screen.getByText('Chưa có môn học nào được phân công')
       ).toBeInTheDocument()
+    })
+  })
+
+  it('10. Hiển thị YouTube Embed iframe cho bài giảng dạng video YouTube và hỗ trợ mở trên YouTube', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <StudentLessonViewerPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Bài 4: Video bài giảng YouTube Ôn tập')).toBeInTheDocument()
+    }, { timeout: 4000 })
+
+    await user.click(screen.getByText('Bài 4: Video bài giảng YouTube Ôn tập'))
+
+    await waitFor(() => {
+      const iframe = screen.getByTitle('Bài 4: Video bài giảng YouTube Ôn tập')
+      expect(iframe).toBeInTheDocument()
+      expect(iframe).toHaveAttribute('src', expect.stringContaining('dQw4w9WgXcQ'))
+      expect(screen.getByText('Video bài giảng YouTube')).toBeInTheDocument()
+      expect(screen.getByText('Mở trên YouTube')).toBeInTheDocument()
     })
   })
 })
