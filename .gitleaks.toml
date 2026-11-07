@@ -1,0 +1,16 @@
+# Gitleaks configuration file for Edu-LMS
+title = "Edu-LMS Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore example env files and historical placeholder commit"
+paths = [
+  '''(?i)\.env\.example$''',
+  '''(?i)\.env\.sample$''',
+]
+commits = [
+  "3ca91eab1aacd9f4fc5803d9443bb35da5348957",
+]
+

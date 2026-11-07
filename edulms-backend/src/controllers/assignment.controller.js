@@ -70,9 +70,30 @@ const checkConflict = async (req, res, next) => {
 
 const getTeacherSchedule = async (req, res, next) => {
   try {
-    const { teacherId } = req.params;
+    let { teacherId } = req.params;
     const { academicYear, semester } = req.query;
-    const schedule = await assignmentService.getTeacherSchedule(teacherId, academicYear, semester);
+
+    // Hỗ trợ trường hợp gọi bằng alias 'me', hoặc 'undefined', hoặc nếu user là giáo viên và không có teacherId
+    if (!teacherId || teacherId === "me" || teacherId === "undefined" || teacherId === "null") {
+      if (req.user?.role === "teacher" || req.user?.userId) {
+        teacherId = req.user.userId;
+      }
+    }
+
+    let schedule = await assignmentService.getTeacherSchedule(teacherId, academicYear, semester);
+
+    // Fallback: Nếu không tìm thấy phân công theo teacherId và req.user có userCode
+    if ((!schedule || schedule.length === 0) && req.user?.userCode) {
+      const fallbackSchedule = await assignmentService.getTeacherSchedule(
+        req.user.userCode,
+        academicYear,
+        semester
+      );
+      if (fallbackSchedule && fallbackSchedule.length > 0) {
+        schedule = fallbackSchedule;
+      }
+    }
+
     return successResponse(res, schedule, "Lấy lịch giảng dạy của giáo viên thành công");
   } catch (error) {
     next(error);

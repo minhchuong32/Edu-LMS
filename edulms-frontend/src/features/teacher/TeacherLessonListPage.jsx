@@ -305,25 +305,43 @@ export const TeacherLessonListPage = () => {
   // Tải danh sách phân công giảng dạy của giáo viên
   useEffect(() => {
     let ignore = false
-    const teacherId = user?._id || user?.id || user?.userId || user?.userCode
+    const teacherId = user?._id || user?.id || user?.userId || user?.userCode || 'me'
 
     const loadAssignments = async () => {
-      if (!teacherId) {
-        if (!ignore) {
-          setLoadingAssignments(false)
-        }
-        return
-      }
-
+      setLoadingAssignments(true)
       try {
-        const res = await academicApi.getTeacherSchedule(teacherId)
+        let scheduleData = []
+
+        // 1. Thử gọi API getTeacherSchedule
+        try {
+          const res = await academicApi.getTeacherSchedule(teacherId)
+          const data = res?.data || res || []
+          scheduleData = Array.isArray(data) ? data : data?.assignments || []
+        } catch (scheduleErr) {
+          console.warn('Lỗi getTeacherSchedule, thử gọi getAssignments fallback:', scheduleErr)
+          // 2. Dự phòng: Nếu getTeacherSchedule bị lỗi (404/400/...), thử gọi getAssignments với teacher
+          if (teacherId && teacherId !== 'me') {
+            try {
+              const fallbackRes = await academicApi.getAssignments({ teacher: teacherId })
+              const fbData = fallbackRes?.data || fallbackRes || []
+              scheduleData = Array.isArray(fbData) ? fbData : fbData?.assignments || []
+            } catch (fbErr) {
+              console.warn('Fallback getAssignments thất bại:', fbErr)
+            }
+          }
+        }
+
         if (!ignore) {
-          const data = res.data || res || []
-          setAssignments(data)
+          setAssignments(scheduleData)
 
           // Mặc định chọn phân công đầu tiên nếu có
-          if (data.length > 0) {
-            setSelectedAssignmentId((prev) => prev || data[0]._id)
+          if (scheduleData.length > 0) {
+            setSelectedAssignmentId((prev) => {
+              const stillExists = scheduleData.some((a) => a._id === prev)
+              return stillExists ? prev : scheduleData[0]._id
+            })
+          } else {
+            setSelectedAssignmentId('')
           }
         }
       } catch (err) {
@@ -343,7 +361,7 @@ export const TeacherLessonListPage = () => {
     return () => {
       ignore = true
     }
-  }, [user, assignmentsReloadKey])
+  }, [user?._id, user?.id, user?.userId, user?.userCode, assignmentsReloadKey])
 
   // Tải danh sách bài giảng theo phân công được chọn
   useEffect(() => {
@@ -354,10 +372,12 @@ export const TeacherLessonListPage = () => {
     }
 
     const loadLessons = async () => {
+      setLoadingLessons(true)
       try {
         const res = await lessonApi.getLessons({ teachingAssignment: selectedAssignmentId })
         if (!ignore) {
-          const data = res.data || res || []
+          const resData = res?.data || res || []
+          const data = Array.isArray(resData) ? resData : resData?.lessons || []
           // Sắp xếp tăng dần theo order
           const sorted = [...data].sort((a, b) => (a.order || 0) - (b.order || 0))
           setLessons(sorted)

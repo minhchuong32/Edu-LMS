@@ -26,6 +26,7 @@ vi.mock('@/context/useAuth', () => ({
 vi.mock('@/api/academicApi', () => ({
   default: {
     getTeacherSchedule: vi.fn(),
+    getAssignments: vi.fn(),
   },
 }))
 
@@ -88,6 +89,7 @@ describe('TeacherLessonListPage Component Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     academicApi.getTeacherSchedule.mockResolvedValue({ data: mockAssignments })
+    academicApi.getAssignments.mockResolvedValue({ data: mockAssignments })
     lessonApi.getLessons.mockResolvedValue({ data: mockLessons })
   })
 
