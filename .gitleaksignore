@@ -1,0 +1,5 @@
+# Gitleaks ignore file
+# Ignores false positive / historical example in .env.example
+3ca91eab1aacd9f4fc5803d9443bb35da5348957:edulms-backend/.env.example:generic-api-key:26
+edulms-backend/.env.example:generic-api-key:26
+

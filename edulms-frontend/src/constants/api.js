@@ -30,5 +30,11 @@ export const API_ENDPOINTS = {
     BASE: '/assignments',
     SUBMISSIONS: '/assignments/submissions',
   },
+  LESSONS: {
+    BASE: '/lessons',
+    BY_CLASS_SUBJECT: '/lessons/by-class-subject',
+  },
+  UPLOAD: '/upload',
   NOTIFICATIONS: '/notifications',
 }
+

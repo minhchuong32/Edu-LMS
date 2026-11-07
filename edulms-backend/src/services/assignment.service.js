@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const TeachingAssignment = require("../models/TeachingAssignment");
 const Class = require("../models/Class");
 const Subject = require("../models/Subject");
@@ -414,8 +415,23 @@ const getTeachersList = async (academicYear = null) => {
  * Lấy thời khóa biểu/lịch giảng dạy của một giáo viên
  */
 const getTeacherSchedule = async (teacherId, academicYear, semester) => {
+  let resolvedTeacherId = teacherId;
+
+  // Hỗ trợ nếu truyền vào userCode (ví dụ: GV001, GV002) thay vì ObjectId
+  if (teacherId && !mongoose.Types.ObjectId.isValid(teacherId)) {
+    try {
+      const query = User.findOne({ userCode: teacherId });
+      const teacherUser = query && typeof query.select === "function" ? await query.select("_id") : await query;
+      if (teacherUser && teacherUser._id) {
+        resolvedTeacherId = teacherUser._id;
+      }
+    } catch (_err) {
+      // Giữ nguyên resolvedTeacherId nếu User model mock không có findOne hoặc lỗi
+    }
+  }
+
   const filter = {
-    teacher: teacherId,
+    teacher: resolvedTeacherId,
     isDeleted: false,
   };
   if (academicYear) filter.academicYear = academicYear;

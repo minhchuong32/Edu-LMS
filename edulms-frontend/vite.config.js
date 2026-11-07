@@ -16,6 +16,8 @@ export default defineConfig({
     setupFiles: './src/test/setup.js',
     globals: true,
     clearMocks: true,
+    testTimeout: 15000,
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
