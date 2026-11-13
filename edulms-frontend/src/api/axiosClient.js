@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { clearAllAuthStorage } from '@/utils/storage'
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
@@ -20,6 +21,9 @@ axiosClient.interceptors.request.use(
     const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    } else if (!config._preserveAuthHeader) {
+      delete config.headers.Authorization
+      delete axiosClient.defaults.headers.common['Authorization']
     }
     return config
   },
@@ -100,8 +104,8 @@ axiosClient.interceptors.response.use(
         }
       } catch (refreshErr) {
         processQueue(refreshErr, null)
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        delete axiosClient.defaults.headers.common['Authorization']
+        clearAllAuthStorage()
 
         // Phát sự kiện đăng xuất toàn ứng dụng tới AuthContext
         if (typeof window !== 'undefined') {

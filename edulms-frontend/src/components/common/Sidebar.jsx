@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/useAuth'
 import { getNavigationByRole } from '@/constants/navigation'
 import { ROLE_LABELS, ROLE_BADGE_CLASSES } from '@/constants/roles'
@@ -6,6 +6,7 @@ import { Shield, Sparkles, LogOut } from 'lucide-react'
 
 export const Sidebar = ({ onItemClick, isMobile = false }) => {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const role = user?.role || 'student'
   const items = getNavigationByRole(role)
   const roleLabel = ROLE_LABELS[role] || role
@@ -15,6 +16,7 @@ export const Sidebar = ({ onItemClick, isMobile = false }) => {
   const handleMobileLogout = async () => {
     if (onItemClick) onItemClick()
     await logout()
+    navigate('/login', { replace: true })
   }
 
   return (

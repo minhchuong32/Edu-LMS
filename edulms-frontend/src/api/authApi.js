@@ -33,7 +33,17 @@ export const authApi = {
    * Đăng xuất, vô hiệu hóa Refresh Token và xóa cookie
    */
   logout: () => {
-    return axiosClient.post('/v1/auth/logout')
+    const token = localStorage.getItem('token')
+    return axiosClient.post(
+      '/v1/auth/logout',
+      {},
+      token
+        ? {
+            headers: { Authorization: `Bearer ${token}` },
+            _preserveAuthHeader: true,
+          }
+        : undefined,
+    )
   },
 
   /**

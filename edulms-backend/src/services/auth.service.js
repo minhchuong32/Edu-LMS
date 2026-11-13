@@ -263,10 +263,14 @@ const refreshSession = async (oldRefreshToken) => {
 /**
  * Đăng xuất: Vô hiệu hóa/Xóa Refresh Token khỏi CSDL
  * @param {string} refreshToken
+ * @param {string} [userId]
  */
-const logoutUser = async (refreshToken) => {
+const logoutUser = async (refreshToken, userId = null) => {
   if (refreshToken) {
     await RefreshToken.deleteMany({ token: refreshToken });
+  }
+  if (userId) {
+    await RefreshToken.deleteMany({ user: userId });
   }
   return true;
 };

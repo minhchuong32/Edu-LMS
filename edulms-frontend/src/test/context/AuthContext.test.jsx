@@ -93,9 +93,11 @@ describe('AuthContext & AuthProvider', () => {
     expect(localStorage.getItem('token')).toBe('new_token_777')
   })
 
-  it('logout dọn dẹp state và localStorage', async () => {
+  it('logout dọn dẹp state và toàn bộ bộ nhớ (localStorage, sessionStorage)', async () => {
     localStorage.setItem('token', 'token_to_remove')
     localStorage.setItem('user', JSON.stringify({ email: 'user@edu.vn' }))
+    localStorage.setItem('extra_cached_key', 'cached_value')
+    sessionStorage.setItem('session_key', 'session_value')
     authApi.getMe.mockResolvedValue({
       data: { user: { email: 'user@edu.vn' } },
     })
@@ -116,6 +118,24 @@ describe('AuthContext & AuthProvider', () => {
 
     expect(screen.getByTestId('auth').textContent).toBe('unauthenticated')
     expect(localStorage.getItem('token')).toBeNull()
+    expect(localStorage.getItem('user')).toBeNull()
+    expect(localStorage.getItem('extra_cached_key')).toBeNull()
+    expect(sessionStorage.getItem('session_key')).toBeNull()
+  })
+
+  it('không hiển thị tài khoản cũ trong localStorage nếu token không tồn tại hoặc hết hạn', async () => {
+    localStorage.setItem('user', JSON.stringify({ email: 'stale_user@edu.vn', fullName: 'Tài Khoản Cũ' }))
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    )
+
+    await act(async () => {})
+
+    expect(screen.getByTestId('auth').textContent).toBe('unauthenticated')
+    expect(screen.getByTestId('user-email').textContent).toBe('none')
     expect(localStorage.getItem('user')).toBeNull()
   })
 })

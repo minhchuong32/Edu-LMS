@@ -16,7 +16,7 @@ export const Header = ({ onToggleSidebar, isSidebarOpen = false }) => {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/login')
+    navigate('/login', { replace: true })
   }
 
   const getDashboardPath = () => {
