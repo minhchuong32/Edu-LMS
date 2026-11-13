@@ -1,18 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import AuthContext from './authContext.js'
 import authApi from '@/api/authApi'
+import { clearAllAuthStorage } from '@/utils/storage'
 
 export const AuthProvider = ({ children }) => {
-  // Khởi tạo thông tin user từ localStorage nếu có
-  const [user, setUser] = useState(() => {
-    try {
-      const savedUser = localStorage.getItem('user')
-      return savedUser ? JSON.parse(savedUser) : null
-    } catch {
-      localStorage.removeItem('user')
-      return null
-    }
-  })
+  // Không khởi tạo trực tiếp user từ localStorage khi chưa xác thực token với server
+  // để tránh hiện tượng mở local vẫn hiển thị tài khoản cũ đã đăng nhập trước đó.
+  const [user, setUser] = useState(null)
 
   // Khởi tạo Access Token từ localStorage nếu có
   const [token, setToken] = useState(
@@ -22,20 +16,29 @@ export const AuthProvider = ({ children }) => {
   const initializedRef = useRef(false)
 
   /**
-   * Đăng xuất: gọi API vô hiệu hóa Refresh Token trong CSDL, xóa cookie và reset state
+   * Xóa sạch toàn bộ state xác thực và bộ nhớ trình duyệt
+   */
+  const resetAuthState = useCallback(() => {
+    setUser(null)
+    setToken(null)
+    clearAllAuthStorage()
+  }, [])
+
+  /**
+   * Đăng xuất: xóa ngay toàn bộ bộ nhớ (localStorage, sessionStorage, cookies, caches),
+   * reset state và gọi API vô hiệu hóa Refresh Token trong CSDL.
    */
   const logout = useCallback(async () => {
     try {
-      await authApi.logout()
+      const logoutPromise = authApi.logout()
+      resetAuthState()
+      await logoutPromise
     } catch (err) {
       console.warn('Logout API error:', err)
     } finally {
-      setUser(null)
-      setToken(null)
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      resetAuthState()
     }
-  }, [])
+  }, [resetAuthState])
 
   // Khôi phục phiên đăng nhập khi load lại trang
   useEffect(() => {
@@ -46,28 +49,33 @@ export const AuthProvider = ({ children }) => {
 
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token')
-      // Không có token -> không cần khôi phục session
+      // Không có token -> xóa sạch dữ liệu cũ còn sót lại và kết thúc
       if (!storedToken) {
-        if (active) setLoading(false)
+        clearAllAuthStorage()
+        if (active) {
+          setUser(null)
+          setToken(null)
+          setLoading(false)
+        }
         return
       }
 
       try {
         const res = await authApi.getMe()
-        const currentUser = res.data?.user || res.user
+        const currentUser = res?.data?.user || res?.user
 
         if (active && currentUser) {
           setUser(currentUser)
+          setToken(storedToken)
           localStorage.setItem('user', JSON.stringify(currentUser))
+        } else if (active) {
+          resetAuthState()
         }
       } catch (error) {
         console.error('Failed to restore session:', error)
-        // Xóa token ngay lập tức — không cần gọi logout API (tránh thêm latency)
+        // Xóa toàn bộ bộ nhớ ngay lập tức khi token không còn hợp lệ
         if (active) {
-          setUser(null)
-          setToken(null)
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
+          resetAuthState()
         }
       } finally {
         if (active) {
@@ -81,30 +89,37 @@ export const AuthProvider = ({ children }) => {
     return () => {
       active = false
     }
-  }, [logout])
+  }, [resetAuthState])
 
-  // Lắng nghe sự kiện 'auth:logout' phát ra từ Axios Interceptor khi Refresh Token không còn hợp lệ
+  // Lắng nghe sự kiện 'auth:logout' từ Axios Interceptor và sự kiện 'storage' đa tab
   useEffect(() => {
     const handleAxiosAutoLogout = () => {
-      setUser(null)
-      setToken(null)
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      resetAuthState()
+    }
+
+    const handleStorageChange = (event) => {
+      if (event.key === null || (event.key === 'token' && !event.newValue)) {
+        setUser(null)
+        setToken(null)
+      }
     }
 
     window.addEventListener('auth:logout', handleAxiosAutoLogout)
+    window.addEventListener('storage', handleStorageChange)
     return () => {
       window.removeEventListener('auth:logout', handleAxiosAutoLogout)
+      window.removeEventListener('storage', handleStorageChange)
     }
-  }, [])
+  }, [resetAuthState])
 
   /**
-   * Đăng nhập: Lưu thông tin người dùng và token vào state & localStorage
+   * Đăng nhập: Dọn sạch bộ nhớ cũ trước khi lưu thông tin người dùng và token mới
    */
   const login = async (credentials) => {
     setLoading(true)
 
     try {
+      clearAllAuthStorage()
       const res = await authApi.login(credentials)
       const data = res.data || res
       const userData = data.user
@@ -141,7 +156,7 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     loading,
-    isAuthenticated: Boolean(user && token),
+    isAuthenticated: Boolean(!loading && user && token),
     login,
     logout,
     updateUser,

@@ -1,3 +1,4 @@
+const jwt = require("jsonwebtoken");
 const {
   activateAccount,
   verifyActivationInfo,
@@ -119,19 +120,30 @@ const refresh = async (req, res, next) => {
 
 /**
  * POST /api/v1/auth/logout
- * Đăng xuất: Vô hiệu hóa Refresh Token trong CSDL và xóa HttpOnly Cookie
+ * Đăng xuất: Vô hiệu hóa Refresh Token trong CSDL, xóa HttpOnly Cookie và bộ nhớ trình duyệt
  */
 const logout = async (req, res, next) => {
   try {
     const token = req.cookies?.[REFRESH_TOKEN_COOKIE] || req.body?.refreshToken;
 
-    await logoutUser(token);
+    let userId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const accessToken = authHeader.split(" ")[1];
+      const decoded = jwt.decode(accessToken);
+      userId = decoded?.userId || decoded?.id || null;
+    }
+
+    await logoutUser(token, userId);
 
     // Xóa HttpOnly Cookie
     res.clearCookie(REFRESH_TOKEN_COOKIE, {
       ...getCookieOptions(),
       maxAge: 0,
     });
+
+    // Yêu cầu trình duyệt xóa toàn bộ bộ nhớ (cookies, localStorage, sessionStorage) của origin
+    res.setHeader("Clear-Site-Data", '"cookies", "storage"');
 
     return successResponse(res, null, "Đăng xuất thành công!", 200);
   } catch (error) {
