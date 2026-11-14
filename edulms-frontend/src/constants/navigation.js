@@ -31,6 +31,11 @@ export const ROLE_NAVIGATION_MENU = {
       icon: Building2,
     },
     {
+      label: 'Xếp lớp học sinh',
+      path: '/admin/class-students',
+      icon: GraduationCap,
+    },
+    {
       label: 'Quản lý người dùng',
       path: '/admin/users',
       icon: Users,

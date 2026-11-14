@@ -11,6 +11,7 @@ import ActivatePage from '@/features/auth/ActivatePage'
 import AdminDashboard from '@/features/admin/AdminDashboard'
 import ImportUsersPage from '@/features/admin/ImportUsersPage'
 import AcademicStructurePage from '@/features/admin/AcademicStructurePage'
+import ClassStudentsPage from '@/features/admin/ClassStudentsPage'
 import TeacherDashboard from '@/features/teacher/TeacherDashboard'
 import StudentDashboard from '@/features/student/StudentDashboard'
 import ParentDashboard from '@/features/parent/ParentDashboard'
@@ -46,6 +47,8 @@ export const AppRoutes = () => {
           <Route element={<DashboardLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/academic-structure" element={<AcademicStructurePage />} />
+            <Route path="/admin/class-students" element={<ClassStudentsPage />} />
+            <Route path="/admin/classes/:classId/students" element={<ClassStudentsPage />} />
             <Route path="/admin/import-users" element={<ImportUsersPage />} />
           </Route>
         </Route>
