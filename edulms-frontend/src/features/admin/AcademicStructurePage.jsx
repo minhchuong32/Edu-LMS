@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useId } from 'react'
+import { Link } from 'react-router-dom'
 import academicApi from '@/api/academicApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import {
@@ -975,25 +976,35 @@ export const AcademicStructurePage = () => {
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveTab('assignments')
-                            setSearchKeyword(cls.name)
-                          }}
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <Link
+                          to={`/admin/class-students?classId=${cls._id}`}
                           className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                          title="Quản lý danh sách học sinh"
                         >
-                          <span>Xem phân công môn học</span>
-                          <span>→</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openCreateAssignmentModal(cls._id)}
-                          className="text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-colors"
-                        >
-                          + Gán môn
-                        </button>
+                          <Users className="w-3.5 h-3.5" />
+                          <span>DS Học sinh ({cls.studentCount || 0})</span>
+                        </Link>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('assignments')
+                              setSearchKeyword(cls.name)
+                            }}
+                            className="text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg transition-colors"
+                            title="Xem phân công môn học"
+                          >
+                            Phân công →
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openCreateAssignmentModal(cls._id)}
+                            className="text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg transition-colors"
+                          >
+                            + Gán môn
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -1071,6 +1082,13 @@ export const AcademicStructurePage = () => {
                             </td>
                             <td className="py-3.5 px-4 text-right">
                               <div className="flex items-center justify-end gap-1">
+                                <Link
+                                  to={`/admin/class-students?classId=${cls._id}`}
+                                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Quản lý danh sách học sinh"
+                                >
+                                  <Users className="w-4 h-4" />
+                                </Link>
                                 <button
                                   type="button"
                                   onClick={() => openAssignHomeroomModal(cls)}

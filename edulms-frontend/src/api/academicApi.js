@@ -36,6 +36,22 @@ export const academicApi = {
 
   // --- DANH SÁCH GIÁO VIÊN ---
   getTeachers: (params) => axiosClient.get('/v1/academic/teachers', { params }),
+
+  // --- XẾP LỚP & CHUYỂN LỚP HỌC SINH (STUDENT ASSIGNMENTS) ---
+  getStudentsByClass: (classId, params) =>
+    axiosClient.get(`/v1/academic/classes/${classId}/students`, { params }),
+  getUnassignedStudents: (params) =>
+    axiosClient.get('/v1/academic/students/unassigned', { params }),
+  addStudentsToClass: (classId, data) =>
+    axiosClient.post(`/v1/academic/classes/${classId}/students`, data),
+  removeStudentFromClass: (classId, studentId, data) =>
+    axiosClient.delete(`/v1/academic/classes/${classId}/students/${studentId}`, { data }),
+  transferStudent: (data) =>
+    axiosClient.post('/v1/academic/classes/transfer-student', data),
+  getClassHistory: (params) =>
+    axiosClient.get('/v1/academic/class-history', { params }),
+  getClassHistoryByClassId: (classId, params) =>
+    axiosClient.get(`/v1/academic/classes/${classId}/history`, { params }),
 }
 
 export default academicApi
