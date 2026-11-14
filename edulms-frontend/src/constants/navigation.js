@@ -38,6 +38,11 @@ export const ROLE_NAVIGATION_MENU = {
       icon: GraduationCap,
     },
     {
+      label: 'Thời khóa biểu',
+      path: '/admin/timetable',
+      icon: Calendar,
+    },
+    {
       label: 'Quản lý người dùng',
       path: '/admin/users',
       icon: Users,
@@ -58,6 +63,11 @@ export const ROLE_NAVIGATION_MENU = {
       label: 'Trang tổng quan',
       path: '/teacher/dashboard',
       icon: LayoutDashboard,
+    },
+    {
+      label: 'Lịch giảng dạy',
+      path: '/teacher/timetable',
+      icon: Calendar,
     },
     {
       label: 'Quản lý bài giảng',

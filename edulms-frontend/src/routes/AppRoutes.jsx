@@ -21,6 +21,7 @@ import StudentLessonViewerPage from '@/features/student/StudentLessonViewerPage'
 import StudentAssignmentPage from '@/features/student/StudentAssignmentPage'
 import StudentExamListPage from '@/features/student/StudentExamListPage'
 import ParentDashboard from '@/features/parent/ParentDashboard'
+import WeeklyTimetablePage from '@/features/timetable/WeeklyTimetablePage'
 import HomePage from '@/features/portal/HomePage'
 import NewsPage from '@/features/portal/NewsPage'
 import GuidePage from '@/features/portal/GuidePage'
@@ -55,6 +56,7 @@ export const AppRoutes = () => {
             <Route path="/admin/academic-structure" element={<AcademicStructurePage />} />
             <Route path="/admin/class-students" element={<ClassStudentsPage />} />
             <Route path="/admin/classes/:classId/students" element={<ClassStudentsPage />} />
+            <Route path="/admin/timetable" element={<WeeklyTimetablePage />} />
             <Route path="/admin/import-users" element={<ImportUsersPage />} />
           </Route>
         </Route>
@@ -63,6 +65,7 @@ export const AppRoutes = () => {
         <Route element={<RoleRoute allowedRoles={['teacher']} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+            <Route path="/teacher/timetable" element={<WeeklyTimetablePage />} />
             <Route path="/teacher/lessons" element={<TeacherLessonListPage />} />
             <Route path="/teacher/assignments" element={<TeacherAssignmentPage />} />
             <Route path="/teacher/questions" element={<TeacherQuestionExamPage />} />
@@ -74,6 +77,7 @@ export const AppRoutes = () => {
         <Route element={<RoleRoute allowedRoles={['student']} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/student/timetable" element={<WeeklyTimetablePage />} />
             <Route path="/student/lessons" element={<StudentLessonViewerPage />} />
             <Route path="/student/assignments" element={<StudentAssignmentPage />} />
             <Route path="/student/exams" element={<StudentExamListPage />} />
