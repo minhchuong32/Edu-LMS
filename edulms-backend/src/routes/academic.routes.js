@@ -6,6 +6,7 @@ const subjectController = require("../controllers/subject.controller");
 const classController = require("../controllers/class.controller");
 const assignmentController = require("../controllers/assignment.controller");
 const studentAssignmentController = require("../controllers/studentAssignment.controller");
+const timetableRoutes = require("./timetable.routes");
 
 const router = express.Router();
 
@@ -65,5 +66,9 @@ router.delete("/classes/:id/students/:studentId", authorize("admin"), studentAss
 router.post("/classes/transfer-student", authorize("admin"), studentAssignmentController.transferStudent);
 router.get("/classes/:id/history", authorize("admin"), studentAssignmentController.getClassHistoryByClassId);
 
-module.exports = router;
+/* ==========================================
+   6. QUẢN LÝ THỜI KHÓA BIỂU (TIMETABLES)
+========================================== */
+router.use("/timetables", timetableRoutes);
 
+module.exports = router;

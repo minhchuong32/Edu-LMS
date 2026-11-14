@@ -36,6 +36,10 @@ router.post(
 const academicRoutes = require("./academic.routes");
 router.use("/academic", academicRoutes);
 
+// Quản lý Thời khóa biểu (Timetables)
+const timetableRoutes = require("./timetable.routes");
+router.use("/timetables", timetableRoutes);
+
 // Quản lý Nội dung bài giảng (Lesson Contents)
 const lessonContentRoutes = require("./lessonContent.routes");
 router.use("/lessons", lessonContentRoutes);
