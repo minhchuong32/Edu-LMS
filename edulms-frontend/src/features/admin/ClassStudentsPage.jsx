@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useSearchParams, useParams, useNavigate, Link } from 'react-router-dom'
+import { useSearchParams, useParams, Link } from 'react-router-dom'
 import academicApi from '@/api/academicApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import {
   Users,
-  UserCheck,
   UserX,
   UserPlus,
   ArrowRightLeft,
@@ -31,7 +30,6 @@ import {
 export const ClassStudentsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const { classId: routeClassId } = useParams()
-  const navigate = useNavigate()
 
   // Base data
   const [classes, setClasses] = useState([])
@@ -89,7 +87,7 @@ export const ClassStudentsPage = () => {
 
   const academicYears = ['2025-2026', '2026-2027', '2024-2025']
 
-  const extractErrMsg = (err) => {
+  const extractErrMsg = useCallback((err) => {
     if (typeof err === 'string') return err
     return (
       err?.message ||
@@ -97,11 +95,10 @@ export const ClassStudentsPage = () => {
       err?.response?.data?.message ||
       'Đã xảy ra lỗi khi thực hiện thao tác!'
     )
-  }
+  }, [])
 
-  // Load Classes & Grades
+  // Refetch helper for manual user actions & submissions
   const fetchClassesAndGrades = useCallback(async () => {
-    setLoadingClasses(true)
     try {
       const [gradesRes, classesRes] = await Promise.all([
         academicApi.getGrades(),
@@ -112,7 +109,6 @@ export const ClassStudentsPage = () => {
       setGrades(fetchedGrades)
       setClasses(fetchedClasses)
 
-      // If no selectedClassId or current selected class is not in fetched classes, auto-select first
       if (fetchedClasses.length > 0) {
         const found = fetchedClasses.some((c) => c._id === selectedClassId)
         if (!selectedClassId || !found) {
@@ -126,11 +122,126 @@ export const ClassStudentsPage = () => {
     } finally {
       setLoadingClasses(false)
     }
-  }, [selectedYear, selectedClassId, setSearchParams])
+  }, [selectedYear, selectedClassId, setSearchParams, extractErrMsg])
 
+  // Fetch Class Students for manual refresh
+  const fetchStudentsOfClass = useCallback(async (classId) => {
+    if (!classId) return
+    try {
+      const res = await academicApi.getStudentsByClass(classId)
+      setClassData(res?.data || null)
+    } catch (err) {
+      setErrorMsg(extractErrMsg(err))
+      setClassData(null)
+    } finally {
+      setLoadingStudents(false)
+    }
+  }, [extractErrMsg])
+
+  // Fetch Class History for manual refresh
+  const fetchClassHistoryData = useCallback(async (classId) => {
+    if (!classId) return
+    try {
+      const res = await academicApi.getClassHistoryByClassId(classId)
+      setClassHistory(res?.data || [])
+    } catch (err) {
+      console.error('Không thể tải lịch sử lớp:', err)
+    } finally {
+      setLoadingHistory(false)
+    }
+  }, [])
+
+  // Load classes & grades on selectedYear change
   useEffect(() => {
-    fetchClassesAndGrades()
-  }, [selectedYear])
+    let ignore = false
+    const loadData = async () => {
+      try {
+        const [gradesRes, classesRes] = await Promise.all([
+          academicApi.getGrades(),
+          academicApi.getClasses({ academicYear: selectedYear }),
+        ])
+        if (!ignore) {
+          const fetchedGrades = gradesRes?.data || []
+          const fetchedClasses = classesRes?.data || []
+          setGrades(fetchedGrades)
+          setClasses(fetchedClasses)
+
+          if (fetchedClasses.length > 0) {
+            const found = fetchedClasses.some((c) => c._id === selectedClassId)
+            if (!selectedClassId || !found) {
+              const firstId = fetchedClasses[0]._id
+              setSelectedClassId(firstId)
+              setSearchParams({ classId: firstId })
+            }
+          }
+          setLoadingClasses(false)
+        }
+      } catch (err) {
+        if (!ignore) {
+          setErrorMsg(extractErrMsg(err))
+          setLoadingClasses(false)
+        }
+      }
+    }
+
+    loadData()
+    return () => {
+      ignore = true
+    }
+  }, [selectedYear, selectedClassId, setSearchParams, extractErrMsg])
+
+  // Load students of selected class
+  useEffect(() => {
+    if (!selectedClassId) return
+    let ignore = false
+
+    const loadStudents = async () => {
+      try {
+        const res = await academicApi.getStudentsByClass(selectedClassId)
+        if (!ignore) {
+          setClassData(res?.data || null)
+          setLoadingStudents(false)
+        }
+      } catch (err) {
+        if (!ignore) {
+          setErrorMsg(extractErrMsg(err))
+          setClassData(null)
+          setLoadingStudents(false)
+        }
+      }
+    }
+
+    loadStudents()
+    return () => {
+      ignore = true
+    }
+  }, [selectedClassId, extractErrMsg])
+
+  // Load class history when activeTab is history
+  useEffect(() => {
+    if (!selectedClassId || activeTab !== 'history') return
+    let ignore = false
+
+    const loadHistory = async () => {
+      try {
+        const res = await academicApi.getClassHistoryByClassId(selectedClassId)
+        if (!ignore) {
+          setClassHistory(res?.data || [])
+          setLoadingHistory(false)
+        }
+      } catch (err) {
+        if (!ignore) {
+          console.error('Không thể tải lịch sử lớp:', err)
+          setLoadingHistory(false)
+        }
+      }
+    }
+
+    loadHistory()
+    return () => {
+      ignore = true
+    }
+  }, [selectedClassId, activeTab])
 
   // Filtered classes by selected Grade
   const filteredClasses = useMemo(() => {
@@ -149,58 +260,27 @@ export const ClassStudentsPage = () => {
     )
   }, [classData, classes, selectedClassId])
 
-  // Fetch Class Students
-  const fetchStudentsOfClass = useCallback(async (classId) => {
-    if (!classId) return
-    setLoadingStudents(true)
-    setErrorMsg(null)
-    try {
-      const res = await academicApi.getStudentsByClass(classId)
-      setClassData(res?.data || null)
-    } catch (err) {
-      setErrorMsg(extractErrMsg(err))
-      setClassData(null)
-    } finally {
-      setLoadingStudents(false)
-    }
-  }, [])
-
-  // Fetch Class History
-  const fetchClassHistoryData = useCallback(async (classId) => {
-    if (!classId) return
-    setLoadingHistory(true)
-    try {
-      const res = await academicApi.getClassHistoryByClassId(classId)
-      setClassHistory(res?.data || [])
-    } catch (err) {
-      // Non-blocking history load
-      console.error('Không thể tải lịch sử lớp:', err)
-    } finally {
-      setLoadingHistory(false)
-    }
-  }, [])
-
-  // Trigger loading when selectedClassId changes
-  useEffect(() => {
-    if (selectedClassId) {
-      fetchStudentsOfClass(selectedClassId)
-      if (activeTab === 'history') {
-        fetchClassHistoryData(selectedClassId)
-      }
-    }
-  }, [selectedClassId, fetchStudentsOfClass])
-
-  useEffect(() => {
-    if (selectedClassId && activeTab === 'history') {
-      fetchClassHistoryData(selectedClassId)
-    }
-  }, [activeTab, selectedClassId, fetchClassHistoryData])
-
   // Handle changing class
   const handleSelectClass = (newClassId) => {
     setSelectedClassId(newClassId)
     setSearchParams({ classId: newClassId })
     setSearchKeyword('')
+    setLoadingStudents(true)
+    if (activeTab === 'history') {
+      setLoadingHistory(true)
+    }
+  }
+
+  const handleYearChange = (newYear) => {
+    setSelectedYear(newYear)
+    setLoadingClasses(true)
+  }
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    if (tab === 'history' && selectedClassId) {
+      setLoadingHistory(true)
+    }
   }
 
   // Filtered students in current class based on searchKeyword
@@ -304,7 +384,6 @@ export const ClassStudentsPage = () => {
   // ACTION: TRANSFER STUDENT
   // ----------------------------------------------------
   const openTransferModal = (student) => {
-    // Pick first candidate destination class (different from current class)
     const availableTargets = classes.filter((c) => c._id !== selectedClassId)
     const defaultTarget = availableTargets.length > 0 ? availableTargets[0]._id : ''
 
@@ -371,7 +450,7 @@ export const ClassStudentsPage = () => {
         note: '',
         isConfirming: false,
       })
-      // Refresh current class students & classes list
+      // Refresh
       fetchStudentsOfClass(selectedClassId)
       fetchClassesAndGrades()
       if (activeTab === 'history') fetchClassHistoryData(selectedClassId)
@@ -461,6 +540,8 @@ export const ClassStudentsPage = () => {
           <button
             type="button"
             onClick={() => {
+              setLoadingClasses(true)
+              setLoadingStudents(true)
               fetchClassesAndGrades()
               if (selectedClassId) fetchStudentsOfClass(selectedClassId)
             }}
@@ -525,7 +606,7 @@ export const ClassStudentsPage = () => {
               <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <select
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
+                onChange={(e) => handleYearChange(e.target.value)}
                 className="w-full pl-9 pr-8 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white cursor-pointer"
               >
                 {academicYears.map((yr) => (
@@ -730,7 +811,7 @@ export const ClassStudentsPage = () => {
             <div className="flex gap-4">
               <button
                 type="button"
-                onClick={() => setActiveTab('students')}
+                onClick={() => handleTabChange('students')}
                 className={`flex items-center gap-2 pb-3 px-1 border-b-2 text-sm font-bold transition-colors ${
                   activeTab === 'students'
                     ? 'border-blue-600 text-blue-600'
@@ -742,7 +823,7 @@ export const ClassStudentsPage = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('history')}
+                onClick={() => handleTabChange('history')}
                 className={`flex items-center gap-2 pb-3 px-1 border-b-2 text-sm font-bold transition-colors ${
                   activeTab === 'history'
                     ? 'border-blue-600 text-blue-600'
@@ -934,7 +1015,10 @@ export const ClassStudentsPage = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => fetchClassHistoryData(selectedClassId)}
+                  onClick={() => {
+                    setLoadingHistory(true)
+                    fetchClassHistoryData(selectedClassId)
+                  }}
                   className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
