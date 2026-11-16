@@ -40,6 +40,10 @@ router.use("/academic", academicRoutes);
 const lessonContentRoutes = require("./lessonContent.routes");
 router.use("/lessons", lessonContentRoutes);
 
+// Quản lý Bài tập (Assignments)
+const assignmentRoutes = require("./assignment.routes");
+router.use("/assignments", assignmentRoutes);
+
 // Quản lý Upload tài liệu & media lên Cloudinary
 const uploadRoutes = require("./upload.routes");
 router.use("/upload", uploadRoutes);

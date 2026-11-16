@@ -4,7 +4,7 @@ const { protect, authorize } = require("../middlewares");
 const gradeController = require("../controllers/grade.controller");
 const subjectController = require("../controllers/subject.controller");
 const classController = require("../controllers/class.controller");
-const assignmentController = require("../controllers/assignment.controller");
+const assignmentController = require("../controllers/teachingAssignment.controller");
 const studentAssignmentController = require("../controllers/studentAssignment.controller");
 
 const router = express.Router();
