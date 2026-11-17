@@ -3,6 +3,7 @@ const rbacMiddleware = require("./rbac.middleware");
 const errorMiddleware = require("./error.middleware");
 const lessonPermissionMiddleware = require("./lessonPermission.middleware");
 const assignmentPermissionMiddleware = require("./assignmentPermission.middleware");
+const submissionPermissionMiddleware = require("./submissionPermission.middleware");
 const uploadMiddleware = require("./upload.middleware");
 
 module.exports = {
@@ -11,6 +12,7 @@ module.exports = {
   ...errorMiddleware,
   ...lessonPermissionMiddleware,
   ...assignmentPermissionMiddleware,
+  ...submissionPermissionMiddleware,
   uploadFile: uploadMiddleware.uploadFile,
   uploadDocument: uploadMiddleware.uploadDocument,
   uploadSpreadsheet: uploadMiddleware.uploadSpreadsheet,

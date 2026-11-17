@@ -5,13 +5,29 @@ const {
   canModifyAssignment,
   canAccessTeachingAssignment,
   canViewAssignmentDetail,
+  canSubmitAssignment,
+  canViewSubmissionsByAssignment,
 } = require("../middlewares");
 const assignmentController = require("../controllers/assignment.controller");
+const submissionController = require("../controllers/submission.controller");
 
 const router = express.Router();
 
 // Tất cả các route quản lý bài tập đều yêu cầu người dùng đăng nhập (401 nếu thiếu token)
 router.use(protect);
+
+// 0. Các route tích hợp cho Bài nộp (Submissions) dưới /assignments/submissions
+router.get(
+  "/submissions",
+  canViewSubmissionsByAssignment,
+  submissionController.getSubmissionsByAssignment
+);
+
+router.post(
+  "/submissions",
+  canSubmitAssignment,
+  submissionController.submitAssignment
+);
 
 // 1. Lấy danh sách bài tập (hỗ trợ lọc theo teachingAssignment, status, search)
 router.get(
@@ -125,6 +141,30 @@ router.post(
   "/:id/unlock",
   canModifyAssignment,
   assignmentController.openAssignment
+);
+
+// 9. Nộp bài & Lấy danh sách bài nộp trực tiếp theo bài tập (/assignments/:assignmentId/submissions)
+router.get(
+  "/:assignmentId/submissions",
+  canViewSubmissionsByAssignment,
+  submissionController.getSubmissionsByAssignment
+);
+
+router.post(
+  "/:assignmentId/submissions",
+  canSubmitAssignment,
+  submissionController.submitAssignment
+);
+
+router.post(
+  "/:assignmentId/submit",
+  canSubmitAssignment,
+  submissionController.submitAssignment
+);
+
+router.get(
+  "/:assignmentId/my-submission",
+  submissionController.getMySubmission
 );
 
 module.exports = router;
