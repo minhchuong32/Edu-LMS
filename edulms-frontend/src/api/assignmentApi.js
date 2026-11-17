@@ -91,6 +91,35 @@ export const assignmentApi = {
    */
   deleteUploadedFile: (payload) =>
     axiosClient.post('/v1/upload/delete', payload),
+
+  /**
+   * Học sinh nộp bài tập (hoặc nộp lại khi bài tập đang mở)
+   * @param {{ assignment: string, fileUrl: string, attachments?: Array, note?: string }} data
+   */
+  submitAssignment: (data) => axiosClient.post('/v1/submissions', data),
+
+  /**
+   * Lấy thông tin bài nộp của học sinh hiện tại cho một bài tập
+   * @param {string} assignmentId
+   */
+  getMySubmission: (assignmentId) =>
+    axiosClient.get(`/v1/submissions/my/${assignmentId}`),
+
+  /**
+   * Lấy danh sách bài nộp theo bài tập (dành cho Giáo viên phụ trách)
+   * @param {string} assignmentId
+   * @param {Object} [params] - { isLate, student }
+   */
+  getSubmissionsByAssignment: (assignmentId, params) =>
+    axiosClient.get(`/v1/submissions/assignment/${assignmentId}`, { params }),
+
+  /**
+   * Giáo viên chấm điểm và nhận xét bài nộp
+   * @param {string} submissionId
+   * @param {{ score: number, feedback?: string }} data
+   */
+  gradeSubmission: (submissionId, data) =>
+    axiosClient.patch(`/v1/submissions/${submissionId}/grade`, data),
 }
 
 export default assignmentApi
