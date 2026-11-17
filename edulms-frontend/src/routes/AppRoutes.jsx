@@ -14,6 +14,7 @@ import AcademicStructurePage from '@/features/admin/AcademicStructurePage'
 import ClassStudentsPage from '@/features/admin/ClassStudentsPage'
 import TeacherDashboard from '@/features/teacher/TeacherDashboard'
 import TeacherLessonListPage from '@/features/teacher/TeacherLessonListPage'
+import TeacherAssignmentPage from '@/features/teacher/TeacherAssignmentPage'
 import StudentDashboard from '@/features/student/StudentDashboard'
 import StudentLessonViewerPage from '@/features/student/StudentLessonViewerPage'
 import ParentDashboard from '@/features/parent/ParentDashboard'
@@ -60,6 +61,7 @@ export const AppRoutes = () => {
           <Route element={<DashboardLayout />}>
             <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
             <Route path="/teacher/lessons" element={<TeacherLessonListPage />} />
+            <Route path="/teacher/assignments" element={<TeacherAssignmentPage />} />
           </Route>
         </Route>
 
