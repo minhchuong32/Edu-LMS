@@ -1,112 +1,200 @@
 const assignmentService = require("../services/assignment.service");
-const { successResponse } = require("../utils/apiResponse");
+const { successResponse, errorResponse } = require("../utils/apiResponse");
 
-const getAssignments = async (req, res, next) => {
-  try {
-    const assignments = await assignmentService.getAssignments(req.query);
-    return successResponse(res, assignments, "Lấy danh sách phân công giảng dạy thành công");
-  } catch (error) {
-    next(error);
+/**
+ * Trích xuất ngữ cảnh xác thực & đối tượng đã kiểm tra từ middleware
+ */
+const getRequestContext = (req) => ({
+  user: req.user,
+  targetTeachingAssignment: req.targetTeachingAssignment,
+  targetAssignmentDoc: req.targetAssignmentDoc,
+  studentClass: req.studentClass,
+});
+
+/**
+ * Xử lý lỗi từ tầng service trả về đúng định dạng API response
+ */
+const handleServiceError = (res, next, error) => {
+  if (error && error.statusCode) {
+    return errorResponse(res, error.message, error.statusCode);
   }
+  return next(error);
 };
 
-const getAssignmentById = async (req, res, next) => {
-  try {
-    const assignment = await assignmentService.getAssignmentById(req.params.id);
-    return successResponse(res, assignment, "Lấy chi tiết phân công giảng dạy thành công");
-  } catch (error) {
-    next(error);
-  }
-};
-
+/**
+ * [POST] /api/v1/assignments
+ * Tạo mới bài tập liên kết với TeachingAssignment
+ */
 const createAssignment = async (req, res, next) => {
   try {
-    const assignment = await assignmentService.createAssignment(req.body);
-    return successResponse(res, assignment, "Phân công giảng dạy thành công", 201);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const updateAssignment = async (req, res, next) => {
-  try {
-    const assignment = await assignmentService.updateAssignment(req.params.id, req.body);
-    return successResponse(res, assignment, "Cập nhật phân công giảng dạy thành công");
-  } catch (error) {
-    next(error);
-  }
-};
-
-const deleteAssignment = async (req, res, next) => {
-  try {
-    const result = await assignmentService.deleteAssignment(req.params.id);
-    return successResponse(res, result, result.message);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getTeachersList = async (req, res, next) => {
-  try {
-    const teachers = await assignmentService.getTeachersList(req.query.academicYear);
-    return successResponse(res, teachers, "Lấy danh sách giáo viên thành công");
-  } catch (error) {
-    next(error);
-  }
-};
-
-const checkConflict = async (req, res, next) => {
-  try {
-    const result = await assignmentService.checkConflicts(req.body);
+    const savedAssignment = await assignmentService.createAssignment(
+      req.body,
+      getRequestContext(req)
+    );
     return successResponse(
       res,
-      result,
-      result.hasConflict ? "Phát hiện xung đột lịch giảng dạy" : "Lịch giảng dạy không bị trùng lặp"
+      savedAssignment,
+      "Tạo bài tập thành công",
+      201
     );
   } catch (error) {
-    next(error);
+    return handleServiceError(res, next, error);
   }
 };
 
-const getTeacherSchedule = async (req, res, next) => {
+/**
+ * [GET] /api/v1/assignments
+ * Lấy danh sách bài tập theo bộ lọc và phân quyền TeachingAssignment
+ */
+const getAssignments = async (req, res, next) => {
   try {
-    let { teacherId } = req.params;
-    const { academicYear, semester } = req.query;
-
-    // Hỗ trợ trường hợp gọi bằng alias 'me', hoặc 'undefined', hoặc nếu user là giáo viên và không có teacherId
-    if (!teacherId || teacherId === "me" || teacherId === "undefined" || teacherId === "null") {
-      if (req.user?.role === "teacher" || req.user?.userId) {
-        teacherId = req.user.userId;
-      }
-    }
-
-    let schedule = await assignmentService.getTeacherSchedule(teacherId, academicYear, semester);
-
-    // Fallback: Nếu không tìm thấy phân công theo teacherId và req.user có userCode
-    if ((!schedule || schedule.length === 0) && req.user?.userCode) {
-      const fallbackSchedule = await assignmentService.getTeacherSchedule(
-        req.user.userCode,
-        academicYear,
-        semester
-      );
-      if (fallbackSchedule && fallbackSchedule.length > 0) {
-        schedule = fallbackSchedule;
-      }
-    }
-
-    return successResponse(res, schedule, "Lấy lịch giảng dạy của giáo viên thành công");
+    const assignments = await assignmentService.getAssignments(
+      req.query,
+      getRequestContext(req)
+    );
+    return successResponse(
+      res,
+      assignments,
+      "Lấy danh sách bài tập thành công"
+    );
   } catch (error) {
-    next(error);
+    return handleServiceError(res, next, error);
   }
+};
+
+/**
+ * [GET] /api/v1/assignments/by-class-subject
+ * [GET] /api/v1/assignments/class/:classId/subject/:subjectId
+ * Lấy danh sách bài tập theo Lớp học và Môn học
+ */
+const getAssignmentsByClassAndSubject = async (req, res, next) => {
+  try {
+    const classId = req.params.classId || req.query.classId || req.query.class;
+    const subjectId =
+      req.params.subjectId || req.query.subjectId || req.query.subject;
+    const { academicYear, semester, status } = req.query;
+
+    const { assignments, isEmptyTeachingAssignment } =
+      await assignmentService.getAssignmentsByClassAndSubject(
+        { classId, subjectId, academicYear, semester, status },
+        getRequestContext(req)
+      );
+
+    return successResponse(
+      res,
+      assignments,
+      isEmptyTeachingAssignment
+        ? "Chưa có bài tập cho lớp và môn học này"
+        : "Lấy danh sách bài tập theo lớp và môn học thành công"
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
+ * [GET] /api/v1/assignments/:id
+ * Lấy chi tiết một bài tập theo ID
+ */
+const getAssignmentById = async (req, res, next) => {
+  try {
+    const assignmentDoc = await assignmentService.getAssignmentById(
+      req.params.id,
+      getRequestContext(req)
+    );
+    return successResponse(
+      res,
+      assignmentDoc,
+      "Lấy chi tiết bài tập thành công"
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
+ * [PUT/PATCH] /api/v1/assignments/:id
+ * Cập nhật thông tin bài tập
+ */
+const updateAssignment = async (req, res, next) => {
+  try {
+    const updatedAssignment = await assignmentService.updateAssignment(
+      req.params.id,
+      req.body,
+      getRequestContext(req)
+    );
+    return successResponse(
+      res,
+      updatedAssignment,
+      "Cập nhật bài tập thành công"
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
+ * [DELETE] /api/v1/assignments/:id
+ * Xóa mềm bài tập và dọn dẹp tệp đính kèm trên Cloudinary
+ */
+const deleteAssignment = async (req, res, next) => {
+  try {
+    await assignmentService.deleteAssignment(
+      req.params.id,
+      getRequestContext(req)
+    );
+    return successResponse(res, null, "Xóa bài tập thành công");
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
+ * [PATCH/PUT] /api/v1/assignments/:id/status
+ * API mở/khóa nhận bài (status: 'open' | 'locked' hoặc tự động đảo trạng thái)
+ */
+const updateAssignmentStatus = async (req, res, next) => {
+  try {
+    const { assignment, message } =
+      await assignmentService.updateAssignmentStatus(
+        req.params.id,
+        req.body?.status,
+        getRequestContext(req)
+      );
+    return successResponse(res, assignment, message);
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
+ * [PATCH/POST] /api/v1/assignments/:id/lock
+ * Khóa nhận bài tập (status = 'locked')
+ */
+const lockAssignment = async (req, res, next) => {
+  req.body = { ...req.body, status: "locked" };
+  return updateAssignmentStatus(req, res, next);
+};
+
+/**
+ * [PATCH/POST] /api/v1/assignments/:id/open (hoặc /unlock)
+ * Mở nhận bài tập (status = 'open')
+ */
+const openAssignment = async (req, res, next) => {
+  req.body = { ...req.body, status: "open" };
+  return updateAssignmentStatus(req, res, next);
 };
 
 module.exports = {
-  getAssignments,
-  getAssignmentById,
   createAssignment,
+  getAssignments,
+  getAssignmentsByClassAndSubject,
+  getAssignmentById,
   updateAssignment,
   deleteAssignment,
-  getTeachersList,
-  checkConflict,
-  getTeacherSchedule,
+  updateAssignmentStatus,
+  toggleAssignmentStatus: updateAssignmentStatus,
+  lockAssignment,
+  openAssignment,
+  unlockAssignment: openAssignment,
 };

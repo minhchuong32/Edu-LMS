@@ -59,6 +59,7 @@ export const FileUploadManager = ({
   accept,
   title = 'Tải lên tài liệu hoặc video bài giảng',
   helperText,
+  autoUpload = false,
 }) => {
   const [selectedFiles, setSelectedFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
@@ -150,6 +151,14 @@ export const FileUploadManager = ({
     setSelectedFiles((prev) => [...prev, ...newItems])
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+
+    if (autoUpload) {
+      newItems.forEach((item) => {
+        if (item.status === 'ready') {
+          void handleUploadSingleItem(item)
+        }
+      })
     }
   }
 

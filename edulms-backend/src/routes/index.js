@@ -40,6 +40,18 @@ router.use("/academic", academicRoutes);
 const lessonContentRoutes = require("./lessonContent.routes");
 router.use("/lessons", lessonContentRoutes);
 
+// Quản lý Bài tập (Assignments)
+const assignmentRoutes = require("./assignment.routes");
+router.use("/assignments", assignmentRoutes);
+
+// Quản lý Bài nộp của học sinh (Submissions)
+const submissionRoutes = require("./submission.routes");
+router.use("/submissions", submissionRoutes);
+
+// Quản lý Thông báo (Notifications)
+const notificationRoutes = require("./notification.routes");
+router.use("/notifications", notificationRoutes);
+
 // Quản lý Upload tài liệu & media lên Cloudinary
 const uploadRoutes = require("./upload.routes");
 router.use("/upload", uploadRoutes);

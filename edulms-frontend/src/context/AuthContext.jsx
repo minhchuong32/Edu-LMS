@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import AuthContext from './authContext.js'
 import authApi from '@/api/authApi'
 import { clearAllAuthStorage } from '@/utils/storage'
@@ -13,7 +13,6 @@ export const AuthProvider = ({ children }) => {
     () => localStorage.getItem('token') || null,
   )
   const [loading, setLoading] = useState(true)
-  const initializedRef = useRef(false)
 
   /**
    * Xóa sạch toàn bộ state xác thực và bộ nhớ trình duyệt
@@ -37,19 +36,17 @@ export const AuthProvider = ({ children }) => {
       console.warn('Logout API error:', err)
     } finally {
       resetAuthState()
+      setLoading(false)
     }
   }, [resetAuthState])
 
-  // Khôi phục phiên đăng nhập khi load lại trang
+  // Khôi phục phiên đăng nhập khi load lại trang (tương thích hoàn toàn với React StrictMode)
   useEffect(() => {
-    if (initializedRef.current) return
-    initializedRef.current = true
-
     let active = true
 
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token')
-      // Không có token -> xóa sạch dữ liệu cũ còn sót lại và kết thúc
+      // Không có token -> xóa sạch dữ liệu cũ còn sót lại và kết thúc loading ngay
       if (!storedToken) {
         clearAllAuthStorage()
         if (active) {
@@ -64,12 +61,14 @@ export const AuthProvider = ({ children }) => {
         const res = await authApi.getMe()
         const currentUser = res?.data?.user || res?.user
 
-        if (active && currentUser) {
-          setUser(currentUser)
-          setToken(storedToken)
-          localStorage.setItem('user', JSON.stringify(currentUser))
-        } else if (active) {
-          resetAuthState()
+        if (active) {
+          if (currentUser) {
+            setUser(currentUser)
+            setToken(storedToken)
+            localStorage.setItem('user', JSON.stringify(currentUser))
+          } else {
+            resetAuthState()
+          }
         }
       } catch (error) {
         console.error('Failed to restore session:', error)

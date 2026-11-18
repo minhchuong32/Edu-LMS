@@ -1,457 +1,753 @@
 const mongoose = require("mongoose");
+const Assignment = require("../models/Assignment");
 const TeachingAssignment = require("../models/TeachingAssignment");
-const Class = require("../models/Class");
-const Subject = require("../models/Subject");
-const User = require("../models/User");
+const { getStudentEnrolledClass } = require("../middlewares/lessonPermission.middleware");
+const { safeDeleteFromCloudinary } = require("../config/cloudinary");
+
+const VALID_STATUSES = ["open", "locked"];
 
 /**
- * Kiểm tra xem 2 khung giờ học (slot) có bị giao thoa (overlap) hay không
+ * Tạo lỗi nghiệp vụ có gắn statusCode chuẩn HTTP
  */
-const isSlotOverlapping = (slotA, slotB) => {
-  if (Number(slotA.dayOfWeek) !== Number(slotB.dayOfWeek)) return false;
-  return (
-    Number(slotA.startPeriod) <= Number(slotB.endPeriod) &&
-    Number(slotA.endPeriod) >= Number(slotB.startPeriod)
-  );
+const createAppError = (message, statusCode = 400) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
 };
 
 /**
- * Lấy danh sách các học kỳ có khả năng xung đột thời gian
+ * Xóa an toàn các tệp đính kèm trên Cloudinary liên quan đến một bài tập
+ * @param {object} assignmentDoc
+ * @param {string[]} [excludeUrls=[]]
  */
-const getConflictingSemesters = (semester) => {
-  if (semester === "CaNam") return ["HK1", "HK2", "CaNam"];
-  return [semester, "CaNam"];
+const deleteAssignmentCloudinaryFiles = async (assignmentDoc, excludeUrls = []) => {
+  if (!assignmentDoc) return;
+  const deleteTasks = [];
+
+  if (Array.isArray(assignmentDoc.attachments)) {
+    for (const att of assignmentDoc.attachments) {
+      if (att && att.url && !excludeUrls.includes(att.url)) {
+        if (att.url.includes("res.cloudinary.com") || att.publicId) {
+          deleteTasks.push(
+            safeDeleteFromCloudinary(att.publicId || att.url, att.resourceType)
+          );
+        }
+      }
+    }
+  }
+
+  if (
+    assignmentDoc.attachmentUrl &&
+    assignmentDoc.attachmentUrl.includes("res.cloudinary.com") &&
+    !excludeUrls.includes(assignmentDoc.attachmentUrl)
+  ) {
+    const isAlreadyQueued = assignmentDoc.attachments?.some(
+      (a) =>
+        a.url === assignmentDoc.attachmentUrl ||
+        a.publicId === assignmentDoc.attachmentUrl
+    );
+    if (!isAlreadyQueued) {
+      deleteTasks.push(safeDeleteFromCloudinary(assignmentDoc.attachmentUrl));
+    }
+  }
+
+  if (deleteTasks.length > 0) {
+    try {
+      await Promise.allSettled(deleteTasks);
+    } catch (err) {
+      console.error("[Assignment] Lỗi khi xóa tệp Cloudinary:", err.message);
+    }
+  }
 };
 
 /**
- * Kiểm tra xung đột lịch giảng dạy chi tiết
- * - Xung đột cặp Lớp - Môn trong cùng thời gian
- * - Xung đột lịch của Giáo viên (Teacher Schedule Conflict)
- * - Xung đột lịch của Lớp (Class Schedule Conflict)
+ * Chuẩn hóa danh sách tệp đính kèm (attachments)
+ * @param {Array} rawAttachments
  */
-const checkConflicts = async ({
-  class: classId,
-  subject: subjectId,
-  teacher: teacherId,
-  academicYear,
-  semester = "CaNam",
-  schedules = [],
-  excludeId = null,
-}) => {
-  const conflictingSemesters = getConflictingSemesters(semester);
+const normalizeAttachments = (rawAttachments) => {
+  if (!Array.isArray(rawAttachments)) return [];
+  return rawAttachments
+    .filter((item) => item && typeof item.url === "string" && item.url.trim())
+    .map((item) => ({
+      name: item.name || item.originalName || "Tài liệu bài tập",
+      url: item.url.trim(),
+      publicId: item.publicId || "",
+      resourceType: item.resourceType || "raw",
+      fileType: item.fileType || item.category || "document",
+      fileSize: Number(item.fileSize || item.size) || 0,
+      format: item.format || "",
+    }));
+};
 
-  // 1. Kiểm tra Lớp - Môn đã có giáo viên phụ trách chưa
-  const existingClassSubject = await TeachingAssignment.findOne({
-    class: classId,
-    subject: subjectId,
-    academicYear,
-    semester: { $in: conflictingSemesters },
-    isDeleted: false,
-    ...(excludeId ? { _id: { $ne: excludeId } } : {}),
-  }).populate("teacher", "fullName userCode");
+/**
+ * Kiểm tra quyền sở hữu bài tập theo TeachingAssignment đối với Giáo viên / Admin
+ */
+const verifyTeacherOwnership = async (assignmentDoc, user) => {
+  if (!user) return;
+  const { role, userId } = user;
 
-  if (existingClassSubject) {
-    const teacherName = existingClassSubject.teacher?.fullName || "Giáo viên khác";
-    return {
-      hasConflict: true,
-      type: "CLASS_SUBJECT_DUPLICATE",
-      message: `Lớp học và môn học này đã được phân công cho thầy/cô ${teacherName} (${existingClassSubject.semester}) trong năm học ${academicYear}! Không được phân công trùng lặp.`,
+  if (!["admin", "teacher"].includes(role)) {
+    throw createAppError(
+      `Tài khoản với vai trò '${role}' không có quyền thao tác trên bài tập!`,
+      403
+    );
+  }
+
+  if (role === "teacher") {
+    const ta = await TeachingAssignment.findOne({
+      _id: assignmentDoc.teachingAssignment,
+      isDeleted: false,
+    });
+    const assignedTeacherId = (ta?.teacher?._id || ta?.teacher)?.toString();
+
+    if (!ta || assignedTeacherId !== userId.toString()) {
+      throw createAppError(
+        "Bạn không phải giáo viên phụ trách bài tập này, không có quyền thao tác!",
+        403
+      );
+    }
+  }
+};
+
+/**
+ * Tạo mới bài tập liên kết với TeachingAssignment
+ */
+const createAssignment = async (data = {}, context = {}) => {
+  let {
+    teachingAssignment,
+    title,
+    description,
+    dueDate,
+    attachmentUrl,
+    attachments: rawAttachments,
+    status,
+    isActive,
+  } = data;
+
+  const { user, targetTeachingAssignment: preloadedTa } = context;
+
+  if (!title || !String(title).trim()) {
+    throw createAppError("Tiêu đề bài tập là bắt buộc", 400);
+  }
+
+  if (String(title).trim().length < 2) {
+    throw createAppError("Tiêu đề bài tập phải có ít nhất 2 ký tự", 400);
+  }
+
+  if (!dueDate) {
+    throw createAppError("Hạn nộp bài (dueDate) là bắt buộc", 400);
+  }
+
+  const parsedDueDate = new Date(dueDate);
+  if (Number.isNaN(parsedDueDate.getTime())) {
+    throw createAppError("Hạn nộp bài (dueDate) không hợp lệ", 400);
+  }
+
+  if (status !== undefined && status !== null && status !== "") {
+    const normalizedStatus = String(status).trim().toLowerCase();
+    if (!VALID_STATUSES.includes(normalizedStatus)) {
+      throw createAppError(
+        `Trạng thái bài tập '${status}' không hợp lệ. Chỉ chấp nhận: open, locked`,
+        400
+      );
+    }
+    status = normalizedStatus;
+  } else {
+    status = "open";
+  }
+
+  let targetTeachingAssignment = preloadedTa;
+  if (!targetTeachingAssignment) {
+    if (!teachingAssignment) {
+      throw createAppError(
+        "Phân công giảng dạy (teachingAssignment) là bắt buộc",
+        400
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(teachingAssignment)) {
+      throw createAppError(
+        "Mã phân công giảng dạy (teachingAssignment) không hợp lệ",
+        400
+      );
+    }
+
+    targetTeachingAssignment = await TeachingAssignment.findOne({
+      _id: teachingAssignment,
+      isDeleted: false,
+    });
+
+    if (!targetTeachingAssignment) {
+      throw createAppError(
+        "Phân công giảng dạy không tồn tại hoặc đã bị xóa",
+        404
+      );
+    }
+
+    if (user) {
+      const { role, userId } = user;
+      if (!["admin", "teacher"].includes(role)) {
+        throw createAppError(
+          `Tài khoản với vai trò '${role}' không có quyền tạo bài tập!`,
+          403
+        );
+      }
+
+      const assignedTeacherId = (
+        targetTeachingAssignment.teacher?._id || targetTeachingAssignment.teacher
+      )?.toString();
+
+      if (role === "teacher" && assignedTeacherId !== userId.toString()) {
+        throw createAppError(
+          "Bạn không được phân công giảng dạy lớp học này, không có quyền tạo bài tập!",
+          403
+        );
+      }
+    }
+  }
+
+  const attachments = normalizeAttachments(rawAttachments);
+  if (!attachmentUrl && attachments.length > 0) {
+    attachmentUrl = attachments[0].url;
+  }
+
+  const newAssignment = new Assignment({
+    teachingAssignment: targetTeachingAssignment._id || teachingAssignment,
+    title: String(title).trim(),
+    description: description ? String(description).trim() : "",
+    dueDate: parsedDueDate,
+    attachmentUrl: attachmentUrl ? String(attachmentUrl).trim() : "",
+    attachments,
+    status,
+    isActive: isActive !== undefined ? Boolean(isActive) : true,
+  });
+
+  return await newAssignment.save();
+};
+
+/**
+ * Lấy danh sách bài tập (hỗ trợ lọc theo teachingAssignment, status, isActive, search)
+ */
+const getAssignments = async (query = {}, context = {}) => {
+  const { teachingAssignment, status, isActive, search } = query;
+  const { user, targetTeachingAssignment: preloadedTa, studentClass: preloadedClass } = context;
+
+  const filter = { isDeleted: false };
+
+  if (user?.role === "student" || user?.role === "parent") {
+    filter.isActive = true;
+  } else if (isActive !== undefined) {
+    filter.isActive = isActive === "true" || isActive === true;
+  }
+
+  if (status) {
+    const normalizedStatus = String(status).trim().toLowerCase();
+    if (!VALID_STATUSES.includes(normalizedStatus)) {
+      throw createAppError(
+        `Trạng thái lọc '${status}' không hợp lệ. Chỉ chấp nhận: open, locked`,
+        400
+      );
+    }
+    filter.status = normalizedStatus;
+  }
+
+  if (search && String(search).trim()) {
+    filter.title = { $regex: String(search).trim(), $options: "i" };
+  }
+
+  if (teachingAssignment) {
+    if (!mongoose.Types.ObjectId.isValid(teachingAssignment)) {
+      throw createAppError(
+        "Mã phân công giảng dạy (teachingAssignment) không hợp lệ",
+        400
+      );
+    }
+
+    let targetTeachingAssignment = preloadedTa;
+    if (!targetTeachingAssignment) {
+      targetTeachingAssignment = await TeachingAssignment.findOne({
+        _id: teachingAssignment,
+        isDeleted: false,
+      });
+    }
+
+    if (!targetTeachingAssignment) {
+      throw createAppError(
+        "Phân công giảng dạy không tồn tại hoặc đã bị xóa",
+        404
+      );
+    }
+
+    if (user?.role === "teacher") {
+      const assignedTeacherId = (
+        targetTeachingAssignment.teacher?._id || targetTeachingAssignment.teacher
+      )?.toString();
+
+      if (assignedTeacherId !== user.userId.toString()) {
+        throw createAppError(
+          "Bạn không được phân công giảng dạy lớp/môn học này, không có quyền truy cập bài tập!",
+          403
+        );
+      }
+    } else if (user?.role === "student") {
+      let studentClass = preloadedClass;
+      if (!studentClass) {
+        const enrolled = await getStudentEnrolledClass(user.userId);
+        studentClass = enrolled.studentClass;
+      }
+
+      const assignedClassId = (
+        targetTeachingAssignment.class?._id || targetTeachingAssignment.class
+      )?.toString();
+
+      if (assignedClassId !== studentClass._id.toString()) {
+        throw createAppError(
+          "Bạn không thuộc lớp học này, không có quyền truy cập bài tập!",
+          403
+        );
+      }
+    }
+
+    filter.teachingAssignment = teachingAssignment;
+  } else if (user?.role === "teacher") {
+    const teacherAssignments = await TeachingAssignment.find({
+      teacher: user.userId,
+      isDeleted: false,
+    }).select("_id");
+
+    filter.teachingAssignment = {
+      $in: teacherAssignments.map((a) => a._id),
+    };
+  } else if (user?.role === "student") {
+    let studentClass = preloadedClass;
+    if (!studentClass) {
+      const enrolled = await getStudentEnrolledClass(user.userId);
+      studentClass = enrolled.studentClass;
+    }
+
+    const classAssignments = await TeachingAssignment.find({
+      class: studentClass._id,
+      isDeleted: false,
+    }).select("_id");
+
+    filter.teachingAssignment = {
+      $in: classAssignments.map((a) => a._id),
     };
   }
 
-  // 2. Nếu có khai báo lịch chi tiết (schedules), kiểm tra trùng tiết/thứ
-  if (Array.isArray(schedules) && schedules.length > 0) {
-    // 2.1 Kiểm tra trùng lịch của Giáo viên
-    const teacherAssignments = await TeachingAssignment.find({
-      teacher: teacherId,
-      academicYear,
-      semester: { $in: conflictingSemesters },
-      isDeleted: false,
-      ...(excludeId ? { _id: { $ne: excludeId } } : {}),
-    })
-      .populate("class", "name")
-      .populate("subject", "name")
-      .populate("teacher", "fullName");
-
-    for (const other of teacherAssignments) {
-      if (Array.isArray(other.schedules)) {
-        for (const slotOther of other.schedules) {
-          for (const newSlot of schedules) {
-            if (isSlotOverlapping(newSlot, slotOther)) {
-              const dayLabel = newSlot.dayOfWeek === 8 ? "Chủ Nhật" : `Thứ ${newSlot.dayOfWeek}`;
-              return {
-                hasConflict: true,
-                type: "TEACHER_SCHEDULE_CONFLICT",
-                message: `Giáo viên đã có lịch dạy lớp ${other.class?.name} môn ${other.subject?.name} vào ${dayLabel} (Tiết ${slotOther.startPeriod}-${slotOther.endPeriod})!`,
-              };
-            }
-          }
-        }
-      }
-    }
-
-    // 2.2 Kiểm tra trùng lịch của Lớp học
-    const classAssignments = await TeachingAssignment.find({
-      class: classId,
-      academicYear,
-      semester: { $in: conflictingSemesters },
-      isDeleted: false,
-      ...(excludeId ? { _id: { $ne: excludeId } } : {}),
-    })
-      .populate("subject", "name")
-      .populate("teacher", "fullName")
-      .populate("class", "name");
-
-    for (const other of classAssignments) {
-      if (Array.isArray(other.schedules)) {
-        for (const slotOther of other.schedules) {
-          for (const newSlot of schedules) {
-            if (isSlotOverlapping(newSlot, slotOther)) {
-              const dayLabel = newSlot.dayOfWeek === 8 ? "Chủ Nhật" : `Thứ ${newSlot.dayOfWeek}`;
-              return {
-                hasConflict: true,
-                type: "CLASS_SCHEDULE_CONFLICT",
-                message: `Lớp đã có lịch học môn ${other.subject?.name} (GV: ${other.teacher?.fullName}) vào ${dayLabel} (Tiết ${slotOther.startPeriod}-${slotOther.endPeriod})!`,
-              };
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return { hasConflict: false, message: null };
-};
-
-/**
- * Lấy danh sách phân công giảng dạy theo bộ lọc
- */
-const getAssignments = async (query = {}) => {
-  const filter = { isDeleted: false };
-
-  if (query.class) filter.class = query.class;
-  if (query.subject) filter.subject = query.subject;
-  if (query.teacher) filter.teacher = query.teacher;
-  if (query.academicYear) filter.academicYear = query.academicYear.trim();
-  if (query.semester) filter.semester = query.semester;
-  if (query.status) filter.status = query.status;
-  if (query.isActive !== undefined) {
-    filter.isActive = query.isActive === "true" || query.isActive === true;
-  }
-
-  const assignments = await TeachingAssignment.find(filter)
+  return await Assignment.find(filter)
+    .sort({ dueDate: 1, createdAt: -1 })
     .populate({
-      path: "class",
-      select: "name academicYear room grade homeroomTeacher",
-      populate: { path: "grade", select: "level name" },
+      path: "teachingAssignment",
+      select: "class subject teacher academicYear semester",
+      populate: [
+        { path: "class", select: "name academicYear" },
+        { path: "subject", select: "name code" },
+        { path: "teacher", select: "fullName userCode email" },
+      ],
     })
-    .populate("subject", "name code periodsPerWeek")
-    .populate("teacher", "fullName userCode email")
-    .sort({ academicYear: -1, "class.name": 1, "subject.name": 1 })
     .lean();
-
-  return assignments;
 };
 
 /**
- * Lấy chi tiết phân công giảng dạy theo ID
+ * Lấy danh sách bài tập theo Lớp học và Môn học
  */
-const getAssignmentById = async (id) => {
-  const assignment = await TeachingAssignment.findOne({ _id: id, isDeleted: false })
-    .populate({
-      path: "class",
-      select: "name academicYear room grade homeroomTeacher",
-      populate: { path: "grade", select: "level name" },
-    })
-    .populate("subject", "name code periodsPerWeek")
-    .populate("teacher", "fullName userCode email")
-    .lean();
+const getAssignmentsByClassAndSubject = async (params = {}, context = {}) => {
+  const { classId, subjectId, academicYear, semester, status } = params;
+  const { user, studentClass: preloadedClass } = context;
 
-  if (!assignment) {
-    const error = new Error("Phân công giảng dạy không tồn tại hoặc đã bị hủy!");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  return assignment;
-};
-
-/**
- * Tạo mới phân công giảng dạy
- * Đảm bảo:
- * 1. Dữ liệu Giáo viên, Lớp và Môn học tồn tại và hợp lệ trước khi phân công
- * 2. Ngăn chặn trùng phân công và trùng lịch giảng dạy
- */
-const createAssignment = async ({
-  class: classId,
-  subject: subjectId,
-  teacher: teacherId,
-  academicYear,
-  semester = "CaNam",
-  periodsPerWeek = 2,
-  schedules = [],
-  note = "",
-  isActive = true,
-}) => {
   if (!classId) {
-    const error = new Error("Lớp học là thông tin bắt buộc!");
-    error.statusCode = 400;
-    throw error;
+    throw createAppError("Thông tin lớp học (classId) là bắt buộc", 400);
   }
   if (!subjectId) {
-    const error = new Error("Môn học là thông tin bắt buộc!");
-    error.statusCode = 400;
-    throw error;
-  }
-  if (!teacherId) {
-    const error = new Error("Giáo viên bộ môn là thông tin bắt buộc!");
-    error.statusCode = 400;
-    throw error;
+    throw createAppError("Thông tin môn học (subjectId) là bắt buộc", 400);
   }
 
-  // 1. Kiểm tra tồn tại dữ liệu Lớp học
-  const targetClass = await Class.findOne({ _id: classId, isDeleted: false });
-  if (!targetClass) {
-    const error = new Error("Lớp học không tồn tại hoặc đã bị xóa!");
-    error.statusCode = 400;
-    throw error;
+  if (!mongoose.Types.ObjectId.isValid(classId)) {
+    throw createAppError(
+      "Mã lớp học (classId) không đúng định dạng ObjectId",
+      400
+    );
+  }
+  if (!mongoose.Types.ObjectId.isValid(subjectId)) {
+    throw createAppError(
+      "Mã môn học (subjectId) không đúng định dạng ObjectId",
+      400
+    );
   }
 
-  const cleanYear = (academicYear || targetClass.academicYear).trim();
+  if (user?.role === "student") {
+    let studentClass = preloadedClass;
+    if (!studentClass) {
+      const enrolled = await getStudentEnrolledClass(user.userId);
+      studentClass = enrolled.studentClass;
+    }
 
-  // 2. Kiểm tra tồn tại dữ liệu Môn học
-  const targetSubject = await Subject.findOne({ _id: subjectId, isDeleted: false });
-  if (!targetSubject) {
-    const error = new Error("Môn học không tồn tại hoặc đã bị ngưng hoạt động!");
-    error.statusCode = 400;
-    throw error;
+    if (classId.toString() !== studentClass._id.toString()) {
+      throw createAppError(
+        "Bạn không thuộc lớp học này, không có quyền truy cập danh sách bài tập!",
+        403
+      );
+    }
   }
 
-  // 3. Kiểm tra tồn tại dữ liệu Giáo viên
-  const targetTeacher = await User.findOne({ _id: teacherId, role: "teacher" });
-  if (!targetTeacher) {
-    const error = new Error("Tài khoản chỉ định không tồn tại hoặc không phải là giáo viên!");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  // 4. Kiểm tra xung đột lịch giảng dạy
-  const conflict = await checkConflicts({
+  const assignmentQuery = {
     class: classId,
     subject: subjectId,
-    teacher: teacherId,
-    academicYear: cleanYear,
-    semester,
-    schedules,
-  });
-
-  if (conflict.hasConflict) {
-    const error = new Error(conflict.message);
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const assignment = await TeachingAssignment.create({
-    class: classId,
-    subject: subjectId,
-    teacher: teacherId,
-    academicYear: cleanYear,
-    semester,
-    periodsPerWeek: periodsPerWeek ? Number(periodsPerWeek) : (targetSubject.periodsPerWeek || 2),
-    schedules: Array.isArray(schedules) ? schedules : [],
-    note: note ? note.trim() : "",
-    isActive,
     isDeleted: false,
-  });
+  };
+  if (academicYear) assignmentQuery.academicYear = academicYear.trim();
+  if (semester) assignmentQuery.semester = semester.trim();
 
-  return await TeachingAssignment.findById(assignment._id)
-    .populate({
-      path: "class",
-      select: "name academicYear room grade",
-      populate: { path: "grade", select: "level name" },
-    })
-    .populate("subject", "name code periodsPerWeek")
-    .populate("teacher", "fullName userCode email");
-};
+  const matchedTeachingAssignments = await TeachingAssignment.find(
+    assignmentQuery
+  ).lean();
 
-/**
- * Cập nhật thông tin phân công giảng dạy (đổi giáo viên, sửa lịch, số tiết, ghi chú)
- */
-const updateAssignment = async (id, data) => {
-  const assignment = await TeachingAssignment.findOne({ _id: id, isDeleted: false });
-  if (!assignment) {
-    const error = new Error("Phân công giảng dạy không tồn tại hoặc đã bị hủy!");
-    error.statusCode = 404;
-    throw error;
+  if (!matchedTeachingAssignments || matchedTeachingAssignments.length === 0) {
+    return {
+      assignments: [],
+      isEmptyTeachingAssignment: true,
+    };
   }
 
-  const targetClassId = data.class || assignment.class;
-  const targetSubjectId = data.subject || assignment.subject;
-  const targetTeacherId = data.teacher || assignment.teacher;
-  const targetYear = data.academicYear ? data.academicYear.trim() : assignment.academicYear;
-  const targetSemester = data.semester || assignment.semester;
-  const targetSchedules = data.schedules !== undefined ? data.schedules : assignment.schedules;
-
-  // Xác thực tồn tại nếu có thay đổi
-  if (data.teacher) {
-    const teacher = await User.findOne({ _id: data.teacher, role: "teacher" });
-    if (!teacher) {
-      const error = new Error("Giáo viên chỉ định không hợp lệ!");
-      error.statusCode = 400;
-      throw error;
-    }
-  }
-
-  if (data.class) {
-    const cls = await Class.findOne({ _id: data.class, isDeleted: false });
-    if (!cls) {
-      const error = new Error("Lớp học chỉ định không tồn tại!");
-      error.statusCode = 400;
-      throw error;
-    }
-  }
-
-  if (data.subject) {
-    const sub = await Subject.findOne({ _id: data.subject, isDeleted: false });
-    if (!sub) {
-      const error = new Error("Môn học chỉ định không tồn tại!");
-      error.statusCode = 400;
-      throw error;
-    }
-  }
-
-  // Kiểm tra xung đột lịch với các bản ghi khác
-  const conflict = await checkConflicts({
-    class: targetClassId,
-    subject: targetSubjectId,
-    teacher: targetTeacherId,
-    academicYear: targetYear,
-    semester: targetSemester,
-    schedules: targetSchedules,
-    excludeId: id,
-  });
-
-  if (conflict.hasConflict) {
-    const error = new Error(conflict.message);
-    error.statusCode = 400;
-    throw error;
-  }
-
-  if (data.teacher) assignment.teacher = targetTeacherId;
-  if (data.class) assignment.class = targetClassId;
-  if (data.subject) assignment.subject = targetSubjectId;
-  if (data.academicYear) assignment.academicYear = targetYear;
-  if (data.semester) assignment.semester = targetSemester;
-  if (data.periodsPerWeek !== undefined) assignment.periodsPerWeek = Number(data.periodsPerWeek);
-  if (data.schedules !== undefined) assignment.schedules = data.schedules;
-  if (data.status) assignment.status = data.status;
-  if (data.note !== undefined) assignment.note = data.note.trim();
-  if (data.isActive !== undefined) assignment.isActive = Boolean(data.isActive);
-
-  await assignment.save();
-
-  return await TeachingAssignment.findById(assignment._id)
-    .populate({
-      path: "class",
-      select: "name academicYear room grade",
-      populate: { path: "grade", select: "level name" },
-    })
-    .populate("subject", "name code periodsPerWeek")
-    .populate("teacher", "fullName userCode email");
-};
-
-/**
- * Xóa/Hủy phân công giảng dạy (áp dụng soft-delete)
- */
-const deleteAssignment = async (id) => {
-  const assignment = await TeachingAssignment.findOne({ _id: id, isDeleted: false });
-  if (!assignment) {
-    const error = new Error("Phân công giảng dạy không tồn tại hoặc đã bị hủy!");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  assignment.isDeleted = true;
-  assignment.isActive = false;
-  assignment.status = "suspended";
-  await assignment.save();
-
-  return { message: "Đã hủy phân công giảng dạy thành công!" };
-};
-
-/**
- * Lấy danh sách giáo viên có sẵn để lựa chọn phân công kèm thống kê số lớp phụ trách & lớp chủ nhiệm
- */
-const getTeachersList = async (academicYear = null) => {
-  const teachers = await User.find({ role: "teacher" })
-    .select("fullName userCode email className")
-    .sort({ fullName: 1 })
-    .lean();
-
-  const teachersWithStats = await Promise.all(
-    teachers.map(async (teacher) => {
-      // Đếm số phân công giảng dạy
-      const assignmentFilter = { teacher: teacher._id, isDeleted: false };
-      if (academicYear) assignmentFilter.academicYear = academicYear;
-      const assignmentCount = await TeachingAssignment.countDocuments(assignmentFilter);
-
-      // Tìm lớp đang làm GVCN trong năm học
-      const classFilter = { homeroomTeacher: teacher._id, isDeleted: false };
-      if (academicYear) classFilter.academicYear = academicYear;
-      const homeroomClass = await Class.findOne(classFilter).select("name academicYear").lean();
-
-      return {
-        ...teacher,
-        assignmentCount,
-        homeroomClass: homeroomClass ? homeroomClass.name : null,
-      };
-    })
-  );
-
-  return teachersWithStats;
-};
-
-/**
- * Lấy thời khóa biểu/lịch giảng dạy của một giáo viên
- */
-const getTeacherSchedule = async (teacherId, academicYear, semester) => {
-  let resolvedTeacherId = teacherId;
-
-  // Hỗ trợ nếu truyền vào userCode (ví dụ: GV001, GV002) thay vì ObjectId
-  if (teacherId && !mongoose.Types.ObjectId.isValid(teacherId)) {
-    try {
-      const query = User.findOne({ userCode: teacherId });
-      const teacherUser = query && typeof query.select === "function" ? await query.select("_id") : await query;
-      if (teacherUser && teacherUser._id) {
-        resolvedTeacherId = teacherUser._id;
-      }
-    } catch (_err) {
-      // Giữ nguyên resolvedTeacherId nếu User model mock không có findOne hoặc lỗi
+  if (user?.role === "teacher") {
+    const ownsAny = matchedTeachingAssignments.some(
+      (ta) =>
+        (ta.teacher?._id || ta.teacher)?.toString() === user.userId.toString()
+    );
+    if (!ownsAny) {
+      throw createAppError(
+        "Bạn không được phân công giảng dạy lớp/môn học này, không có quyền truy cập bài tập!",
+        403
+      );
     }
   }
 
   const filter = {
-    teacher: resolvedTeacherId,
+    teachingAssignment: {
+      $in: matchedTeachingAssignments.map((ta) => ta._id),
+    },
     isDeleted: false,
   };
-  if (academicYear) filter.academicYear = academicYear;
-  if (semester) filter.semester = { $in: getConflictingSemesters(semester) };
 
-  const assignments = await TeachingAssignment.find(filter)
-    .populate("class", "name room")
-    .populate("subject", "name code")
+  if (user?.role === "student" || user?.role === "parent") {
+    filter.isActive = true;
+  }
+
+  if (status) {
+    const normalizedStatus = String(status).trim().toLowerCase();
+    if (!VALID_STATUSES.includes(normalizedStatus)) {
+      throw createAppError(`Trạng thái lọc '${status}' không hợp lệ`, 400);
+    }
+    filter.status = normalizedStatus;
+  }
+
+  const assignments = await Assignment.find(filter)
+    .sort({ dueDate: 1, createdAt: -1 })
+    .populate({
+      path: "teachingAssignment",
+      select: "class subject teacher academicYear semester",
+      populate: [
+        { path: "class", select: "name academicYear" },
+        { path: "subject", select: "name code" },
+        { path: "teacher", select: "fullName userCode email" },
+      ],
+    })
     .lean();
 
-  return assignments;
+  return {
+    assignments,
+    isEmptyTeachingAssignment: false,
+  };
+};
+
+/**
+ * Lấy chi tiết một bài tập theo ID
+ */
+const getAssignmentById = async (id, context = {}) => {
+  const { user, targetAssignmentDoc } = context;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw createAppError("Mã bài tập không hợp lệ", 400);
+  }
+
+  const assignmentDoc = await Assignment.findOne({
+    _id: id,
+    isDeleted: false,
+  })
+    .populate({
+      path: "teachingAssignment",
+      select: "class subject teacher academicYear semester",
+      populate: [
+        { path: "class", select: "name academicYear" },
+        { path: "subject", select: "name code" },
+        { path: "teacher", select: "fullName userCode email" },
+      ],
+    })
+    .lean();
+
+  if (!assignmentDoc) {
+    throw createAppError("Bài tập không tồn tại hoặc đã bị xóa", 404);
+  }
+
+  if (user && !targetAssignmentDoc) {
+    const { role, userId } = user;
+    const ta = assignmentDoc.teachingAssignment;
+
+    if (role === "teacher") {
+      const assignedTeacherId = (ta?.teacher?._id || ta?.teacher)?.toString();
+      if (!ta || assignedTeacherId !== userId.toString()) {
+        throw createAppError(
+          "Bạn không được phân công giảng dạy lớp/môn học này, không có quyền xem bài tập!",
+          403
+        );
+      }
+    } else if (role === "student") {
+      if (!assignmentDoc.isActive) {
+        throw createAppError("Bài tập hiện chưa được công khai!", 403);
+      }
+      const { studentClass } = await getStudentEnrolledClass(userId);
+      const assignedClassId = (ta?.class?._id || ta?.class)?.toString();
+      if (!ta || assignedClassId !== studentClass._id.toString()) {
+        throw createAppError(
+          "Bạn không thuộc lớp học này, không có quyền truy cập bài tập!",
+          403
+        );
+      }
+    }
+  }
+
+  return assignmentDoc;
+};
+
+/**
+ * Cập nhật thông tin bài tập
+ */
+const updateAssignment = async (id, data = {}, context = {}) => {
+  const { user, targetAssignmentDoc } = context;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw createAppError("Mã bài tập không hợp lệ", 400);
+  }
+
+  let assignmentDoc = targetAssignmentDoc;
+  if (!assignmentDoc) {
+    assignmentDoc = await Assignment.findOne({
+      _id: id,
+      isDeleted: false,
+    });
+
+    if (!assignmentDoc) {
+      throw createAppError("Bài tập không tồn tại hoặc đã bị xóa", 404);
+    }
+
+    await verifyTeacherOwnership(assignmentDoc, user);
+  }
+
+  const {
+    title,
+    description,
+    dueDate,
+    attachmentUrl,
+    attachments: rawAttachments,
+    status,
+    isActive,
+    teachingAssignment: newTeachingAssignmentId,
+  } = data;
+
+  if (
+    newTeachingAssignmentId &&
+    newTeachingAssignmentId.toString() !==
+      assignmentDoc.teachingAssignment.toString()
+  ) {
+    if (!mongoose.Types.ObjectId.isValid(newTeachingAssignmentId)) {
+      throw createAppError(
+        "Mã phân công giảng dạy (teachingAssignment) không hợp lệ",
+        400
+      );
+    }
+
+    const newTa = await TeachingAssignment.findOne({
+      _id: newTeachingAssignmentId,
+      isDeleted: false,
+    });
+
+    if (!newTa) {
+      throw createAppError(
+        "Phân công giảng dạy mới không tồn tại hoặc đã bị xóa",
+        404
+      );
+    }
+
+    if (user?.role === "teacher") {
+      const newTeacherId = (newTa.teacher?._id || newTa.teacher)?.toString();
+      if (newTeacherId !== user.userId.toString()) {
+        throw createAppError(
+          "Bạn không được phân công giảng dạy ở lớp/môn học mới này!",
+          403
+        );
+      }
+    }
+
+    assignmentDoc.teachingAssignment = newTeachingAssignmentId;
+  }
+
+  if (title !== undefined) {
+    if (!String(title).trim()) {
+      throw createAppError("Tiêu đề bài tập không được để trống", 400);
+    }
+    if (String(title).trim().length < 2) {
+      throw createAppError("Tiêu đề bài tập phải có ít nhất 2 ký tự", 400);
+    }
+    assignmentDoc.title = String(title).trim();
+  }
+
+  if (description !== undefined) {
+    assignmentDoc.description = String(description).trim();
+  }
+
+  if (dueDate !== undefined) {
+    const parsedDueDate = new Date(dueDate);
+    if (!dueDate || Number.isNaN(parsedDueDate.getTime())) {
+      throw createAppError("Hạn nộp bài (dueDate) không hợp lệ", 400);
+    }
+    assignmentDoc.dueDate = parsedDueDate;
+  }
+
+  if (status !== undefined) {
+    const normalizedStatus = String(status).trim().toLowerCase();
+    if (!VALID_STATUSES.includes(normalizedStatus)) {
+      throw createAppError(
+        `Trạng thái bài tập '${status}' không hợp lệ. Chỉ chấp nhận: open, locked`,
+        400
+      );
+    }
+    assignmentDoc.status = normalizedStatus;
+  }
+
+  if (isActive !== undefined) {
+    assignmentDoc.isActive = Boolean(isActive);
+  }
+
+  if (rawAttachments !== undefined || attachmentUrl !== undefined) {
+    const nextAttachments =
+      rawAttachments !== undefined
+        ? normalizeAttachments(rawAttachments)
+        : assignmentDoc.attachments || [];
+    const nextAttachmentUrl =
+      attachmentUrl !== undefined
+        ? String(attachmentUrl).trim()
+        : nextAttachments[0]?.url || assignmentDoc.attachmentUrl || "";
+
+    const keepUrls = [
+      nextAttachmentUrl,
+      ...nextAttachments.map((a) => a.url),
+    ].filter(Boolean);
+
+    await deleteAssignmentCloudinaryFiles(assignmentDoc, keepUrls);
+
+    if (rawAttachments !== undefined) {
+      assignmentDoc.attachments = nextAttachments;
+    }
+    assignmentDoc.attachmentUrl = nextAttachmentUrl;
+  }
+
+  return await assignmentDoc.save();
+};
+
+/**
+ * Xóa mềm bài tập và dọn dẹp tệp đính kèm trên Cloudinary
+ */
+const deleteAssignment = async (id, context = {}) => {
+  const { user, targetAssignmentDoc } = context;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw createAppError("Mã bài tập không hợp lệ", 400);
+  }
+
+  let assignmentDoc = targetAssignmentDoc;
+  if (!assignmentDoc) {
+    assignmentDoc = await Assignment.findOne({
+      _id: id,
+      isDeleted: false,
+    });
+
+    if (!assignmentDoc) {
+      throw createAppError("Bài tập không tồn tại hoặc đã bị xóa", 404);
+    }
+
+    await verifyTeacherOwnership(assignmentDoc, user);
+  }
+
+  await deleteAssignmentCloudinaryFiles(assignmentDoc);
+
+  assignmentDoc.isDeleted = true;
+  assignmentDoc.isActive = false;
+  await assignmentDoc.save();
+
+  return null;
+};
+
+/**
+ * Mở / Khóa nhận bài tập (status: 'open' | 'locked' hoặc tự động đảo nếu không truyền)
+ */
+const updateAssignmentStatus = async (id, statusInput, context = {}) => {
+  const { user, targetAssignmentDoc } = context;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw createAppError("Mã bài tập không hợp lệ", 400);
+  }
+
+  let assignmentDoc = targetAssignmentDoc;
+  if (!assignmentDoc) {
+    assignmentDoc = await Assignment.findOne({
+      _id: id,
+      isDeleted: false,
+    });
+
+    if (!assignmentDoc) {
+      throw createAppError("Bài tập không tồn tại hoặc đã bị xóa", 404);
+    }
+
+    await verifyTeacherOwnership(assignmentDoc, user);
+  }
+
+  let nextStatus = statusInput;
+  if (nextStatus !== undefined && nextStatus !== null && nextStatus !== "") {
+    nextStatus = String(nextStatus).trim().toLowerCase();
+    if (!VALID_STATUSES.includes(nextStatus)) {
+      throw createAppError(
+        `Trạng thái bài tập '${statusInput}' không hợp lệ. Chỉ chấp nhận: open, locked`,
+        400
+      );
+    }
+  } else {
+    nextStatus = assignmentDoc.status === "open" ? "locked" : "open";
+  }
+
+  assignmentDoc.status = nextStatus;
+  const savedAssignment = await assignmentDoc.save();
+
+  const message =
+    nextStatus === "locked"
+      ? "Khóa nhận bài tập thành công"
+      : "Mở nhận bài tập thành công";
+
+  return {
+    assignment: savedAssignment,
+    message,
+  };
 };
 
 module.exports = {
-  checkConflicts,
-  getAssignments,
-  getAssignmentById,
+  createAppError,
+  deleteAssignmentCloudinaryFiles,
+  normalizeAttachments,
   createAssignment,
+  getAssignments,
+  getAssignmentsByClassAndSubject,
+  getAssignmentById,
   updateAssignment,
   deleteAssignment,
-  getTeachersList,
-  getTeacherSchedule,
+  updateAssignmentStatus,
 };
