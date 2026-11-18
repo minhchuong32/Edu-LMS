@@ -111,8 +111,30 @@ const getMySubmission = async (req, res, next) => {
 };
 
 /**
+ * [GET] /api/v1/submissions/:id
+ * Lấy chi tiết một bài nộp (Học sinh chỉ xem được điểm & nhận xét của chính mình)
+ */
+const getSubmissionById = async (req, res, next) => {
+  try {
+    const submissionId = req.params.submissionId || req.params.id;
+    const submission = await submissionService.getSubmissionById(
+      submissionId,
+      getRequestContext(req)
+    );
+
+    return successResponse(
+      res,
+      submission,
+      "Lấy chi tiết bài nộp thành công"
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
  * [PATCH/PUT] /api/v1/submissions/:id/grade
- * Giáo viên chấm điểm và nhận xét bài nộp
+ * Giáo viên chấm điểm (score) và nhận xét (feedback) bài nộp, đồng thời gửi thông báo cho học sinh
  */
 const gradeSubmission = async (req, res, next) => {
   try {
@@ -133,10 +155,58 @@ const gradeSubmission = async (req, res, next) => {
   }
 };
 
+/**
+ * [PATCH/PUT] /api/v1/submissions/:id/score
+ * API cập nhật điểm số (score) cho bài nộp
+ */
+const updateSubmissionScore = async (req, res, next) => {
+  try {
+    const submissionId = req.params.submissionId || req.params.id;
+    const updatedSubmission = await submissionService.updateSubmissionScore(
+      submissionId,
+      req.body,
+      getRequestContext(req)
+    );
+
+    return successResponse(
+      res,
+      updatedSubmission,
+      "Cập nhật điểm số bài nộp thành công"
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
+ * [PATCH/PUT] /api/v1/submissions/:id/feedback
+ * API cập nhật nhận xét (feedback) của giáo viên cho bài nộp
+ */
+const updateSubmissionFeedback = async (req, res, next) => {
+  try {
+    const submissionId = req.params.submissionId || req.params.id;
+    const updatedSubmission = await submissionService.updateSubmissionFeedback(
+      submissionId,
+      req.body,
+      getRequestContext(req)
+    );
+
+    return successResponse(
+      res,
+      updatedSubmission,
+      "Cập nhật nhận xét bài nộp thành công"
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
 module.exports = {
   submitAssignment,
   getSubmissionsByAssignment,
   getMySubmission,
+  getSubmissionById,
   gradeSubmission,
+  updateSubmissionScore,
+  updateSubmissionFeedback,
 };
-

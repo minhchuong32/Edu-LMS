@@ -4,16 +4,22 @@ const Assignment = require("../src/models/Assignment");
 const TeachingAssignment = require("../src/models/TeachingAssignment");
 const User = require("../src/models/User");
 const Class = require("../src/models/Class");
+const Notification = require("../src/models/Notification");
 const {
   canSubmitAssignment,
   canViewSubmissionsByAssignment,
+  canGradeSubmission,
+  canViewSubmissionDetail,
 } = require("../src/middlewares/submissionPermission.middleware");
 const submissionService = require("../src/services/submission.service");
 const {
   submitAssignment,
   getSubmissionsByAssignment,
   getMySubmission,
+  getSubmissionById,
   gradeSubmission,
+  updateSubmissionScore,
+  updateSubmissionFeedback,
 } = require("../src/controllers/submission.controller");
 
 // Helper tạo mock Mongoose query chain có thể await
@@ -450,7 +456,7 @@ describe("Submission Controller & Service Unit Tests", () => {
     );
   });
 
-  it("gradeSubmission cho phép giáo viên phụ trách chấm điểm và nhận xét bài nộp", async () => {
+  it("gradeSubmission cho phép giáo viên phụ trách chấm điểm, lưu nhận xét và tự động tạo thông báo cho học sinh", async () => {
     req.user = { userId: teacherId, role: "teacher" };
     req.params = { id: submissionId };
     req.body = { score: 8.5, feedback: "Làm tốt, cần trình bày kỹ hơn câu 3" };
@@ -458,6 +464,7 @@ describe("Submission Controller & Service Unit Tests", () => {
     const mockSubDoc = {
       _id: submissionId,
       assignment: assignmentId,
+      student: studentId,
       score: null,
       feedback: "",
       save: jest.fn().mockImplementation(function () {
@@ -465,12 +472,157 @@ describe("Submission Controller & Service Unit Tests", () => {
       }),
     };
     req.targetSubmissionDoc = mockSubDoc;
+    req.targetAssignmentDoc = {
+      _id: assignmentId,
+      title: "Bài tập chương 1",
+    };
+
+    const notifySaveSpy = jest
+      .spyOn(Notification.prototype, "save")
+      .mockImplementation(function () {
+        return Promise.resolve(this);
+      });
 
     await gradeSubmission(req, res, next);
 
     expect(mockSubDoc.score).toBe(8.5);
     expect(mockSubDoc.feedback).toBe("Làm tốt, cần trình bày kỹ hơn câu 3");
+    expect(notifySaveSpy).toHaveBeenCalledTimes(1);
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it("updateSubmissionScore kiểm tra điểm nằm trong khoảng hợp lệ (0 - 10), từ chối điểm < 0 hoặc > 10 (400)", async () => {
+    req.user = { userId: teacherId, role: "teacher" };
+    req.params = { id: submissionId };
+    req.body = { score: 11.5 };
+
+    await updateSubmissionScore(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        message: expect.stringMatching(/nằm trong khoảng từ 0 đến 10/i),
+      })
+    );
+  });
+
+  it("updateSubmissionFeedback lưu nhận xét của giáo viên và gửi thông báo cho học sinh", async () => {
+    req.user = { userId: teacherId, role: "teacher" };
+    req.params = { id: submissionId };
+    req.body = { feedback: "Bài giải có hướng tư duy rất sáng tạo!" };
+
+    const mockSubDoc = {
+      _id: submissionId,
+      assignment: assignmentId,
+      student: studentId,
+      score: 9,
+      feedback: "",
+      save: jest.fn().mockImplementation(function () {
+        return Promise.resolve(this);
+      }),
+    };
+    req.targetSubmissionDoc = mockSubDoc;
+    req.targetAssignmentDoc = { _id: assignmentId, title: "Bài tập Hình học" };
+
+    const notifySaveSpy = jest
+      .spyOn(Notification.prototype, "save")
+      .mockImplementation(function () {
+        return Promise.resolve(this);
+      });
+
+    await updateSubmissionFeedback(req, res, next);
+
+    expect(mockSubDoc.feedback).toBe("Bài giải có hướng tư duy rất sáng tạo!");
+    expect(notifySaveSpy).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it("canGradeSubmission chặn giáo viên không phụ trách Assignment chấm hoặc sửa điểm (403)", async () => {
+    const otherTeacherId = new mongoose.Types.ObjectId().toString();
+    req.user = { userId: otherTeacherId, role: "teacher" };
+    req.params = { id: submissionId };
+
+    jest.spyOn(Submission, "findOne").mockResolvedValue({
+      _id: submissionId,
+      assignment: assignmentId,
+      student: studentId,
+      isDeleted: false,
+    });
+
+    jest.spyOn(Assignment, "findOne").mockResolvedValue({
+      _id: assignmentId,
+      teachingAssignment: teachingAssignmentId,
+      isDeleted: false,
+    });
+
+    jest.spyOn(TeachingAssignment, "findOne").mockResolvedValue({
+      _id: teachingAssignmentId,
+      teacher: teacherId,
+      isDeleted: false,
+    });
+
+    await canGradeSubmission(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        message: expect.stringMatching(/không phải giáo viên phụ trách/i),
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("canViewSubmissionDetail & getSubmissionById đảm bảo học sinh chỉ có quyền xem điểm và nhận xét của chính mình (403 nếu xem của bạn khác)", async () => {
+    const otherStudentId = new mongoose.Types.ObjectId().toString();
+    req.user = { userId: studentId, role: "student" };
+    req.params = { id: submissionId };
+
+    // Bài nộp thuộc về otherStudentId
+    jest.spyOn(Submission, "findOne").mockResolvedValue({
+      _id: submissionId,
+      assignment: assignmentId,
+      student: otherStudentId,
+      score: 9,
+      feedback: "Tốt",
+      isDeleted: false,
+    });
+
+    await canViewSubmissionDetail(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        message: expect.stringMatching(
+          /chỉ có quyền xem điểm và nhận xét của chính mình/i
+        ),
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+
+    // Khi xem đúng bài nộp của chính mình (studentId) -> 200 OK
+    const ownSub = {
+      _id: submissionId,
+      assignment: assignmentId,
+      student: { _id: studentId, fullName: "Học Sinh Chính Chủ" },
+      score: 9.5,
+      feedback: "Xuất sắc",
+    };
+    jest.spyOn(Submission, "findOne").mockReturnValue(createMockQuery(ownSub));
+
+    res.status.mockClear();
+    res.json.mockClear();
+    await getSubmissionById(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: ownSub,
+      })
+    );
   });
 });
 

@@ -4,6 +4,7 @@ const {
   canSubmitAssignment,
   canViewSubmissionsByAssignment,
   canGradeSubmission,
+  canViewSubmissionDetail,
 } = require("../middlewares");
 const submissionController = require("../controllers/submission.controller");
 
@@ -29,7 +30,14 @@ router.get(
 // 3. Lấy bài nộp của học sinh hiện tại cho một bài tập
 router.get("/my/:assignmentId", submissionController.getMySubmission);
 
-// 4. Học sinh nộp bài tập (Body: { assignment, fileUrl, attachments, note })
+// 4. Lấy chi tiết một bài nộp theo ID (Học sinh chỉ xem được bài nộp của mình)
+router.get(
+  "/:id",
+  canViewSubmissionDetail,
+  submissionController.getSubmissionById
+);
+
+// 5. Học sinh nộp bài tập (Body: { assignment, fileUrl, attachments, note })
 router.post(
   "/",
   canSubmitAssignment,
@@ -42,7 +50,7 @@ router.post(
   submissionController.submitAssignment
 );
 
-// 5. Giáo viên chấm điểm và nhận xét bài nộp
+// 6. Giáo viên chấm điểm và gửi nhận xét chung (score + feedback)
 router.patch(
   "/:id/grade",
   canGradeSubmission,
@@ -55,5 +63,36 @@ router.put(
   submissionController.gradeSubmission
 );
 
-module.exports = router;
+router.post(
+  "/:id/grade",
+  canGradeSubmission,
+  submissionController.gradeSubmission
+);
 
+// 7. API chuyên biệt cập nhật điểm số (score)
+router.patch(
+  "/:id/score",
+  canGradeSubmission,
+  submissionController.updateSubmissionScore
+);
+
+router.put(
+  "/:id/score",
+  canGradeSubmission,
+  submissionController.updateSubmissionScore
+);
+
+// 8. API chuyên biệt cập nhật nhận xét của giáo viên (feedback)
+router.patch(
+  "/:id/feedback",
+  canGradeSubmission,
+  submissionController.updateSubmissionFeedback
+);
+
+router.put(
+  "/:id/feedback",
+  canGradeSubmission,
+  submissionController.updateSubmissionFeedback
+);
+
+module.exports = router;

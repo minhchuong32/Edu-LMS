@@ -48,6 +48,10 @@ router.use("/assignments", assignmentRoutes);
 const submissionRoutes = require("./submission.routes");
 router.use("/submissions", submissionRoutes);
 
+// Quản lý Thông báo (Notifications)
+const notificationRoutes = require("./notification.routes");
+router.use("/notifications", notificationRoutes);
+
 // Quản lý Upload tài liệu & media lên Cloudinary
 const uploadRoutes = require("./upload.routes");
 router.use("/upload", uploadRoutes);

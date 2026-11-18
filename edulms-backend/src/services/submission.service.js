@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Submission = require("../models/Submission");
 const Assignment = require("../models/Assignment");
 const TeachingAssignment = require("../models/TeachingAssignment");
+const notificationService = require("./notification.service");
 const { getStudentEnrolledClass } = require("../middlewares/lessonPermission.middleware");
 const { safeDeleteFromCloudinary } = require("../config/cloudinary");
 
@@ -12,6 +13,58 @@ const createAppError = (message, statusCode = 400) => {
   const error = new Error(message);
   error.statusCode = statusCode;
   return error;
+};
+
+/**
+ * Kiểm tra và chuẩn hóa điểm số (score nằm trong khoảng hợp lệ 0 - 10)
+ * @param {number|string} score
+ * @returns {number}
+ */
+const validateScore = (score) => {
+  if (
+    score === undefined ||
+    score === null ||
+    String(score).trim() === "" ||
+    typeof score === "boolean"
+  ) {
+    throw createAppError("Điểm số (score) là bắt buộc", 400);
+  }
+
+  const numericScore = Number(score);
+  if (
+    Number.isNaN(numericScore) ||
+    !Number.isFinite(numericScore) ||
+    numericScore < 0 ||
+    numericScore > 10
+  ) {
+    throw createAppError(
+      "Điểm số (score) phải nằm trong khoảng từ 0 đến 10",
+      400
+    );
+  }
+
+  return Math.round(numericScore * 100) / 100;
+};
+
+/**
+ * Kiểm tra và chuẩn hóa nhận xét của giáo viên (feedback)
+ * @param {string} feedback
+ * @returns {string}
+ */
+const validateFeedback = (feedback) => {
+  if (feedback === undefined || feedback === null) {
+    throw createAppError("Nhận xét của giáo viên (feedback) là bắt buộc", 400);
+  }
+
+  const trimmed = String(feedback).trim();
+  if (trimmed.length > 2000) {
+    throw createAppError(
+      "Nhận xét của giáo viên không được vượt quá 2000 ký tự",
+      400
+    );
+  }
+
+  return trimmed;
 };
 
 /**
@@ -88,10 +141,55 @@ const deleteSubmissionCloudinaryFiles = async (submissionDoc, excludeUrls = []) 
 };
 
 /**
+ * Kiểm tra quyền giáo viên phụ trách Assignment của bài nộp
+ */
+const verifyGradingPermission = async (submissionDoc, user, preloadedAssignment) => {
+  if (!user) {
+    throw createAppError("Chưa xác thực thông tin người dùng!", 401);
+  }
+
+  if (!["admin", "teacher"].includes(user.role)) {
+    throw createAppError(
+      "Chỉ giáo viên phụ trách hoặc quản trị viên mới có quyền chấm và sửa điểm!",
+      403
+    );
+  }
+
+  let assignmentDoc = preloadedAssignment;
+  if (!assignmentDoc) {
+    assignmentDoc = await Assignment.findOne({
+      _id: submissionDoc.assignment,
+      isDeleted: false,
+    });
+  }
+
+  if (user.role === "teacher") {
+    const teachingAssignment = assignmentDoc
+      ? await TeachingAssignment.findOne({
+          _id: assignmentDoc.teachingAssignment,
+          isDeleted: false,
+        })
+      : null;
+
+    const assignedTeacherId = (
+      teachingAssignment?.teacher?._id || teachingAssignment?.teacher
+    )?.toString();
+
+    const currentUserId = (user.userId || user._id || user.id)?.toString();
+
+    if (!teachingAssignment || assignedTeacherId !== currentUserId) {
+      throw createAppError(
+        "Bạn không phải giáo viên phụ trách bài tập này, không có quyền chấm điểm!",
+        403
+      );
+    }
+  }
+
+  return assignmentDoc;
+};
+
+/**
  * Học sinh nộp bài tập (hoặc nộp lại khi bài tập vẫn đang mở)
- * - Kiểm tra bài tập có đang mở ('open') hay đã khóa ('locked')
- * - Kiểm tra học sinh thuộc đúng lớp/môn của bài tập
- * - Tự động xác định isLate dựa trên submittedAt và dueDate
  */
 const submitAssignment = async (data = {}, context = {}) => {
   const { user, targetAssignmentDoc: preloadedAssignment, studentClass: preloadedClass } = context;
@@ -126,7 +224,6 @@ const submitAssignment = async (data = {}, context = {}) => {
     throw createAppError("Đường dẫn tệp bài nộp (fileUrl) là bắt buộc", 400);
   }
 
-  // 1. Lấy và kiểm tra Assignment
   let assignmentDoc = preloadedAssignment;
   if (!assignmentDoc) {
     assignmentDoc = await Assignment.findOne({
@@ -143,7 +240,6 @@ const submitAssignment = async (data = {}, context = {}) => {
     throw createAppError("Bài tập hiện chưa được công khai!", 403);
   }
 
-  // 2. Không cho phép nộp bài khi Assignment đã ở trạng thái locked
   if (assignmentDoc.status === "locked") {
     throw createAppError(
       "Bài tập đã bị khóa nhận bài, bạn không thể nộp bài!",
@@ -151,7 +247,6 @@ const submitAssignment = async (data = {}, context = {}) => {
     );
   }
 
-  // 3. Kiểm tra học sinh thuộc đúng lớp/môn của bài tập (nếu chưa qua middleware)
   if (!preloadedAssignment || !preloadedClass) {
     const { studentClass } = await getStudentEnrolledClass(studentId);
     const teachingAssignmentId =
@@ -174,7 +269,6 @@ const submitAssignment = async (data = {}, context = {}) => {
     }
   }
 
-  // 4. Tự động xác định thời điểm nộp (submittedAt) và trạng thái trễ hạn (isLate)
   const submittedAt = data.submittedAt ? new Date(data.submittedAt) : new Date();
   if (Number.isNaN(submittedAt.getTime())) {
     throw createAppError("Thời gian nộp bài (submittedAt) không hợp lệ", 400);
@@ -183,7 +277,6 @@ const submitAssignment = async (data = {}, context = {}) => {
   const isLate = calculateIsLate(submittedAt, assignmentDoc.dueDate);
   const note = data.note ? String(data.note).trim() : "";
 
-  // 5. Kiểm tra xem học sinh đã từng nộp bài cho bài tập này chưa (nếu có thì cập nhật bài nộp)
   const existingSubmission = await Submission.findOne({
     assignment: assignmentDoc._id,
     student: studentId,
@@ -232,7 +325,7 @@ const submitAssignment = async (data = {}, context = {}) => {
 /**
  * Lấy danh sách bài nộp theo bài tập (assignmentId)
  * - Giáo viên phụ trách xem được toàn bộ bài nộp của học sinh trong lớp
- * - Học sinh chỉ xem được bài nộp của chính mình
+ * - Học sinh chỉ có quyền xem điểm và nhận xét của chính mình
  */
 const getSubmissionsByAssignment = async (
   assignmentId,
@@ -308,9 +401,15 @@ const getSubmissionsByAssignment = async (
     isDeleted: false,
   };
 
-  // Nếu là học sinh, chỉ được lấy bài nộp của chính mình
   if (user?.role === "student") {
-    filter.student = user.userId || user._id || user.id;
+    const currentStudentId = (user.userId || user._id || user.id)?.toString();
+    if (query.student && query.student.toString() !== currentStudentId) {
+      throw createAppError(
+        "Học sinh chỉ có quyền xem điểm và nhận xét của chính mình!",
+        403
+      );
+    }
+    filter.student = currentStudentId;
   } else if (query.student) {
     if (!mongoose.Types.ObjectId.isValid(query.student)) {
       throw createAppError("Mã học sinh (student) không hợp lệ", 400);
@@ -318,7 +417,6 @@ const getSubmissionsByAssignment = async (
     filter.student = query.student;
   }
 
-  // Lọc theo trạng thái đúng hạn / trễ hạn (isLate)
   if (query.isLate !== undefined && query.isLate !== "") {
     filter.isLate = query.isLate === "true" || query.isLate === true;
   }
@@ -360,16 +458,102 @@ const getMySubmission = async (assignmentId, context = {}) => {
 };
 
 /**
- * Giáo viên chấm điểm (score) và nhận xét (feedback) cho bài nộp
+ * Lấy chi tiết một bài nộp theo ID
+ * - Học sinh chỉ có quyền xem bài nộp, điểm và nhận xét của chính mình
+ * - Giáo viên chỉ xem được bài nộp thuộc Assignment do mình phụ trách
  */
-const gradeSubmission = async (submissionId, data = {}, context = {}) => {
+const getSubmissionById = async (submissionId, context = {}) => {
   const { user, targetSubmissionDoc } = context;
 
   if (!mongoose.Types.ObjectId.isValid(submissionId)) {
     throw createAppError("Mã bài nộp không hợp lệ", 400);
   }
 
+  const submissionDoc = await Submission.findOne({
+    _id: submissionId,
+    isDeleted: false,
+  })
+    .populate("student", "fullName userCode email className")
+    .populate("assignment", "title dueDate status attachmentUrl teachingAssignment")
+    .lean();
+
+  if (!submissionDoc) {
+    throw createAppError("Bài nộp không tồn tại hoặc đã bị xóa", 404);
+  }
+
+  if (user && !targetSubmissionDoc) {
+    const currentUserId = (user.userId || user._id || user.id)?.toString();
+
+    if (user.role === "student") {
+      const ownerStudentId = (
+        submissionDoc.student?._id || submissionDoc.student
+      )?.toString();
+
+      if (ownerStudentId !== currentUserId) {
+        throw createAppError(
+          "Học sinh chỉ có quyền xem điểm và nhận xét của chính mình!",
+          403
+        );
+      }
+    } else if (user.role === "teacher") {
+      const taId =
+        submissionDoc.assignment?.teachingAssignment?._id ||
+        submissionDoc.assignment?.teachingAssignment;
+      const teachingAssignment = taId
+        ? await TeachingAssignment.findOne({ _id: taId, isDeleted: false })
+        : null;
+
+      const assignedTeacherId = (
+        teachingAssignment?.teacher?._id || teachingAssignment?.teacher
+      )?.toString();
+
+      if (!teachingAssignment || assignedTeacherId !== currentUserId) {
+        throw createAppError(
+          "Bạn không phải giáo viên phụ trách bài tập này, không có quyền xem bài nộp!",
+          403
+        );
+      }
+    }
+  }
+
+  return submissionDoc;
+};
+
+/**
+ * Giáo viên chấm điểm (score) và/hoặc gửi nhận xét (feedback) cho bài nộp,
+ * đồng thời tự động tạo thông báo (Notification) cho học sinh.
+ */
+const gradeSubmission = async (submissionId, data = {}, context = {}) => {
+  const { user, targetSubmissionDoc, targetAssignmentDoc } = context;
+
+  if (!mongoose.Types.ObjectId.isValid(submissionId)) {
+    throw createAppError("Mã bài nộp không hợp lệ", 400);
+  }
+
+  const { score, feedback } = data;
+  const hasScoreInput = score !== undefined && score !== null && String(score).trim() !== "";
+  const hasFeedbackInput = feedback !== undefined && feedback !== null;
+
+  if (!hasScoreInput && !hasFeedbackInput) {
+    throw createAppError(
+      "Vui lòng cung cấp điểm số (score) hoặc nhận xét (feedback) để cập nhật",
+      400
+    );
+  }
+
+  let validatedScore = null;
+  if (hasScoreInput) {
+    validatedScore = validateScore(score);
+  }
+
+  let validatedFeedback = null;
+  if (hasFeedbackInput) {
+    validatedFeedback = validateFeedback(feedback);
+  }
+
   let submissionDoc = targetSubmissionDoc;
+  let assignmentDoc = targetAssignmentDoc;
+
   if (!submissionDoc) {
     submissionDoc = await Submission.findOne({
       _id: submissionId,
@@ -380,59 +564,101 @@ const gradeSubmission = async (submissionId, data = {}, context = {}) => {
       throw createAppError("Bài nộp không tồn tại hoặc đã bị xóa", 404);
     }
 
-    if (user?.role === "teacher") {
-      const assignmentDoc = await Assignment.findOne({
+    assignmentDoc = await verifyGradingPermission(
+      submissionDoc,
+      user,
+      assignmentDoc
+    );
+  } else if (!assignmentDoc && submissionDoc.assignment) {
+    try {
+      assignmentDoc = await Assignment.findOne({
         _id: submissionDoc.assignment,
         isDeleted: false,
       });
-      const teachingAssignment = assignmentDoc
-        ? await TeachingAssignment.findOne({
-            _id: assignmentDoc.teachingAssignment,
-            isDeleted: false,
-          })
-        : null;
-
-      const assignedTeacherId = (
-        teachingAssignment?.teacher?._id || teachingAssignment?.teacher
-      )?.toString();
-
-      if (!teachingAssignment || assignedTeacherId !== user.userId.toString()) {
-        throw createAppError(
-          "Bạn không phải giáo viên phụ trách bài tập này, không có quyền chấm điểm!",
-          403
-        );
-      }
+    } catch {
+      assignmentDoc = null;
     }
   }
 
-  const { score, feedback } = data;
-
-  if (score !== undefined && score !== null && score !== "") {
-    const numericScore = Number(score);
-    if (Number.isNaN(numericScore) || numericScore < 0 || numericScore > 10) {
-      throw createAppError("Điểm số (score) phải nằm trong khoảng từ 0 đến 10", 400);
-    }
-    submissionDoc.score = numericScore;
+  if (hasScoreInput) {
+    submissionDoc.score = validatedScore;
   }
 
-  if (feedback !== undefined) {
-    submissionDoc.feedback = String(feedback).trim();
+  if (hasFeedbackInput) {
+    submissionDoc.feedback = validatedFeedback;
   }
 
   submissionDoc.gradedAt = new Date();
-  if (user?.userId || user?._id) {
-    submissionDoc.gradedBy = user.userId || user._id;
+  if (user?.userId || user?._id || user?.id) {
+    submissionDoc.gradedBy = user.userId || user._id || user.id;
   }
 
-  return await submissionDoc.save();
+  const savedSubmission = await submissionDoc.save();
+
+  // Trigger tạo thông báo cho học sinh khi điểm số / nhận xét được cập nhật
+  try {
+    await notificationService.createGradingNotification({
+      recipient: submissionDoc.student,
+      sender: user?.userId || user?._id || user?.id || null,
+      submission: savedSubmission,
+      assignment: assignmentDoc,
+      score: submissionDoc.score,
+      feedback: submissionDoc.feedback,
+    });
+  } catch (notifyErr) {
+    console.error(
+      "[Submission] Không thể tạo thông báo kết quả chấm bài:",
+      notifyErr.message
+    );
+  }
+
+  return savedSubmission;
+};
+
+/**
+ * API chuyên biệt: Cập nhật điểm số (score) cho bài nộp
+ */
+const updateSubmissionScore = async (submissionId, data = {}, context = {}) => {
+  const validatedScore = validateScore(data.score);
+  return await gradeSubmission(
+    submissionId,
+    {
+      score: validatedScore,
+      ...(data.feedback !== undefined ? { feedback: data.feedback } : {}),
+    },
+    context
+  );
+};
+
+/**
+ * API chuyên biệt: Cập nhật nhận xét (feedback) của giáo viên cho bài nộp
+ */
+const updateSubmissionFeedback = async (
+  submissionId,
+  data = {},
+  context = {}
+) => {
+  const validatedFeedback = validateFeedback(data.feedback);
+  return await gradeSubmission(
+    submissionId,
+    {
+      feedback: validatedFeedback,
+      ...(data.score !== undefined ? { score: data.score } : {}),
+    },
+    context
+  );
 };
 
 module.exports = {
   createAppError,
+  validateScore,
+  validateFeedback,
   calculateIsLate,
   submitAssignment,
   getSubmissionsByAssignment,
   getMySubmission,
+  getSubmissionById,
   gradeSubmission,
+  updateSubmissionScore,
+  updateSubmissionFeedback,
 };
-

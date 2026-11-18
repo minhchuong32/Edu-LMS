@@ -312,9 +312,97 @@ const canGradeSubmission = async (req, res, next) => {
   }
 };
 
+/**
+ * Middleware kiểm tra quyền XEM CHI TIẾT một bài nộp (điểm & nhận xét) - canViewSubmissionDetail
+ * Quy tắc:
+ * 1. Bắt buộc đăng nhập (401).
+ * 2. Học sinh chỉ có quyền xem điểm và nhận xét của chính mình (403 nếu xem của học sinh khác - Chống IDOR).
+ * 3. Giáo viên chỉ có quyền xem bài nộp thuộc Assignment do mình phụ trách (403 nếu của GV khác).
+ */
+const canViewSubmissionDetail = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return errorResponse(res, "Chưa xác thực thông tin người dùng!", 401);
+    }
+
+    const { role, userId } = req.user;
+    const submissionId = req.params.submissionId || req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(submissionId)) {
+      return errorResponse(res, "Mã bài nộp không hợp lệ!", 400);
+    }
+
+    const submissionDoc = await Submission.findOne({
+      _id: submissionId,
+      isDeleted: false,
+    });
+
+    if (!submissionDoc) {
+      return errorResponse(
+        res,
+        "Bài nộp không tồn tại hoặc đã bị xóa!",
+        404
+      );
+    }
+
+    if (role === "student") {
+      const ownerStudentId = (
+        submissionDoc.student?._id || submissionDoc.student
+      )?.toString();
+
+      if (ownerStudentId !== userId.toString()) {
+        return errorResponse(
+          res,
+          "Học sinh chỉ có quyền xem điểm và nhận xét của chính mình!",
+          403
+        );
+      }
+    } else if (role === "teacher") {
+      const assignmentDoc = await Assignment.findOne({
+        _id: submissionDoc.assignment,
+        isDeleted: false,
+      });
+
+      const teachingAssignment = assignmentDoc
+        ? await TeachingAssignment.findOne({
+            _id: assignmentDoc.teachingAssignment,
+            isDeleted: false,
+          })
+        : null;
+
+      const assignedTeacherId = (
+        teachingAssignment?.teacher?._id || teachingAssignment?.teacher
+      )?.toString();
+
+      if (!teachingAssignment || assignedTeacherId !== userId.toString()) {
+        return errorResponse(
+          res,
+          "Bạn không phải giáo viên phụ trách bài tập này, không có quyền xem bài nộp!",
+          403
+        );
+      }
+
+      req.targetAssignmentDoc = assignmentDoc;
+      req.targetTeachingAssignment = teachingAssignment;
+    } else if (role !== "admin") {
+      return errorResponse(
+        res,
+        `Tài khoản với vai trò '${role}' không có quyền xem bài nộp!`,
+        403
+      );
+    }
+
+    req.targetSubmissionDoc = submissionDoc;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   canSubmitAssignment,
   canViewSubmissionsByAssignment,
   canGradeSubmission,
+  canViewSubmissionDetail,
 };
 
