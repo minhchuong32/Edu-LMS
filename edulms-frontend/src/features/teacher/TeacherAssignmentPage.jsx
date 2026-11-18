@@ -10,7 +10,6 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
-  FileText,
   ExternalLink,
   RefreshCw,
   Paperclip,
@@ -87,7 +86,6 @@ export const TeacherAssignmentPage = () => {
   const assignmentSelectId = useId()
   const descriptionInputId = useId()
   const dueDateInputId = useId()
-  const attachmentUrlInputId = useId()
 
   // Danh sách phân công giảng dạy (Lớp - Môn) của giáo viên
   const [teachingAssignments, setTeachingAssignments] = useState([])
@@ -144,13 +142,16 @@ export const TeacherAssignmentPage = () => {
 
     const loadTeachingAssignments = async () => {
       setLoadingTeachingAssignments(true)
+      setError(null)
       try {
         let scheduleData = []
+        let loadErr = null
         try {
           const res = await academicApi.getTeacherSchedule(teacherId)
           const data = res?.data || res || []
           scheduleData = Array.isArray(data) ? data : data?.assignments || []
         } catch (scheduleErr) {
+          loadErr = scheduleErr
           console.warn(
             'Lỗi getTeacherSchedule, thử gọi getAssignments fallback:',
             scheduleErr
@@ -164,7 +165,9 @@ export const TeacherAssignmentPage = () => {
               scheduleData = Array.isArray(fbData)
                 ? fbData
                 : fbData?.assignments || []
+              loadErr = null
             } catch (fbErr) {
+              loadErr = fbErr
               console.warn('Fallback getAssignments thất bại:', fbErr)
             }
           }
@@ -172,6 +175,12 @@ export const TeacherAssignmentPage = () => {
 
         if (!ignore) {
           setTeachingAssignments(scheduleData)
+          if (loadErr && scheduleData.length === 0) {
+            setError(
+              loadErr?.message ||
+                'Không thể tải danh sách lớp và môn học được phân công.'
+            )
+          }
           if (scheduleData.length > 0) {
             setSelectedTeachingAssignmentId((prev) => {
               const stillExists = scheduleData.some((a) => a._id === prev)
@@ -179,6 +188,8 @@ export const TeacherAssignmentPage = () => {
             })
           } else {
             setSelectedTeachingAssignmentId('')
+            setAssignments([])
+            setLoadingAssignments(false)
           }
         }
       } catch (err) {
@@ -204,11 +215,16 @@ export const TeacherAssignmentPage = () => {
   useEffect(() => {
     let ignore = false
 
-    if (!selectedTeachingAssignmentId) {
-      return
-    }
-
     const loadAssignments = async () => {
+      if (!selectedTeachingAssignmentId) {
+        await Promise.resolve()
+        if (!ignore) {
+          setAssignments([])
+          setLoadingAssignments(false)
+        }
+        return
+      }
+
       setLoadingAssignments(true)
       setError(null)
       try {
@@ -224,6 +240,7 @@ export const TeacherAssignmentPage = () => {
         }
       } catch (err) {
         if (!ignore) {
+          setAssignments([])
           setError(err?.message || 'Không thể tải danh sách bài tập.')
         }
       } finally {
@@ -337,19 +354,42 @@ export const TeacherAssignmentPage = () => {
   }
 
   // Callback khi upload file đề bài lên Cloudinary thành công qua FileUploadManager
-  const handleUploadSuccess = (uploadedItems) => {
-    const items = Array.isArray(uploadedItems) ? uploadedItems : [uploadedItems]
-    const normalized = items
+  const handleUploadSuccess = (urlOrItems, uploadData) => {
+    let rawList = []
+    if (typeof urlOrItems === 'string' && urlOrItems.trim()) {
+      rawList = [
+        {
+          ...(uploadData || {}),
+          url: urlOrItems.trim(),
+        },
+      ]
+    } else if (Array.isArray(urlOrItems)) {
+      rawList = urlOrItems
+    } else if (urlOrItems && typeof urlOrItems === 'object') {
+      rawList = [urlOrItems]
+    }
+
+    const normalized = rawList
       .filter((item) => item && item.url)
-      .map((item) => ({
-        name: item.originalName || item.name || 'De-bai-tap',
-        url: item.url,
-        publicId: item.publicId || '',
-        resourceType: item.resourceType || 'raw',
-        fileType: item.category || item.fileType || 'document',
-        fileSize: Number(item.size || item.fileSize) || 0,
-        format: item.format || '',
-      }))
+      .map((item) => {
+        const cleanUrlName =
+          decodeURIComponent(
+            String(item.url).split('/').pop().split('?')[0]
+          ) || 'De-bai-tap'
+        return {
+          name:
+            item.originalName ||
+            item.fileName ||
+            item.name ||
+            cleanUrlName,
+          url: item.url,
+          publicId: item.publicId || '',
+          resourceType: item.resourceType || 'raw',
+          fileType: item.category || item.fileType || 'document',
+          fileSize: Number(item.size || item.fileSize) || 0,
+          format: item.format || '',
+        }
+      })
 
     if (normalized.length === 0) return
 
@@ -615,9 +655,8 @@ export const TeacherAssignmentPage = () => {
                 className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 <RefreshCw
-                  className={`w-3.5 h-3.5 ${
-                    loadingTeachingAssignments ? 'animate-spin' : ''
-                  }`}
+                  className={`w-3.5 h-3.5 ${loadingTeachingAssignments ? 'animate-spin' : ''
+                    }`}
                 />
               </button>
             </div>
@@ -646,11 +685,10 @@ export const TeacherAssignmentPage = () => {
                       key={ta._id}
                       type="button"
                       onClick={() => setSelectedTeachingAssignmentId(ta._id)}
-                      className={`w-full text-left p-3 rounded-xl border transition-all cursor-pointer ${
-                        isSelected
+                      className={`w-full text-left p-3 rounded-xl border transition-all cursor-pointer ${isSelected
                           ? 'bg-blue-50/90 border-blue-500 shadow-xs'
                           : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-600 text-white">
@@ -738,9 +776,8 @@ export const TeacherAssignmentPage = () => {
                 className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${
-                    loadingAssignments ? 'animate-spin' : ''
-                  }`}
+                  className={`w-4 h-4 ${loadingAssignments ? 'animate-spin' : ''
+                    }`}
                 />
               </button>
             </div>
@@ -849,11 +886,10 @@ export const TeacherAssignmentPage = () => {
                                 prev === item._id ? null : item._id
                               )
                             }
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                              gradingAssignmentId === item._id
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${gradingAssignmentId === item._id
                                 ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                                 : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
-                            }`}
+                              }`}
                           >
                             <Users className="w-3.5 h-3.5" />
                             <span>
@@ -867,11 +903,10 @@ export const TeacherAssignmentPage = () => {
                             type="button"
                             onClick={() => handleToggleStatus(item)}
                             disabled={togglingStatusId === item._id}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                              isOpen
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${isOpen
                                 ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200'
                                 : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
-                            }`}
+                              }`}
                             title={
                               isOpen
                                 ? 'Khóa không cho học sinh nộp bài'
@@ -1144,11 +1179,10 @@ export const TeacherAssignmentPage = () => {
                       onClick={() =>
                         setFormData((prev) => ({ ...prev, status: 'open' }))
                       }
-                      className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                        formData.status === 'open'
+                      className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${formData.status === 'open'
                           ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-2xs'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       <Unlock className="w-3.5 h-3.5" />
                       <span>Đang mở</span>
@@ -1159,11 +1193,10 @@ export const TeacherAssignmentPage = () => {
                       onClick={() =>
                         setFormData((prev) => ({ ...prev, status: 'locked' }))
                       }
-                      className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                        formData.status === 'locked'
+                      className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${formData.status === 'locked'
                           ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-2xs'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       <Lock className="w-3.5 h-3.5" />
                       <span>Đã khóa</span>
@@ -1181,33 +1214,8 @@ export const TeacherAssignmentPage = () => {
                   attachments={formData.attachments}
                   onUploadSuccess={handleUploadSuccess}
                   onDeleteAttachment={handleDeleteAttachment}
+                  autoUpload={true}
                 />
-
-                <div>
-                  <label
-                    htmlFor={attachmentUrlInputId}
-                    className="block text-xs font-semibold text-slate-600 mb-1"
-                  >
-                    Hoặc dán đường dẫn (URL) file đề bài trực tiếp
-                  </label>
-                  <div className="relative">
-                    <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      id={attachmentUrlInputId}
-                      type="url"
-                      value={formData.attachmentUrl}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          attachmentUrl: e.target.value,
-                        }))
-                      }
-                      placeholder="https://res.cloudinary.com/.../de-bai-tap.pdf"
-                      disabled={formSubmitting}
-                      className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:bg-white focus:border-blue-600"
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Modal Actions */}
@@ -1228,8 +1236,8 @@ export const TeacherAssignmentPage = () => {
                   {formSubmitting
                     ? 'Đang lưu...'
                     : modalType === 'create'
-                    ? 'Giao bài tập'
-                    : 'Lưu thay đổi'}
+                      ? 'Giao bài tập'
+                      : 'Lưu thay đổi'}
                 </button>
               </div>
             </form>

@@ -19,6 +19,7 @@ import {
   RefreshCw,
   MessageSquare,
   Upload,
+  Download,
 } from 'lucide-react'
 import { useAuth } from '@/context/useAuth'
 import academicApi from '@/api/academicApi'
@@ -95,9 +96,52 @@ const getStudentAssignmentStatuses = (assignment, submission) => {
   }
 }
 
+/**
+ * Trích xuất danh sách tất cả file đề bài mà giáo viên đã đính kèm vào bài tập
+ */
+const getTeacherAssignmentFiles = (assignment) => {
+  if (!assignment) return []
+  const files = []
+
+  if (Array.isArray(assignment.attachments) && assignment.attachments.length > 0) {
+    assignment.attachments.forEach((att, idx) => {
+      if (att && att.url) {
+        const fallbackName =
+          decodeURIComponent(String(att.url).split('/').pop().split('?')[0]) ||
+          `File đề bài ${idx + 1}`
+        files.push({
+          _id: att._id || att.id || `att-${idx}`,
+          name: att.name || att.originalName || fallbackName,
+          url: att.url,
+          format: att.format || '',
+          fileSize: Number(att.fileSize || att.size) || 0,
+        })
+      }
+    })
+  }
+
+  if (
+    assignment.attachmentUrl &&
+    !files.some((f) => f.url === assignment.attachmentUrl)
+  ) {
+    const fallbackName =
+      decodeURIComponent(
+        String(assignment.attachmentUrl).split('/').pop().split('?')[0]
+      ) || 'Tài liệu đề bài đính kèm'
+    files.unshift({
+      _id: 'primary-attachment',
+      name: fallbackName,
+      url: assignment.attachmentUrl,
+      format: '',
+      fileSize: 0,
+    })
+  }
+
+  return files
+}
+
 export const StudentAssignmentPage = () => {
   const { user } = useAuth()
-  const fileUrlInputId = useId()
   const noteInputId = useId()
 
   // Danh sách môn học (TeachingAssignment) thuộc lớp của học sinh
@@ -154,8 +198,8 @@ export const StudentAssignmentPage = () => {
             const classList = resClasses?.data || resClasses || []
             const foundClass = Array.isArray(classList)
               ? classList.find(
-                  (c) => c.name?.toLowerCase() === className.toLowerCase()
-                )
+                (c) => c.name?.toLowerCase() === className.toLowerCase()
+              )
               : classList
             if (foundClass && !ignore) {
               classId = foundClass._id
@@ -221,7 +265,7 @@ export const StudentAssignmentPage = () => {
       try {
         const params =
           selectedTeachingAssignmentId &&
-          selectedTeachingAssignmentId !== 'ALL'
+            selectedTeachingAssignmentId !== 'ALL'
             ? { teachingAssignment: selectedTeachingAssignmentId }
             : {}
 
@@ -245,6 +289,9 @@ export const StudentAssignmentPage = () => {
           setSelectedAssignmentId(null)
         }
 
+        // Dừng loading danh sách bài tập ngay khi đã có dữ liệu bài tập
+        setLoadingAssignments(false)
+
         // Tải thông tin bài nộp của học sinh cho từng bài tập
         const submissionEntries = await Promise.all(
           assignmentList.map(async (item) => {
@@ -266,6 +313,7 @@ export const StudentAssignmentPage = () => {
         }
       } catch (err) {
         if (!ignore) {
+          setAssignments([])
           setPageError(
             err?.message || 'Không thể tải danh sách bài tập của lớp.'
           )
@@ -358,19 +406,42 @@ export const StudentAssignmentPage = () => {
   }, [assignments, submissionsByAssignment])
 
   // Khi upload file bài làm lên Cloudinary thành công
-  const handleUploadSuccess = (uploadedItems) => {
-    const items = Array.isArray(uploadedItems) ? uploadedItems : [uploadedItems]
-    const normalized = items
+  const handleUploadSuccess = (urlOrItems, uploadData) => {
+    let rawList = []
+    if (typeof urlOrItems === 'string' && urlOrItems.trim()) {
+      rawList = [
+        {
+          ...(uploadData || {}),
+          url: urlOrItems.trim(),
+        },
+      ]
+    } else if (Array.isArray(urlOrItems)) {
+      rawList = urlOrItems
+    } else if (urlOrItems && typeof urlOrItems === 'object') {
+      rawList = [urlOrItems]
+    }
+
+    const normalized = rawList
       .filter((item) => item && item.url)
-      .map((item) => ({
-        name: item.originalName || item.name || 'Bai-lam-hoc-sinh',
-        url: item.url,
-        publicId: item.publicId || '',
-        resourceType: item.resourceType || 'raw',
-        fileType: item.category || item.fileType || 'document',
-        fileSize: Number(item.size || item.fileSize) || 0,
-        format: item.format || '',
-      }))
+      .map((item) => {
+        const cleanUrlName =
+          decodeURIComponent(
+            String(item.url).split('/').pop().split('?')[0]
+          ) || 'Bai-lam-hoc-sinh'
+        return {
+          name:
+            item.originalName ||
+            item.fileName ||
+            item.name ||
+            cleanUrlName,
+          url: item.url,
+          publicId: item.publicId || '',
+          resourceType: item.resourceType || 'raw',
+          fileType: item.category || item.fileType || 'document',
+          fileSize: Number(item.size || item.fileSize) || 0,
+          format: item.format || '',
+        }
+      })
 
     if (normalized.length === 0) return
 
@@ -589,11 +660,10 @@ export const StudentAssignmentPage = () => {
           <button
             type="button"
             onClick={() => setSelectedTeachingAssignmentId('ALL')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-              selectedTeachingAssignmentId === 'ALL'
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${selectedTeachingAssignmentId === 'ALL'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
+              }`}
           >
             Tất cả môn học
           </button>
@@ -608,11 +678,10 @@ export const StudentAssignmentPage = () => {
                   key={ta._id}
                   type="button"
                   onClick={() => setSelectedTeachingAssignmentId(ta._id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer flex items-center gap-1.5 ${
-                    isSelected
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer flex items-center gap-1.5 ${isSelected
                       ? 'bg-blue-600 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   <BookOpen className="w-3.5 h-3.5" />
                   <span>{subjectName}</span>
@@ -656,9 +725,8 @@ export const StudentAssignmentPage = () => {
               className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"
             >
               <RefreshCw
-                className={`w-4 h-4 ${
-                  loadingAssignments ? 'animate-spin' : ''
-                }`}
+                className={`w-4 h-4 ${loadingAssignments ? 'animate-spin' : ''
+                  }`}
               />
             </button>
           </div>
@@ -697,22 +765,30 @@ export const StudentAssignmentPage = () => {
                   const subjectName =
                     item.teachingAssignment?.subject?.name || 'Môn học'
                   const isLocked = item.status === 'locked'
+                  const teacherFiles = getTeacherAssignmentFiles(item)
 
                   return (
                     <div
                       key={item._id}
                       data-testid={`student-assignment-item-${item._id}`}
                       onClick={() => handleSelectAssignment(item)}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 ${
-                        isSelected
+                      className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 ${isSelected
                           ? 'bg-blue-50/70 border-blue-500 shadow-xs'
                           : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-md">
-                          {subjectName}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-md">
+                            {subjectName}
+                          </span>
+                          {teacherFiles.length > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
+                              <Paperclip className="w-3 h-3" />
+                              <span>Có file đề bài ({teacherFiles.length})</span>
+                            </span>
+                          )}
+                        </div>
                         {renderStatusBadges(item, sub, 'list-badge')}
                       </div>
 
@@ -817,26 +893,72 @@ export const StudentAssignmentPage = () => {
                   </div>
                 )}
 
-                {/* File đề bài đính kèm của giáo viên */}
-                {(selectedAssignment.attachmentUrl ||
-                  selectedAssignment.attachments?.length > 0) && (
-                  <div className="pt-1">
-                    <a
-                      href={
-                        selectedAssignment.attachmentUrl ||
-                        selectedAssignment.attachments?.[0]?.url
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition-colors"
-                    >
-                      <Paperclip className="w-4 h-4" />
+                {/* File đề bài đính kèm của giáo viên để học sinh tải về làm */}
+                {getTeacherAssignmentFiles(selectedAssignment).length > 0 && (
+                  <div
+                    data-testid="teacher-assignment-files-section"
+                    className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-2.5"
+                  >
+                    <div className="flex items-center gap-2 text-xs font-bold text-blue-900">
+                      <Paperclip className="w-4 h-4 text-blue-600" />
                       <span>
-                        {selectedAssignment.attachments?.[0]?.name ||
-                          'Xem / Tải file đề bài đính kèm'}
+                        Tài liệu / File đề bài từ Giáo viên (
+                        {getTeacherAssignmentFiles(selectedAssignment).length}{' '}
+                        tệp)
                       </span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    </div>
+
+                    <div className="space-y-2">
+                      {getTeacherAssignmentFiles(selectedAssignment).map(
+                        (fileItem) => (
+                          <div
+                            key={fileItem._id || fileItem.url}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white p-3 rounded-xl border border-blue-100 shadow-2xs"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="p-2 rounded-lg bg-blue-100 text-blue-700 shrink-0">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p
+                                  className="text-xs font-bold text-slate-800 truncate"
+                                  title={fileItem.name}
+                                >
+                                  {fileItem.name}
+                                </p>
+                                <p className="text-[11px] text-slate-500">
+                                  Đề bài đính kèm • Bấm để xem hoặc tải về máy làm bài
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <a
+                                href={fileItem.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>Xem đề bài</span>
+                              </a>
+
+                              <a
+                                href={fileItem.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={fileItem.name || true}
+                                data-testid="download-teacher-assignment-file"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Tải đề bài về làm</span>
+                              </a>
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -971,25 +1093,9 @@ export const StudentAssignmentPage = () => {
                     attachments={submitAttachments}
                     onUploadSuccess={handleUploadSuccess}
                     onDeleteAttachment={handleDeleteAttachment}
+                    autoUpload={true}
                   />
 
-                  <div>
-                    <label
-                      htmlFor={fileUrlInputId}
-                      className="block text-xs font-semibold text-slate-700 mb-1"
-                    >
-                      Hoặc dán đường dẫn (URL) file bài làm
-                    </label>
-                    <input
-                      id={fileUrlInputId}
-                      type="url"
-                      value={submitFileUrl}
-                      onChange={(e) => setSubmitFileUrl(e.target.value)}
-                      placeholder="https://res.cloudinary.com/.../bai-lam.pdf"
-                      disabled={submitting}
-                      className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:bg-white focus:border-blue-600"
-                    />
-                  </div>
 
                   <div>
                     <label
@@ -1020,8 +1126,8 @@ export const StudentAssignmentPage = () => {
                         {submitting
                           ? 'Đang nộp bài...'
                           : currentSubmission
-                          ? 'Cập nhật bài nộp'
-                          : 'Nộp bài tập'}
+                            ? 'Cập nhật bài nộp'
+                            : 'Nộp bài tập'}
                       </span>
                     </button>
                   </div>

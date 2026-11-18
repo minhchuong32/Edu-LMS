@@ -86,17 +86,25 @@ export const TeacherSubmissionGradingPanel = ({ assignment, onClose }) => {
   // Tải danh sách bài nộp của bài tập
   useEffect(() => {
     let ignore = false
-    if (!assignmentId) return
 
     const fetchSubmissions = async () => {
+      if (!assignmentId) {
+        await Promise.resolve()
+        if (!ignore) {
+          setSubmissions([])
+          setLoading(false)
+        }
+        return
+      }
+
       setLoading(true)
       try {
         const res = await assignmentApi.getSubmissionsByAssignment(assignmentId)
         const list = Array.isArray(res?.data)
           ? res.data
           : Array.isArray(res)
-          ? res
-          : res?.data?.submissions || []
+            ? res
+            : res?.data?.submissions || []
 
         if (!ignore) {
           setSubmissions(list)
@@ -114,6 +122,7 @@ export const TeacherSubmissionGradingPanel = ({ assignment, onClose }) => {
         }
       } catch (err) {
         if (!ignore) {
+          setSubmissions([])
           setGradeStatusMsg({
             type: 'error',
             text:
@@ -197,17 +206,17 @@ export const TeacherSubmissionGradingPanel = ({ assignment, onClose }) => {
         prev.map((item) =>
           item._id === subId
             ? {
-                ...item,
-                score:
-                  updatedSub.score !== undefined
-                    ? updatedSub.score
-                    : numericScore,
-                feedback:
-                  updatedSub.feedback !== undefined
-                    ? updatedSub.feedback
-                    : rawFeedback,
-                gradedAt: updatedSub.gradedAt || new Date().toISOString(),
-              }
+              ...item,
+              score:
+                updatedSub.score !== undefined
+                  ? updatedSub.score
+                  : numericScore,
+              feedback:
+                updatedSub.feedback !== undefined
+                  ? updatedSub.feedback
+                  : rawFeedback,
+              gradedAt: updatedSub.gradedAt || new Date().toISOString(),
+            }
             : item
         )
       )
@@ -349,11 +358,10 @@ export const TeacherSubmissionGradingPanel = ({ assignment, onClose }) => {
               ? 'grading-alert-error'
               : 'grading-alert-success'
           }
-          className={`p-3 rounded-xl text-xs font-medium flex items-center justify-between gap-2 border ${
-            gradeStatusMsg.type === 'error'
+          className={`p-3 rounded-xl text-xs font-medium flex items-center justify-between gap-2 border ${gradeStatusMsg.type === 'error'
               ? 'bg-red-50 border-red-200 text-red-700'
               : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-2">
             {gradeStatusMsg.type === 'error' ? (
