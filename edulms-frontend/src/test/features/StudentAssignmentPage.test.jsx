@@ -162,6 +162,17 @@ describe('StudentAssignmentPage Component', () => {
       expect(
         screen.getByTestId('list-badge-graded-asg_graded')
       ).toHaveTextContent('Đã chấm (9.5/10)')
+
+      // Kiểm tra hiển thị file đề bài do giáo viên gửi để học sinh tải về làm
+      expect(
+        screen.getByTestId('teacher-assignment-files-section')
+      ).toBeInTheDocument()
+      const downloadBtn = screen.getByTestId('download-teacher-assignment-file')
+      expect(downloadBtn).toHaveAttribute(
+        'href',
+        'https://res.cloudinary.com/demo/raw/upload/v1/de-1.pdf'
+      )
+      expect(downloadBtn).toHaveTextContent('Tải đề bài về làm')
     })
   })
 
