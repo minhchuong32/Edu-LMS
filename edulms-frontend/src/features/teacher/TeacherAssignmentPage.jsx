@@ -18,6 +18,7 @@ import {
   Unlock,
   BookOpen,
   Filter,
+  Users,
 } from 'lucide-react'
 import { useAuth } from '@/context/useAuth'
 import assignmentApi from '@/api/assignmentApi'
@@ -25,6 +26,7 @@ import academicApi from '@/api/academicApi'
 import lessonApi from '@/api/lessonApi'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import FileUploadManager from '@/components/teacher/FileUploadManager'
+import TeacherSubmissionGradingPanel from '@/components/teacher/TeacherSubmissionGradingPanel'
 
 /**
  * Chuyển đổi đối tượng Date hoặc chuỗi ISO sang định dạng YYYY-MM-DDTHH:mm cho input datetime-local
@@ -98,6 +100,7 @@ export const TeacherAssignmentPage = () => {
   const [assignments, setAssignments] = useState([])
   const [loadingAssignments, setLoadingAssignments] = useState(false)
   const [togglingStatusId, setTogglingStatusId] = useState(null)
+  const [gradingAssignmentId, setGradingAssignmentId] = useState(null)
 
   // Tìm kiếm & Bộ lọc
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -836,8 +839,30 @@ export const TeacherAssignmentPage = () => {
                           )}
                         </div>
 
-                        {/* Cụm nút hành động: Mở/Khóa nhận bài, Chỉnh sửa, Xóa */}
-                        <div className="flex items-center gap-2 shrink-0">
+                        {/* Cụm nút hành động: Xem bài nộp & Chấm điểm, Mở/Khóa nhận bài, Chỉnh sửa, Xóa */}
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            data-testid={`toggle-submissions-btn-${item._id}`}
+                            onClick={() =>
+                              setGradingAssignmentId((prev) =>
+                                prev === item._id ? null : item._id
+                              )
+                            }
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                              gradingAssignmentId === item._id
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
+                            }`}
+                          >
+                            <Users className="w-3.5 h-3.5" />
+                            <span>
+                              {gradingAssignmentId === item._id
+                                ? 'Ẩn danh sách bài nộp'
+                                : 'Xem bài nộp & Chấm điểm'}
+                            </span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => handleToggleStatus(item)}
@@ -915,6 +940,14 @@ export const TeacherAssignmentPage = () => {
                           </a>
                         )}
                       </div>
+
+                      {/* Bảng danh sách bài nộp & Chấm điểm inline */}
+                      {gradingAssignmentId === item._id && (
+                        <TeacherSubmissionGradingPanel
+                          assignment={item}
+                          onClose={() => setGradingAssignmentId(null)}
+                        />
+                      )}
                     </div>
                   )
                 })}
