@@ -210,7 +210,8 @@ export const StudentLessonViewerPage = () => {
         if (!ignore) {
           console.error('Lỗi khi tải thông tin môn học:', err)
           setLessonError(
-            err.response?.data?.message ||
+            err?.message ||
+              err?.response?.data?.message ||
               'Không thể tải thông tin môn học của lớp. Vui lòng kiểm tra lại kết nối mạng!'
           )
         }
@@ -234,11 +235,17 @@ export const StudentLessonViewerPage = () => {
   useEffect(() => {
     let isMounted = true
 
-    if (!selectedAssignment) {
-      return
-    }
-
     const fetchLessonsBySubject = async () => {
+      if (!selectedAssignment) {
+        await Promise.resolve()
+        if (isMounted) {
+          setLoadingLessons(false)
+        }
+        return
+      }
+
+      setLoadingLessons(true)
+      setLessonError(null)
       try {
         const classId =
           selectedAssignment.class?._id ||
@@ -285,7 +292,8 @@ export const StudentLessonViewerPage = () => {
         if (isMounted) {
           console.error('Lỗi khi tải danh sách bài giảng:', err)
           setLessonError(
-            err.response?.data?.message ||
+            err?.message ||
+              err?.response?.data?.message ||
               'Không thể tải nội dung bài giảng của môn học này.'
           )
           setLessons([])

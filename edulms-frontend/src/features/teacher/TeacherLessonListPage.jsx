@@ -309,8 +309,10 @@ export const TeacherLessonListPage = () => {
 
     const loadAssignments = async () => {
       setLoadingAssignments(true)
+      setError(null)
       try {
         let scheduleData = []
+        let loadErr = null
 
         // 1. Thử gọi API getTeacherSchedule
         try {
@@ -318,6 +320,7 @@ export const TeacherLessonListPage = () => {
           const data = res?.data || res || []
           scheduleData = Array.isArray(data) ? data : data?.assignments || []
         } catch (scheduleErr) {
+          loadErr = scheduleErr
           console.warn('Lỗi getTeacherSchedule, thử gọi getAssignments fallback:', scheduleErr)
           // 2. Dự phòng: Nếu getTeacherSchedule bị lỗi (404/400/...), thử gọi getAssignments với teacher
           if (teacherId && teacherId !== 'me') {
@@ -325,7 +328,9 @@ export const TeacherLessonListPage = () => {
               const fallbackRes = await academicApi.getAssignments({ teacher: teacherId })
               const fbData = fallbackRes?.data || fallbackRes || []
               scheduleData = Array.isArray(fbData) ? fbData : fbData?.assignments || []
+              loadErr = null
             } catch (fbErr) {
+              loadErr = fbErr
               console.warn('Fallback getAssignments thất bại:', fbErr)
             }
           }
@@ -333,6 +338,9 @@ export const TeacherLessonListPage = () => {
 
         if (!ignore) {
           setAssignments(scheduleData)
+          if (loadErr && scheduleData.length === 0) {
+            setError(loadErr?.message || 'Không thể tải danh sách phân công giảng dạy.')
+          }
 
           // Mặc định chọn phân công đầu tiên nếu có
           if (scheduleData.length > 0) {
@@ -342,6 +350,8 @@ export const TeacherLessonListPage = () => {
             })
           } else {
             setSelectedAssignmentId('')
+            setLessons([])
+            setLoadingLessons(false)
           }
         }
       } catch (err) {
@@ -367,11 +377,16 @@ export const TeacherLessonListPage = () => {
   useEffect(() => {
     let ignore = false
 
-    if (!selectedAssignmentId) {
-      return
-    }
-
     const loadLessons = async () => {
+      if (!selectedAssignmentId) {
+        await Promise.resolve()
+        if (!ignore) {
+          setLessons([])
+          setLoadingLessons(false)
+        }
+        return
+      }
+
       setLoadingLessons(true)
       try {
         const res = await lessonApi.getLessons({ teachingAssignment: selectedAssignmentId })
@@ -385,6 +400,7 @@ export const TeacherLessonListPage = () => {
       } catch (err) {
         if (!ignore) {
           console.error('Lỗi tải bài giảng:', err)
+          setLessons([])
           setError(err?.message || 'Không thể tải danh sách bài giảng.')
         }
       } finally {
@@ -403,7 +419,9 @@ export const TeacherLessonListPage = () => {
 
   // Hàm kích hoạt tải lại danh sách bài giảng sau khi tạo, sửa, xóa, kéo thả
   const reloadLessons = () => {
-    setLoadingLessons(true)
+    if (selectedAssignmentId) {
+      setLoadingLessons(true)
+    }
     setLessonsReloadKey((k) => k + 1)
   }
 
