@@ -7,7 +7,7 @@ import ExamCountdown from './ExamCountdown'
 import ExamQuestion from './ExamQuestion'
 import ExamNavPalette from './ExamNavPalette'
 import ExamResultReview from './ExamResultReview'
-import useExamSession from './useExamSession'
+import useExamSession from '@/hooks/useExamSession'
 
 // ---------------------------------------------------------------------------
 // ConfirmSubmitDialog — Xác nhận nộp bài

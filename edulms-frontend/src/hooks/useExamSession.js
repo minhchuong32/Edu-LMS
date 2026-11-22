@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import examApi from '../../../api/examApi'
+import examApi from '../api/examApi'
 
 const LS_KEY = (examId) => `exam_session_${examId}`
 
