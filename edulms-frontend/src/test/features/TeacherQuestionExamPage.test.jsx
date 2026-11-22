@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import TeacherQuestionExamPage from '@/features/teacher/TeacherQuestionExamPage'
@@ -22,6 +22,9 @@ vi.mock('@/api/questionApi', () => ({
     deleteQuestion: vi.fn(),
     getChapters: vi.fn(),
     getSummary: vi.fn(),
+    downloadTemplate: vi.fn(),
+    previewImport: vi.fn(),
+    confirmImport: vi.fn(),
   },
 }))
 vi.mock('@/api/examApi', () => ({
@@ -241,6 +244,172 @@ describe('TeacherQuestionExamPage Component Tests', () => {
       ).toBeInTheDocument()
       expect(screen.getAllByText(/1 câu/i).length).toBeGreaterThan(0)
       expect(screen.getByText(/10 điểm/i)).toBeInTheDocument()
+    })
+  })
+
+  it('nút Tải file mẫu gọi đúng API downloadTemplate', async () => {
+    // Mock URL API for jsdom
+    global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+    global.URL.revokeObjectURL = vi.fn()
+
+    questionApi.downloadTemplate.mockResolvedValue({
+      data: new Blob(['mock-excel'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    })
+
+    render(
+      <MemoryRouter>
+        <TeacherQuestionExamPage />
+      </MemoryRouter>
+    )
+
+    // Chờ tải dữ liệu xong
+    await waitFor(() => {
+      expect(screen.getByText(/Tải file mẫu/i)).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText(/Tải file mẫu/i))
+
+    await waitFor(() => {
+      expect(questionApi.downloadTemplate).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('nút Import từ Excel mở modal với hướng dẫn', async () => {
+    render(
+      <MemoryRouter>
+        <TeacherQuestionExamPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/Import từ Excel/i)).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText(/Import từ Excel/i))
+
+    await waitFor(() => {
+      expect(screen.getByText(/Import câu hỏi từ file Excel/i)).toBeInTheDocument()
+      expect(screen.getByText(/Hướng dẫn import câu hỏi từ Excel/i)).toBeInTheDocument()
+    })
+  })
+
+  it('upload file Excel hiển thị màn hình Preview với số câu hợp lệ', async () => {
+    const mockPreviewData = {
+      totalRows: 3,
+      validCount: 2,
+      errorCount: 1,
+      items: [
+        {
+          row: 2,
+          isValid: true,
+          errors: [],
+          data: { content: 'Câu hỏi 1 hợp lệ', subjectName: 'Toán học', difficulty: 'easy' },
+        },
+        {
+          row: 3,
+          isValid: true,
+          errors: [],
+          data: { content: 'Câu hỏi 2 hợp lệ', subjectName: 'Toán học', difficulty: 'medium' },
+        },
+        {
+          row: 4,
+          isValid: false,
+          errors: ['Nội dung câu hỏi không được để trống'],
+          data: { content: '', subjectName: 'Toán học', difficulty: 'hard' },
+        },
+      ],
+    }
+    questionApi.previewImport.mockResolvedValue({ data: mockPreviewData })
+
+    render(
+      <MemoryRouter>
+        <TeacherQuestionExamPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/Import từ Excel/i)).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText(/Import từ Excel/i))
+
+    // Giả lập upload file
+    await waitFor(() => {
+      expect(screen.getByText(/Hướng dẫn import/i)).toBeInTheDocument()
+    })
+
+    const fileInput = document.querySelector('input[type="file"]')
+    const mockFile = new File(['mock'], 'test.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    fireEvent.change(fileInput, { target: { files: [mockFile] } })
+
+    await waitFor(() => {
+      expect(questionApi.previewImport).toHaveBeenCalledTimes(1)
+      expect(screen.getByText('Tổng số dòng')).toBeInTheDocument()
+      expect(screen.getByText('Hợp lệ ✓')).toBeInTheDocument()
+      expect(screen.getByText('Có lỗi ✗')).toBeInTheDocument()
+      expect(screen.getByText('Câu hỏi 1 hợp lệ')).toBeInTheDocument()
+      expect(screen.getByText('Nội dung câu hỏi không được để trống')).toBeInTheDocument()
+    })
+  })
+
+  it('nút Xác nhận Import gọi confirmImport và hiển thị thông báo thành công', async () => {
+    const mockPreviewData = {
+      totalRows: 2,
+      validCount: 2,
+      errorCount: 0,
+      items: [
+        {
+          row: 2,
+          isValid: true,
+          errors: [],
+          data: { content: 'Câu hỏi 1', subjectName: 'Toán học', difficulty: 'easy' },
+        },
+        {
+          row: 3,
+          isValid: true,
+          errors: [],
+          data: { content: 'Câu hỏi 2', subjectName: 'Toán học', difficulty: 'medium' },
+        },
+      ],
+    }
+    questionApi.previewImport.mockResolvedValue({ data: mockPreviewData })
+    questionApi.confirmImport.mockResolvedValue({ data: { inserted: 2 } })
+
+    render(
+      <MemoryRouter>
+        <TeacherQuestionExamPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/Import từ Excel/i)).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText(/Import từ Excel/i))
+
+    await waitFor(() => {
+      expect(screen.getByText(/Hướng dẫn import/i)).toBeInTheDocument()
+    })
+
+    // Upload file
+    const fileInput = document.querySelector('input[type="file"]')
+    const mockFile = new File(['mock'], 'test.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    fireEvent.change(fileInput, { target: { files: [mockFile] } })
+
+    // Chờ màn hình Preview xuất hiện
+    await waitFor(() => {
+      expect(screen.getByText(/Xác nhận import 2 câu hỏi/i)).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText(/Xác nhận import 2 câu hỏi/i))
+
+    await waitFor(() => {
+      expect(questionApi.confirmImport).toHaveBeenCalledTimes(1)
+      expect(screen.getByText(/Import thành công!/i)).toBeInTheDocument()
     })
   })
 })

@@ -49,6 +49,32 @@ export const questionApi = {
     axiosClient.get('/v1/questions/summary', {
       params: { subject: subjectId },
     }),
+
+  /**
+   * Tải file Excel mẫu câu hỏi trắc nghiệm (có cấu hình Dropdown Data Validation)
+   */
+  downloadTemplate: () =>
+    axiosClient.get('/v1/questions/template', {
+      responseType: 'blob',
+    }),
+
+  /**
+   * Phân tích và xem trước dữ liệu file Excel câu hỏi trắc nghiệm
+   * @param {FormData} formData - Chứa trường 'file'
+   */
+  previewImport: (formData) =>
+    axiosClient.post('/v1/questions/import/preview', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
+
+  /**
+   * Xác nhận lưu hàng loạt các câu hỏi hợp lệ từ kết quả Preview
+   * @param {Array<Object>} items - Danh sách các item từ preview
+   */
+  confirmImport: (items) =>
+    axiosClient.post('/v1/questions/import/confirm', { items }),
 }
 
 export default questionApi

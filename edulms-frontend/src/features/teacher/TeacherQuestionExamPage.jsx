@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   BookOpen,
   Plus,
@@ -19,6 +19,10 @@ import {
   Check,
   Sparkles,
   Info,
+  Upload,
+  Download,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react'
 import { useAuth } from '@/context/useAuth'
 import questionApi from '@/api/questionApi'
@@ -143,6 +147,17 @@ export const TeacherQuestionExamPage = () => {
   const [loadingExams, setLoadingExams] = useState(false)
   const [refreshExamsKey, setRefreshExamsKey] = useState(0)
   const [examDetailModal, setExamDetailModal] = useState(null)
+
+  // ==========================================
+  // IMPORT EXCEL: STATE
+  // ==========================================
+  const [showImportModal, setShowImportModal] = useState(false)
+  // 'upload' | 'preview' | 'done'
+  const [importStep, setImportStep] = useState('upload')
+  const [importPreview, setImportPreview] = useState(null)
+  const [importLoading, setImportLoading] = useState(false)
+  const [importError, setImportError] = useState('')
+  const importFileRef = useRef(null)
 
   // Tải dữ liệu ban đầu: Môn học và Phân công giảng dạy
   useEffect(() => {
@@ -647,6 +662,74 @@ export const TeacherQuestionExamPage = () => {
     }
   }
 
+  // ==========================================
+  // IMPORT EXCEL: HANDLERS
+  // ==========================================
+
+  /** Mở modal import và reset về bước đầu */
+  const handleOpenImportModal = () => {
+    setImportStep('upload')
+    setImportPreview(null)
+    setImportError('')
+    setShowImportModal(true)
+  }
+
+  /** Tải file Excel mẫu về máy tính */
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await questionApi.downloadTemplate()
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'mau_ngan_hang_cau_hoi.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      showAlert(err.response?.data?.message || 'Không thể tải file mẫu', 'error')
+    }
+  }
+
+  /** Phân tích file Excel và hiển thị xem trước */
+  const handleImportPreview = async (file) => {
+    if (!file) return
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      setImportLoading(true)
+      setImportError('')
+      const res = await questionApi.previewImport(formData)
+      setImportPreview(res.data)
+      setImportStep('preview')
+    } catch (err) {
+      setImportError(err.response?.data?.message || 'Không thể đọc file Excel. Vui lòng kiểm tra lại định dạng.')
+    } finally {
+      setImportLoading(false)
+    }
+  }
+
+  /** Xác nhận lưu hàng loạt các câu hỏi hợp lệ */
+  const handleConfirmImport = async () => {
+    if (!importPreview?.items?.length) return
+    const validItems = importPreview.items.filter((it) => it.isValid)
+    if (validItems.length === 0) {
+      setImportError('Không có câu hỏi hợp lệ nào để lưu.')
+      return
+    }
+    try {
+      setImportLoading(true)
+      setImportError('')
+      await questionApi.confirmImport(validItems)
+      setImportStep('done')
+      setRefreshQuestionsKey((k) => k + 1)
+    } catch (err) {
+      setImportError(err.response?.data?.message || 'Có lỗi khi lưu câu hỏi. Vui lòng thử lại.')
+    } finally {
+      setImportLoading(false)
+    }
+  }
+
   if (loadingInitial) {
     return (
       <div className="flex justify-center items-center py-24">
@@ -697,14 +780,33 @@ export const TeacherQuestionExamPage = () => {
           </div>
 
           {activeTab === 'questions' && (
-            <button
-              type="button"
-              onClick={handleOpenCreateQuestionModal}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow-xs transition-all active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Thêm câu hỏi mới</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-semibold text-sm shadow-xs transition-all active:scale-95"
+                title="Tải file Excel mẫu để nhập câu hỏi hàng loạt"
+              >
+                <Download className="w-4 h-4 text-emerald-600" />
+                <span>Tải file mẫu</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenImportModal}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm shadow-xs transition-all active:scale-95"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Import từ Excel</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenCreateQuestionModal}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow-xs transition-all active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Thêm câu hỏi mới</span>
+              </button>
+            </div>
           )}
         </div>
 
@@ -2056,6 +2158,260 @@ export const TeacherQuestionExamPage = () => {
                 Đóng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL 4: IMPORT CÂU HỎI TỪ EXCEL
+         ======================================================== */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl border border-slate-200 overflow-hidden my-8 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50 shrink-0">
+              <div className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-base font-bold text-slate-800">
+                  Import câu hỏi từ file Excel
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Nội dung theo từng bước */}
+            <div className="p-5 overflow-y-auto flex-1 space-y-4">
+
+              {/* BƯỚC 1: UPLOAD */}
+              {importStep === 'upload' && (
+                <div className="space-y-4">
+                  {/* Hướng dẫn */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 space-y-1">
+                    <div className="font-semibold flex items-center gap-2 mb-2">
+                      <Info className="w-4 h-4" />
+                      Hướng dẫn import câu hỏi từ Excel
+                    </div>
+                    <ol className="list-decimal list-inside space-y-1 text-xs">
+                      <li>Nhấn <strong>Tải file mẫu</strong> để tải về file Excel mẫu có sẵn dropdown Môn học, Độ khó, Đáp án đúng.</li>
+                      <li>Điền thông tin các câu hỏi vào sheet <strong>CauHoi</strong> (không xóa hàng tiêu đề).</li>
+                      <li>Lưu file lại và nhấn <strong>Chọn file Excel</strong> bên dưới để tải lên.</li>
+                      <li>Hệ thống sẽ phân tích và hiển thị xem trước kết quả để bạn xác nhận trước khi lưu.</li>
+                    </ol>
+                  </div>
+
+                  {/* Nút tải file mẫu */}
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl text-sm font-semibold transition-all"
+                  >
+                    <Download className="w-4 h-4" />
+                    Tải file mẫu (.xlsx)
+                  </button>
+
+                  {/* Dropzone upload */}
+                  <div
+                    className="border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-xl p-8 text-center cursor-pointer transition-all bg-slate-50 hover:bg-blue-50"
+                    onClick={() => importFileRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      const file = e.dataTransfer.files[0]
+                      if (file) handleImportPreview(file)
+                    }}
+                  >
+                    <Upload className="w-10 h-10 mx-auto text-slate-400 mb-3" />
+                    <p className="text-sm font-semibold text-slate-700">
+                      Kéo thả file vào đây hoặc nhấn để chọn file
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Hỗ trợ định dạng: .xlsx, .xls (tối đa 5MB)
+                    </p>
+                    <input
+                      ref={importFileRef}
+                      type="file"
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleImportPreview(file)
+                        e.target.value = ''
+                      }}
+                    />
+                  </div>
+
+                  {/* Loading */}
+                  {importLoading && (
+                    <div className="flex items-center justify-center gap-2 text-sm text-blue-700 font-medium py-2">
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Đang phân tích file...
+                    </div>
+                  )}
+
+                  {/* Lỗi */}
+                  {importError && (
+                    <div className="flex items-start gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
+                      <XCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                      <span>{importError}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* BƯỚC 2: XEM TRƯỚC KẾT QUẢ PHÂN TÍCH */}
+              {importStep === 'preview' && importPreview && (
+                <div className="space-y-4">
+                  {/* Thống kê tổng quan */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-slate-800">{importPreview.totalRows}</div>
+                      <div className="text-xs text-slate-500 mt-1">Tổng số dòng</div>
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-emerald-700">{importPreview.validCount}</div>
+                      <div className="text-xs text-emerald-600 mt-1">Hợp lệ ✓</div>
+                    </div>
+                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-rose-700">{importPreview.errorCount}</div>
+                      <div className="text-xs text-rose-600 mt-1">Có lỗi ✗</div>
+                    </div>
+                  </div>
+
+                  {importPreview.validCount === 0 && (
+                    <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+                      <XCircle className="w-4 h-4 shrink-0 text-amber-500" />
+                      Không có câu hỏi hợp lệ. Vui lòng kiểm tra lại file và upload lại.
+                    </div>
+                  )}
+
+                  {/* Bảng chi tiết từng dòng */}
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <div className="bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600 grid grid-cols-12 gap-2">
+                      <span className="col-span-1">Dòng</span>
+                      <span className="col-span-5">Nội dung câu hỏi</span>
+                      <span className="col-span-2">Môn học</span>
+                      <span className="col-span-2">Độ khó</span>
+                      <span className="col-span-2">Trạng thái</span>
+                    </div>
+                    <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
+                      {importPreview.items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className={`px-4 py-2.5 text-xs grid grid-cols-12 gap-2 items-start ${item.isValid ? 'bg-white' : 'bg-rose-50/60'}`}
+                        >
+                          <span className="col-span-1 text-slate-500 font-mono">{item.row || idx + 2}</span>
+                          <div className="col-span-5">
+                            <p className="text-slate-800 line-clamp-2 font-medium">
+                              {item.data?.content || <span className="italic text-slate-400">(trống)</span>}
+                            </p>
+                            {!item.isValid && item.errors?.length > 0 && (
+                              <ul className="mt-1 space-y-0.5">
+                                {item.errors.map((err, eIdx) => (
+                                  <li key={eIdx} className="text-rose-600 flex items-start gap-1">
+                                    <span className="shrink-0">•</span>
+                                    <span>{err}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                          <span className="col-span-2 text-slate-600 truncate">
+                            {item.data?.subjectName || item.data?.subject || '-'}
+                          </span>
+                          <span className="col-span-2 text-slate-600">
+                            {item.data?.difficulty || '-'}
+                          </span>
+                          <div className="col-span-2 flex items-center gap-1">
+                            {item.isValid ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[11px] font-semibold">
+                                <CheckCircle className="w-3 h-3" /> Hợp lệ
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-100 text-rose-700 rounded-full text-[11px] font-semibold">
+                                <XCircle className="w-3 h-3" /> Lỗi
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Lỗi confirm */}
+                  {importError && (
+                    <div className="flex items-start gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">
+                      <XCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                      <span>{importError}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* BƯỚC 3: HOÀN THÀNH */}
+              {importStep === 'done' && (
+                <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+                  <CheckCircle className="w-16 h-16 text-emerald-500" />
+                  <h4 className="text-lg font-bold text-slate-800">Import thành công!</h4>
+                  <p className="text-sm text-slate-600">
+                    Đã lưu <strong>{importPreview?.validCount || 0}</strong> câu hỏi hợp lệ vào ngân hàng câu hỏi.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowImportModal(false)}
+                    className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl"
+                  >
+                    Xem danh sách câu hỏi
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {importStep === 'preview' && importPreview && (
+              <div className="p-4 border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImportStep('upload')
+                    setImportPreview(null)
+                    setImportError('')
+                  }}
+                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl"
+                >
+                  ← Tải lại file khác
+                </button>
+                <button
+                  type="button"
+                  disabled={importLoading || importPreview.validCount === 0}
+                  onClick={handleConfirmImport}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl shadow-xs transition-all"
+                >
+                  {importLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Đang lưu...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Xác nhận import {importPreview.validCount} câu hỏi
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

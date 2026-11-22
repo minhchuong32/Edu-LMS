@@ -15,6 +15,7 @@
     "seed": "node src/scripts/seed.js",
     "seed:lesson": "node src/seeds/lesson.seed.js",
     "seed:student-lessons": "node src/seeds/student-lesson.seed.js",
+    "seed:questions": "node src/scripts/seed_questions.js",
     "test:cloudinary": "node src/scripts/test_cloudinary.js"
   },
   "engines": {

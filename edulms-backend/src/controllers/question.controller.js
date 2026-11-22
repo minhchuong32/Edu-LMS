@@ -100,6 +100,66 @@ const getSummary = async (req, res, next) => {
   }
 };
 
+/**
+ * Controller Tải file Excel mẫu câu hỏi trắc nghiệm (có cấu hình Dropdown Data Validation)
+ */
+const downloadTemplate = async (req, res, next) => {
+  try {
+    const buffer = await questionService.generateQuestionTemplate(req.user);
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=mau_ngan_hang_cau_hoi.xlsx"
+    );
+    return res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Controller Phân tích và xem trước (Preview) file Excel nhập câu hỏi
+ */
+const previewImport = async (req, res, next) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng chọn tập tin Excel để tải lên!",
+      });
+    }
+
+    const result = await questionService.previewQuestionsFromExcel(
+      req.file.buffer,
+      req.user
+    );
+    return successResponse(res, result, "Phân tích file Excel thành công");
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Controller Xác nhận lưu hàng loạt câu hỏi từ kết quả Preview
+ */
+const confirmImport = async (req, res, next) => {
+  try {
+    const { items } = req.body;
+    const result = await questionService.confirmImportQuestions(items, req.user);
+    return successResponse(
+      res,
+      result,
+      `Nhập thành công ${result.successCount} câu hỏi vào ngân hàng`,
+      201
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createQuestion,
   getQuestions,
@@ -108,4 +168,7 @@ module.exports = {
   deleteQuestion,
   getChapters,
   getSummary,
+  downloadTemplate,
+  previewImport,
+  confirmImport,
 };

@@ -4,6 +4,8 @@ const {
   canAccessQuestionBank,
   canCreateQuestion,
   canModifyQuestion,
+  uploadSpreadsheet,
+  uploadErrorHandler,
 } = require("../middlewares");
 const questionController = require("../controllers/question.controller");
 
@@ -14,6 +16,16 @@ router.use(protect);
 
 // Kiểm tra quyền: Chỉ giáo viên ('teacher') và admin ('admin') mới được truy cập
 router.use(canAccessQuestionBank);
+
+// Quản lý Import câu hỏi từ file Excel (Template, Preview, Confirm)
+router.get("/template", questionController.downloadTemplate);
+router.post(
+  "/import/preview",
+  uploadSpreadsheet,
+  uploadErrorHandler,
+  questionController.previewImport
+);
+router.post("/import/confirm", questionController.confirmImport);
 
 // Các route tiện ích: Lấy danh sách chương và Thống kê câu hỏi theo môn học
 router.get("/chapters", questionController.getChapters);
