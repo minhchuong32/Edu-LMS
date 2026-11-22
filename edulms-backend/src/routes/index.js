@@ -56,4 +56,8 @@ router.use("/notifications", notificationRoutes);
 const uploadRoutes = require("./upload.routes");
 router.use("/upload", uploadRoutes);
 
+// Quản lý Ngân hàng câu hỏi (Questions)
+const questionRoutes = require("./question.routes");
+router.use("/questions", questionRoutes);
+
 module.exports = router;
