@@ -60,4 +60,8 @@ router.use("/upload", uploadRoutes);
 const questionRoutes = require("./question.routes");
 router.use("/questions", questionRoutes);
 
+// Quản lý Đề kiểm tra (Exams)
+const examRoutes = require("./exam.routes");
+router.use("/exams", examRoutes);
+
 module.exports = router;
