@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Exam = require("../models/Exam");
 const Question = require("../models/Question");
+const ExamAttempt = require("../models/ExamAttempt");
 const TeachingAssignment = require("../models/TeachingAssignment");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
@@ -506,7 +507,37 @@ const getExamById = async (id, user = {}) => {
     throw createAppError("Đề kiểm tra không tồn tại hoặc đã bị xóa!", 404);
   }
 
-  return formatExamForUser(exam, user.role);
+  const formattedExam = formatExamForUser(exam, user.role);
+
+  // Nếu người dùng là học sinh, bổ sung trạng thái đã nộp bài hay chưa (vẫn tuyệt đối không lộ correctIndex)
+  if (user.role === "student" && user.userId && formattedExam) {
+    const existingAttempt = await ExamAttempt.findOne({
+      exam: id,
+      student: user.userId,
+      isDeleted: false,
+    });
+    if (existingAttempt) {
+      formattedExam.hasSubmitted = true;
+      formattedExam.attemptId = existingAttempt._id;
+      formattedExam.attempt = {
+        _id: existingAttempt._id,
+        score: existingAttempt.score,
+        scoreWeight: existingAttempt.scoreWeight,
+        totalQuestions: existingAttempt.totalQuestions,
+        correctCount: existingAttempt.correctCount,
+        wrongCount: existingAttempt.wrongCount,
+        unansweredCount: existingAttempt.unansweredCount,
+        submittedAt: existingAttempt.submittedAt,
+        status: existingAttempt.status,
+      };
+    } else {
+      formattedExam.hasSubmitted = false;
+      formattedExam.attemptId = null;
+      formattedExam.attempt = null;
+    }
+  }
+
+  return formattedExam;
 };
 
 /**
@@ -720,7 +751,348 @@ const deleteExam = async (id, context = {}) => {
   };
 };
 
+/**
+ * Engine tự động chấm điểm bài làm trắc nghiệm
+ * @param {Array<Object>} questions Danh sách câu hỏi kèm đáp án đúng (correctIndex) từ database
+ * @param {Array|Object} studentAnswers Danh sách đáp án học sinh đã chọn
+ * @param {number} scoreWeight Thang điểm của đề (mặc định 10)
+ * @returns {Object} { processedAnswers, score, scoreWeight, totalQuestions, correctCount, wrongCount, unansweredCount }
+ */
+const gradeExamAnswers = (
+  questions = [],
+  studentAnswers = [],
+  scoreWeight = 10
+) => {
+  const answerMap = new Map();
+
+  if (Array.isArray(studentAnswers)) {
+    for (const item of studentAnswers) {
+      if (!item) continue;
+      const qId = (item.questionId || item.question || item._id)?.toString();
+      if (qId) {
+        answerMap.set(qId, item.selectedOption);
+      }
+    }
+  } else if (studentAnswers && typeof studentAnswers === "object") {
+    for (const [key, value] of Object.entries(studentAnswers)) {
+      if (key) {
+        answerMap.set(key.toString(), value);
+      }
+    }
+  }
+
+  let correctCount = 0;
+  let wrongCount = 0;
+  let unansweredCount = 0;
+  const processedAnswers = [];
+
+  for (const question of questions) {
+    if (!question) continue;
+    const qId = (question._id || question.id)?.toString();
+    const rawChoice = answerMap.get(qId);
+
+    let selectedOption = null;
+    const optionsLen = Array.isArray(question.options)
+      ? question.options.length
+      : 4;
+
+    if (
+      rawChoice !== undefined &&
+      rawChoice !== null &&
+      rawChoice !== "" &&
+      !isNaN(Number(rawChoice)) &&
+      Number.isInteger(Number(rawChoice)) &&
+      Number(rawChoice) >= 0 &&
+      Number(rawChoice) < optionsLen
+    ) {
+      selectedOption = Number(rawChoice);
+    }
+
+    const isAnswered = selectedOption !== null;
+    const isCorrect = isAnswered && selectedOption === question.correctIndex;
+
+    if (!isAnswered) {
+      unansweredCount++;
+    } else if (isCorrect) {
+      correctCount++;
+    } else {
+      wrongCount++;
+    }
+
+    processedAnswers.push({
+      question: question._id || question.id,
+      selectedOption,
+      isCorrect,
+    });
+  }
+
+  const totalQuestions = questions.length;
+  const weight = Number(scoreWeight) > 0 ? Number(scoreWeight) : 10;
+  const rawScore =
+    totalQuestions > 0 ? (correctCount / totalQuestions) * weight : 0;
+  // Làm tròn đến 2 chữ số thập phân
+  const score = Math.round((rawScore + Number.EPSILON) * 100) / 100;
+
+  return {
+    processedAnswers,
+    score,
+    scoreWeight: weight,
+    totalQuestions,
+    correctCount,
+    wrongCount,
+    unansweredCount,
+  };
+};
+
+/**
+ * Học sinh nộp bài kiểm tra & Hệ thống tự động chấm điểm tại Backend
+ */
+const submitExam = async (examId, submitData = {}, context = {}) => {
+  const { user } = context;
+
+  if (!user) {
+    throw createAppError("Chưa xác thực thông tin người dùng!", 401);
+  }
+
+  if (!examId || !mongoose.Types.ObjectId.isValid(examId)) {
+    throw createAppError("Mã đề kiểm tra không hợp lệ!", 400);
+  }
+
+  const exam =
+    context.preloadedExam ||
+    (await Exam.findOne({ _id: examId, isDeleted: false }).populate(
+      "teachingAssignment"
+    ));
+
+  if (!exam) {
+    throw createAppError("Đề kiểm tra không tồn tại hoặc đã bị xóa!", 404);
+  }
+
+  if (exam.status !== "published" && !exam.isPublished) {
+    throw createAppError(
+      "Đề kiểm tra chưa được phát hành, không thể làm bài và nộp bài!",
+      403
+    );
+  }
+
+  // Nếu là học sinh, kiểm tra có thuộc lớp của đề kiểm tra không
+  if (user.role === "student") {
+    const { studentClass } =
+      await lessonPermissionMiddleware.getStudentEnrolledClass(user.userId);
+    const examClassId = (
+      exam.teachingAssignment?.class?._id || exam.teachingAssignment?.class
+    )?.toString();
+
+    if (studentClass._id.toString() !== examClassId) {
+      throw createAppError(
+        "Học sinh không thuộc lớp học của đề kiểm tra này, không thể nộp bài!",
+        403
+      );
+    }
+  }
+
+  // Kiểm tra học sinh đã nộp bài này trước đó chưa (Chống nộp lại & chống ghi đè kết quả)
+  const existingAttempt = await ExamAttempt.findOne({
+    exam: exam._id,
+    student: user.userId,
+    isDeleted: false,
+  });
+
+  if (existingAttempt) {
+    throw createAppError(
+      "Bạn đã nộp bài kiểm tra này rồi! Hệ thống không cho phép nộp lại hoặc chỉnh sửa kết quả.",
+      400
+    );
+  }
+
+  // Lấy danh sách câu hỏi gốc từ DB (bao gồm đáp án đúng correctIndex được bảo vệ tại server)
+  const questionDocs = await Question.find({
+    _id: { $in: exam.questionIds },
+    isDeleted: false,
+  });
+
+  // Đảm bảo thứ tự câu hỏi khớp chính xác với exam.questionIds
+  const questionMap = new Map(questionDocs.map((q) => [q._id.toString(), q]));
+  const orderedQuestions = exam.questionIds
+    .map((id) => questionMap.get(id.toString()))
+    .filter(Boolean);
+
+  if (orderedQuestions.length === 0) {
+    throw createAppError(
+      "Đề kiểm tra không có câu hỏi nào hợp lệ để chấm điểm!",
+      400
+    );
+  }
+
+  // Thực hiện chấm điểm tự động tại Backend
+  const {
+    processedAnswers,
+    score,
+    scoreWeight,
+    totalQuestions,
+    correctCount,
+    wrongCount,
+    unansweredCount,
+  } = gradeExamAnswers(orderedQuestions, submitData.answers, exam.scoreWeight);
+
+  const durationSpent = Math.max(0, parseInt(submitData.durationSpent, 10) || 0);
+
+  // Lưu bản ghi làm bài (ExamAttempt)
+  const attempt = new ExamAttempt({
+    exam: exam._id,
+    student: user.userId,
+    answers: processedAnswers,
+    score,
+    scoreWeight,
+    totalQuestions,
+    correctCount,
+    wrongCount,
+    unansweredCount,
+    durationSpent,
+    startedAt: submitData.startedAt
+      ? new Date(submitData.startedAt)
+      : new Date(Date.now() - durationSpent * 1000),
+    submittedAt: new Date(),
+    status: "completed",
+  });
+
+  await attempt.save();
+
+  // Populate đầy đủ thông tin (kèm đáp án đúng và lời giải) để học sinh xem lại sau khi nộp
+  const populatedAttempt = await ExamAttempt.findById(attempt._id)
+    .populate({
+      path: "exam",
+      select: "title duration scoreWeight teachingAssignment",
+      populate: {
+        path: "teachingAssignment",
+        select: "class subject teacher",
+        populate: [
+          { path: "class", select: "name code" },
+          { path: "subject", select: "name code" },
+        ],
+      },
+    })
+    .populate({
+      path: "answers.question",
+      select: "content options correctIndex explanation chapter difficulty",
+    })
+    .populate("student", "fullName email userCode");
+
+  return populatedAttempt;
+};
+
+/**
+ * Xem kết quả chi tiết bài làm của học sinh (kèm đáp án đúng sau khi đã nộp)
+ */
+const getExamAttempt = async (examId, query = {}, context = {}) => {
+  const { user } = context;
+
+  if (!user) {
+    throw createAppError("Chưa xác thực thông tin người dùng!", 401);
+  }
+
+  if (!examId || !mongoose.Types.ObjectId.isValid(examId)) {
+    throw createAppError("Mã đề kiểm tra không hợp lệ!", 400);
+  }
+
+  let targetStudentId = user.userId;
+  if (["teacher", "admin"].includes(user.role) && query.studentId) {
+    if (!mongoose.Types.ObjectId.isValid(query.studentId)) {
+      throw createAppError("Mã học sinh không hợp lệ!", 400);
+    }
+    targetStudentId = query.studentId;
+  }
+
+  const attempt = await ExamAttempt.findOne({
+    exam: examId,
+    student: targetStudentId,
+    isDeleted: false,
+  })
+    .populate({
+      path: "exam",
+      select: "title duration scoreWeight teachingAssignment",
+      populate: {
+        path: "teachingAssignment",
+        select: "class subject teacher",
+        populate: [
+          { path: "class", select: "name code" },
+          { path: "subject", select: "name code" },
+        ],
+      },
+    })
+    .populate({
+      path: "answers.question",
+      select: "content options correctIndex explanation chapter difficulty",
+    })
+    .populate("student", "fullName email userCode");
+
+  if (!attempt) {
+    throw createAppError(
+      "Chưa tìm thấy bài làm của học sinh cho đề kiểm tra này!",
+      404
+    );
+  }
+
+  return attempt;
+};
+
+/**
+ * Giáo viên / Quản trị viên xem toàn bộ danh sách kết quả bài làm của cả lớp
+ */
+const getExamAttempts = async (examId, _query = {}, context = {}) => {
+  const { user } = context;
+
+  if (!user) {
+    throw createAppError("Chưa xác thực thông tin người dùng!", 401);
+  }
+
+  if (!examId || !mongoose.Types.ObjectId.isValid(examId)) {
+    throw createAppError("Mã đề kiểm tra không hợp lệ!", 400);
+  }
+
+  const exam =
+    context.preloadedExam ||
+    (await Exam.findOne({ _id: examId, isDeleted: false }));
+
+  if (!exam) {
+    throw createAppError("Đề kiểm tra không tồn tại hoặc đã bị xóa!", 404);
+  }
+
+  const attempts = await ExamAttempt.find({
+    exam: examId,
+    isDeleted: false,
+  })
+    .populate("student", "fullName email userCode avatar")
+    .sort({ submittedAt: -1 });
+
+  const totalAttempts = attempts.length;
+  const scores = attempts.map((a) => a.score);
+  const averageScore =
+    totalAttempts > 0
+      ? Math.round(
+          (scores.reduce((sum, s) => sum + s, 0) / totalAttempts) * 100
+        ) / 100
+      : 0;
+  const highestScore = totalAttempts > 0 ? Math.max(...scores) : 0;
+  const lowestScore = totalAttempts > 0 ? Math.min(...scores) : 0;
+
+  return {
+    examId,
+    attempts,
+    statistics: {
+      totalAttempts,
+      averageScore,
+      highestScore,
+      lowestScore,
+    },
+  };
+};
+
 module.exports = {
+  gradeExamAnswers,
+  submitExam,
+  getExamAttempt,
+  getExamAttempts,
   formatExamForUser,
   sampleRandomQuestions,
   createManualExam,

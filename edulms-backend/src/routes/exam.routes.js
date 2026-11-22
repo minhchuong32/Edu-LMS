@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const {
   protect,
   canCreateExam,
@@ -46,6 +46,16 @@ router.get("/", examController.getExams);
 
 // 5. Lấy chi tiết đề kiểm tra (học sinh không nhận correctIndex và explanation)
 router.get("/:id", canViewExamDetail, examController.getExamById);
+
+// 5.1. Học sinh nộp bài kiểm tra & Hệ thống tự động chấm điểm
+router.post("/:id/submit", canViewExamDetail, examController.submitExam);
+
+// 5.2. Lấy kết quả bài làm chi tiết (học sinh xem lại bài đã nộp kèm đáp án đúng)
+router.get("/:id/result", canViewExamDetail, examController.getExamAttempt);
+router.get("/:id/attempt", canViewExamDetail, examController.getExamAttempt);
+
+// 5.3. Giáo viên / Quản trị viên xem toàn bộ danh sách kết quả nộp bài của học sinh
+router.get("/:id/attempts", canModifyExam, examController.getExamAttempts);
 
 // 6. Chỉnh sửa đề kiểm tra (chỉ được sửa danh sách câu hỏi khi đề chưa phát hành)
 router.put("/:id", canModifyExam, examController.updateExam);
