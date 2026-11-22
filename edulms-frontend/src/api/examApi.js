@@ -14,6 +14,32 @@ export const examApi = {
   getExamById: (id) => axiosClient.get(`/v1/exams/${id}`),
 
   /**
+   * Học sinh nộp bài kiểm tra & Hệ thống tự động chấm điểm tại Backend
+   * @param {string} id - examId
+   * @param {Object} data - { answers: [{ questionId, selectedOption }], durationSpent, startedAt }
+   */
+  submitExam: (id, data) => axiosClient.post(`/v1/exams/${id}/submit`, data),
+
+  /**
+   * Xem kết quả chi tiết bài làm (kèm đáp án đúng sau khi đã nộp)
+   * @param {string} id - examId
+   * @param {Object} params - { studentId } (dành cho giáo viên/admin)
+   */
+  getExamResult: (id, params) =>
+    axiosClient.get(`/v1/exams/${id}/result`, { params }),
+
+  /**
+   * Giáo viên / Quản trị viên xem toàn bộ danh sách kết quả bài làm của cả lớp
+   * @param {string} id - examId
+   */
+  getExamAttempts: (id) => axiosClient.get(`/v1/exams/${id}/attempts`),
+
+  /**
+   * Lấy server time để đồng bộ đồng hồ đếm ngược (tránh học sinh chỉnh giờ máy)
+   */
+  getServerTime: () => axiosClient.get('/v1/exams/server-time'),
+
+  /**
    * Tạo đề kiểm tra thủ công từ danh sách questionIds
    * @param {Object} data - { teachingAssignment, title, description, duration, questionIds, scoreWeight }
    */
