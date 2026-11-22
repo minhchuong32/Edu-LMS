@@ -20,6 +20,8 @@ import StudentDashboard from '@/features/student/StudentDashboard'
 import StudentLessonViewerPage from '@/features/student/StudentLessonViewerPage'
 import StudentAssignmentPage from '@/features/student/StudentAssignmentPage'
 import StudentExamListPage from '@/features/student/StudentExamListPage'
+import ExamTakingPage from '@/features/student/exam/ExamTakingPage'
+import ExamResultReviewPage from '@/features/student/exam/ExamResultReviewPage'
 import ParentDashboard from '@/features/parent/ParentDashboard'
 import WeeklyTimetablePage from '@/features/timetable/WeeklyTimetablePage'
 import HomePage from '@/features/portal/HomePage'
@@ -81,6 +83,8 @@ export const AppRoutes = () => {
             <Route path="/student/lessons" element={<StudentLessonViewerPage />} />
             <Route path="/student/assignments" element={<StudentAssignmentPage />} />
             <Route path="/student/exams" element={<StudentExamListPage />} />
+            <Route path="/student/exams/:examId/take" element={<ExamTakingPage />} />
+            <Route path="/student/exams/:examId/result" element={<ExamResultReviewPage />} />
           </Route>
         </Route>
 

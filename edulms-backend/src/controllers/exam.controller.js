@@ -128,7 +128,81 @@ const deleteExam = async (req, res, next) => {
   }
 };
 
+/**
+ * Controller Học sinh nộp bài kiểm tra & Hệ thống tự động chấm điểm
+ */
+const submitExam = async (req, res, next) => {
+  try {
+    const result = await examService.submitExam(req.params.id, req.body, {
+      user: req.user,
+      preloadedExam: req.exam,
+    });
+    return successResponse(
+      res,
+      result,
+      "Nộp bài kiểm tra và chấm điểm thành công!",
+      201
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Controller Xem chi tiết kết quả bài làm của học sinh (kèm đáp án đúng sau khi nộp)
+ */
+const getExamAttempt = async (req, res, next) => {
+  try {
+    const result = await examService.getExamAttempt(req.params.id, req.query, {
+      user: req.user,
+      preloadedExam: req.exam,
+    });
+    return successResponse(
+      res,
+      result,
+      "Lấy kết quả bài làm thành công"
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Controller Lấy danh sách kết quả bài làm của cả lớp dành cho Giáo viên / Admin
+ */
+const getExamAttempts = async (req, res, next) => {
+  try {
+    const result = await examService.getExamAttempts(req.params.id, req.query, {
+      user: req.user,
+      preloadedExam: req.exam,
+    });
+    return successResponse(
+      res,
+      result,
+      "Lấy danh sách bài nộp của học sinh thành công"
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Lấy server time để client đồng bộ đồng hồ đếm ngược (tránh gian lận chỉnh giờ máy)
+ */
+const getServerTime = (_req, res) => {
+  const serverTime = Date.now();
+  return successResponse(
+    res,
+    { serverTime, iso: new Date(serverTime).toISOString() },
+    "Lấy server time thành công"
+  );
+};
+
 module.exports = {
+  getServerTime,
+  submitExam,
+  getExamAttempt,
+  getExamAttempts,
   createManualExam,
   previewRandomQuestions,
   createRandomExam,
