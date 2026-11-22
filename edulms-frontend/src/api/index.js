@@ -4,4 +4,5 @@ export { default as importApi } from './importApi'
 export { default as academicApi } from './academicApi'
 export { default as lessonApi } from './lessonApi'
 export { default as assignmentApi } from './assignmentApi'
-
+export { default as questionApi } from './questionApi'
+export { default as examApi } from './examApi'

@@ -4,6 +4,8 @@ const errorMiddleware = require("./error.middleware");
 const lessonPermissionMiddleware = require("./lessonPermission.middleware");
 const assignmentPermissionMiddleware = require("./assignmentPermission.middleware");
 const submissionPermissionMiddleware = require("./submissionPermission.middleware");
+const questionPermissionMiddleware = require("./questionPermission.middleware");
+const examPermissionMiddleware = require("./examPermission.middleware");
 const uploadMiddleware = require("./upload.middleware");
 
 module.exports = {
@@ -13,6 +15,8 @@ module.exports = {
   ...lessonPermissionMiddleware,
   ...assignmentPermissionMiddleware,
   ...submissionPermissionMiddleware,
+  ...questionPermissionMiddleware,
+  ...examPermissionMiddleware,
   uploadFile: uploadMiddleware.uploadFile,
   uploadDocument: uploadMiddleware.uploadDocument,
   uploadSpreadsheet: uploadMiddleware.uploadSpreadsheet,
