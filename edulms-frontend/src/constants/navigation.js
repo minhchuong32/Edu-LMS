@@ -11,6 +11,8 @@ import {
   Calendar,
   Award,
   Bell,
+  HelpCircle,
+  FileText,
 } from 'lucide-react'
 import { ROLES } from './roles'
 
@@ -78,6 +80,11 @@ export const ROLE_NAVIGATION_MENU = {
       icon: GraduationCap,
     },
     {
+      label: 'Ngân hàng câu hỏi & Đề thi',
+      path: '/teacher/questions',
+      icon: HelpCircle,
+    },
+    {
       label: 'Sổ điểm',
       path: '/teacher/gradebook',
       icon: ClipboardList,
@@ -103,6 +110,11 @@ export const ROLE_NAVIGATION_MENU = {
       label: 'Bài tập',
       path: '/student/assignments',
       icon: ClipboardList,
+    },
+    {
+      label: 'Đề kiểm tra',
+      path: '/student/exams',
+      icon: FileText,
     },
     {
       label: 'Điểm',
