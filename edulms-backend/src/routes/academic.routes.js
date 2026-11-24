@@ -6,12 +6,20 @@ const subjectController = require("../controllers/subject.controller");
 const classController = require("../controllers/class.controller");
 const assignmentController = require("../controllers/teachingAssignment.controller");
 const studentAssignmentController = require("../controllers/studentAssignment.controller");
+const teacherDashboardController = require("../controllers/teacherDashboard.controller");
 const timetableRoutes = require("./timetable.routes");
 
 const router = express.Router();
 
 // Tất cả các route học vụ đều yêu cầu đăng nhập
 router.use(protect);
+
+// Thống kê Dashboard dành cho Giáo viên (chỉ trả về dữ liệu trong phạm vi GV phụ trách)
+router.get(
+  "/teacher-dashboard",
+  authorize("teacher", "admin"),
+  teacherDashboardController.getTeacherDashboardStats
+);
 
 // Danh sách giáo viên hỗ trợ phân công
 router.get("/teachers", authorize("admin"), assignmentController.getTeachersList);

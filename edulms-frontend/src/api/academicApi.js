@@ -33,6 +33,8 @@ export const academicApi = {
   checkConflict: (data) => axiosClient.post('/v1/academic/assignments/check-conflict', data),
   getTeacherSchedule: (teacherId, params) =>
     axiosClient.get(`/v1/academic/assignments/teacher/${teacherId}`, { params }),
+  getTeacherDashboardStats: (params) =>
+    axiosClient.get('/v1/academic/teacher-dashboard', { params }),
 
   // --- DANH SÁCH GIÁO VIÊN ---
   getTeachers: (params) => axiosClient.get('/v1/academic/teachers', { params }),
