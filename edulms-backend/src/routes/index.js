@@ -68,4 +68,9 @@ router.use("/questions", questionRoutes);
 const examRoutes = require("./exam.routes");
 router.use("/exams", examRoutes);
 
+// Quản lý Sổ điểm & Bản ghi điểm theo hệ số (Gradebook / GradeRecords)
+const gradebookRoutes = require("./gradebook.routes");
+router.use("/gradebook", gradebookRoutes);
+router.use("/grade-records", gradebookRoutes);
+
 module.exports = router;
