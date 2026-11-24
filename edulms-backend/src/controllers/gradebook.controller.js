@@ -135,10 +135,31 @@ const updateGradeWeightConfig = (req, res, next) => {
   }
 };
 
+/**
+ * [POST/PUT] /api/v1/gradebook/bulk
+ * Lưu hàng loạt nhiều đầu điểm của học sinh trong một lần thao tác
+ */
+const bulkUpsertGradeRecords = async (req, res, next) => {
+  try {
+    const result = await gradebookService.bulkUpsertGradeRecords(
+      req.body,
+      getRequestContext(req)
+    );
+    return successResponse(
+      res,
+      result,
+      `Đã lưu thành công ${result.count} đầu điểm`
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
 module.exports = {
   createGradeRecord,
   updateGradeRecord,
   deleteGradeRecord,
+  bulkUpsertGradeRecords,
   getGradeRecords,
   getGradeWeightConfig,
   updateGradeWeightConfig,

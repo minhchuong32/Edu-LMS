@@ -16,6 +16,7 @@ import TeacherDashboard from '@/features/teacher/TeacherDashboard'
 import TeacherLessonListPage from '@/features/teacher/TeacherLessonListPage'
 import TeacherAssignmentPage from '@/features/teacher/TeacherAssignmentPage'
 import TeacherQuestionExamPage from '@/features/teacher/TeacherQuestionExamPage'
+import TeacherGradebookPage from '@/features/teacher/TeacherGradebookPage'
 import StudentDashboard from '@/features/student/StudentDashboard'
 import StudentLessonViewerPage from '@/features/student/StudentLessonViewerPage'
 import StudentAssignmentPage from '@/features/student/StudentAssignmentPage'
@@ -72,6 +73,7 @@ export const AppRoutes = () => {
             <Route path="/teacher/assignments" element={<TeacherAssignmentPage />} />
             <Route path="/teacher/questions" element={<TeacherQuestionExamPage />} />
             <Route path="/teacher/exams" element={<TeacherQuestionExamPage />} />
+            <Route path="/teacher/gradebook" element={<TeacherGradebookPage />} />
           </Route>
         </Route>
 

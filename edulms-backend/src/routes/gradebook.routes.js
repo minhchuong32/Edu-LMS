@@ -48,7 +48,19 @@ router.get(
   gradebookController.getGradeRecords
 );
 
-// 4. Nhập mới bản ghi điểm (Chỉ Giáo viên phụ trách TeachingAssignment hoặc Admin)
+// 4. Lưu hàng loạt nhiều đầu điểm trong một lần thao tác (Bulk Save / Upsert)
+router.post(
+  "/bulk",
+  canManageGradeRecord,
+  gradebookController.bulkUpsertGradeRecords
+);
+router.put(
+  "/bulk",
+  canManageGradeRecord,
+  gradebookController.bulkUpsertGradeRecords
+);
+
+// 5. Nhập mới bản ghi điểm (Chỉ Giáo viên phụ trách TeachingAssignment hoặc Admin)
 router.post("/", canManageGradeRecord, gradebookController.createGradeRecord);
 
 // 5. Cập nhật bản ghi điểm theo ID (Chỉ Giáo viên phụ trách TeachingAssignment hoặc Admin)

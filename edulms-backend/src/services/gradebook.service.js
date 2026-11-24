@@ -656,6 +656,119 @@ const deleteGradeRecord = async (id, context = {}) => {
 };
 
 /**
+ * Lưu hàng loạt (Bulk Upsert) nhiều đầu điểm của học sinh trong một lần thao tác
+ * @param {object} payload - { teachingAssignment, semester, records: Array }
+ * @param {object} context - { user, targetTeachingAssignment }
+ */
+const bulkUpsertGradeRecords = async (payload = {}, context = {}) => {
+  const { user, targetTeachingAssignment } = context;
+  const {
+    teachingAssignment: rootTaId,
+    semester: rootSemester = "HK1",
+    records = [],
+  } = payload;
+
+  if (!Array.isArray(records) || records.length === 0) {
+    throw createAppError(
+      "Danh sách điểm cần lưu (records) không được để trống",
+      400
+    );
+  }
+
+  const primaryTaId = rootTaId || records[0]?.teachingAssignment;
+  const taDoc = await verifyTeacherAssignmentOwnership(
+    primaryTaId,
+    user,
+    targetTeachingAssignment
+  );
+
+  const actorId = user?.userId || user?._id || user?.id || null;
+  const savedRecords = [];
+
+  for (const item of records) {
+    if (!item || typeof item !== "object") continue;
+
+    const itemStudentId = item.student?._id || item.student;
+    const itemGradeType = String(item.gradeType || "")
+      .toLowerCase()
+      .trim();
+    const itemSemester = String(item.semester || rootSemester || "HK1").trim();
+
+    if (!itemStudentId || !mongoose.Types.ObjectId.isValid(itemStudentId)) {
+      throw createAppError("Mã học sinh (student) trong danh sách không hợp lệ", 400);
+    }
+
+    if (!SUPPORTED_GRADE_TYPES.includes(itemGradeType)) {
+      throw createAppError(
+        `Loại điểm '${item.gradeType}' không hợp lệ. Các loại điểm hỗ trợ: ${SUPPORTED_GRADE_TYPES.join(", ")}`,
+        400
+      );
+    }
+
+    if (!SUPPORTED_SEMESTERS.includes(itemSemester)) {
+      throw createAppError(
+        `Học kỳ '${itemSemester}' không hợp lệ. Chỉ chấp nhận: ${SUPPORTED_SEMESTERS.join(", ")}`,
+        400
+      );
+    }
+
+    const validatedValue = validateGradeValue(item.value);
+    const resolvedWeight = resolveGradeWeight(itemGradeType, item.weight);
+
+    let recordDoc = null;
+    if (item._id && mongoose.Types.ObjectId.isValid(item._id)) {
+      recordDoc = await GradeRecord.findOne({
+        _id: item._id,
+        teachingAssignment: taDoc._id,
+        isDeleted: false,
+      });
+    }
+
+    if (!recordDoc) {
+      recordDoc = await GradeRecord.findOne({
+        student: itemStudentId,
+        teachingAssignment: taDoc._id,
+        semester: itemSemester,
+        gradeType: itemGradeType,
+        isDeleted: false,
+      });
+    }
+
+    if (recordDoc) {
+      recordDoc.value = validatedValue;
+      recordDoc.weight = resolvedWeight;
+      if (item.note !== undefined) {
+        recordDoc.note = String(item.note).trim();
+      }
+      if (actorId) {
+        recordDoc.updatedBy = actorId;
+      }
+      const updated = await recordDoc.save();
+      savedRecords.push(updated);
+    } else {
+      const created = new GradeRecord({
+        student: itemStudentId,
+        teachingAssignment: taDoc._id,
+        semester: itemSemester,
+        gradeType: itemGradeType,
+        value: validatedValue,
+        weight: resolvedWeight,
+        note: item.note ? String(item.note).trim() : "",
+        createdBy: actorId,
+        updatedBy: actorId,
+      });
+      const saved = await created.save();
+      savedRecords.push(saved);
+    }
+  }
+
+  return {
+    records: savedRecords,
+    count: savedRecords.length,
+  };
+};
+
+/**
  * Truy vấn danh sách điểm và tính điểm trung bình theo học sinh / lớp / môn / học kỳ
  */
 const getGradeRecords = async (query = {}, context = {}) => {
@@ -901,5 +1014,6 @@ module.exports = {
   createGradeRecord,
   updateGradeRecord,
   deleteGradeRecord,
+  bulkUpsertGradeRecords,
   getGradeRecords,
 };
