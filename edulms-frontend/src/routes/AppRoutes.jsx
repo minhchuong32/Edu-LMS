@@ -16,10 +16,12 @@ import TeacherDashboard from '@/features/teacher/TeacherDashboard'
 import TeacherLessonListPage from '@/features/teacher/TeacherLessonListPage'
 import TeacherAssignmentPage from '@/features/teacher/TeacherAssignmentPage'
 import TeacherQuestionExamPage from '@/features/teacher/TeacherQuestionExamPage'
+import TeacherGradebookPage from '@/features/teacher/TeacherGradebookPage'
 import StudentDashboard from '@/features/student/StudentDashboard'
 import StudentLessonViewerPage from '@/features/student/StudentLessonViewerPage'
 import StudentAssignmentPage from '@/features/student/StudentAssignmentPage'
 import StudentExamListPage from '@/features/student/StudentExamListPage'
+import StudentGradeLookupPage from '@/features/student/StudentGradeLookupPage'
 import ExamTakingPage from '@/features/student/exam/ExamTakingPage'
 import ExamResultReviewPage from '@/features/student/exam/ExamResultReviewPage'
 import ParentDashboard from '@/features/parent/ParentDashboard'
@@ -72,6 +74,7 @@ export const AppRoutes = () => {
             <Route path="/teacher/assignments" element={<TeacherAssignmentPage />} />
             <Route path="/teacher/questions" element={<TeacherQuestionExamPage />} />
             <Route path="/teacher/exams" element={<TeacherQuestionExamPage />} />
+            <Route path="/teacher/gradebook" element={<TeacherGradebookPage />} />
           </Route>
         </Route>
 
@@ -85,6 +88,7 @@ export const AppRoutes = () => {
             <Route path="/student/exams" element={<StudentExamListPage />} />
             <Route path="/student/exams/:examId/take" element={<ExamTakingPage />} />
             <Route path="/student/exams/:examId/result" element={<ExamResultReviewPage />} />
+            <Route path="/student/grades" element={<StudentGradeLookupPage />} />
           </Route>
         </Route>
 
@@ -92,6 +96,7 @@ export const AppRoutes = () => {
         <Route element={<RoleRoute allowedRoles={['parent']} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/parent/dashboard" element={<ParentDashboard />} />
+            <Route path="/parent/grades" element={<StudentGradeLookupPage />} />
           </Route>
         </Route>
       </Route>
