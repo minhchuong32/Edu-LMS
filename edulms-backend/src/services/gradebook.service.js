@@ -3,6 +3,7 @@ const GradeRecord = require("../models/GradeRecord");
 const TeachingAssignment = require("../models/TeachingAssignment");
 const User = require("../models/User");
 const Class = require("../models/Class");
+const notificationService = require("./notification.service");
 
 const {
   DEFAULT_GRADE_WEIGHTS,
@@ -545,7 +546,25 @@ const createGradeRecord = async (data = {}, context = {}) => {
     updatedBy: actorId,
   });
 
-  return await newRecord.save();
+  const savedRecord = await newRecord.save();
+
+  // Trigger tự động tạo thông báo cho học sinh khi có điểm mới
+  try {
+    await notificationService.createGradeRecordNotification({
+      recipient: student,
+      sender: actorId,
+      gradeRecord: savedRecord,
+      teachingAssignment: taDoc,
+      isUpdate: false,
+    });
+  } catch (notifyErr) {
+    console.error(
+      "[Gradebook] Không thể tạo thông báo nhập điểm mới:",
+      notifyErr.message
+    );
+  }
+
+  return savedRecord;
 };
 
 /**
@@ -618,7 +637,25 @@ const updateGradeRecord = async (id, data = {}, context = {}) => {
     recordDoc.updatedBy = actorId;
   }
 
-  return await recordDoc.save();
+  const updatedRecord = await recordDoc.save();
+
+  // Trigger tự động tạo thông báo cho học sinh khi cập nhật điểm
+  try {
+    await notificationService.createGradeRecordNotification({
+      recipient: updatedRecord.student || recordDoc.student,
+      sender: actorId,
+      gradeRecord: updatedRecord,
+      teachingAssignment: targetTeachingAssignment,
+      isUpdate: true,
+    });
+  } catch (notifyErr) {
+    console.error(
+      "[Gradebook] Không thể tạo thông báo cập nhật điểm:",
+      notifyErr.message
+    );
+  }
+
+  return updatedRecord;
 };
 
 /**
@@ -745,6 +782,18 @@ const bulkUpsertGradeRecords = async (payload = {}, context = {}) => {
       }
       const updated = await recordDoc.save();
       savedRecords.push(updated);
+
+      try {
+        await notificationService.createGradeRecordNotification({
+          recipient: itemStudentId,
+          sender: actorId,
+          gradeRecord: updated,
+          teachingAssignment: taDoc,
+          isUpdate: true,
+        });
+      } catch {
+        // Bỏ qua lỗi tạo thông báo để không gián đoạn lưu hàng loạt
+      }
     } else {
       const created = new GradeRecord({
         student: itemStudentId,
@@ -759,6 +808,18 @@ const bulkUpsertGradeRecords = async (payload = {}, context = {}) => {
       });
       const saved = await created.save();
       savedRecords.push(saved);
+
+      try {
+        await notificationService.createGradeRecordNotification({
+          recipient: itemStudentId,
+          sender: actorId,
+          gradeRecord: saved,
+          teachingAssignment: taDoc,
+          isUpdate: false,
+        });
+      } catch {
+        // Bỏ qua lỗi tạo thông báo để không gián đoạn lưu hàng loạt
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Assignment = require("../models/Assignment");
 const TeachingAssignment = require("../models/TeachingAssignment");
+const notificationService = require("./notification.service");
 const { getStudentEnrolledClass } = require("../middlewares/lessonPermission.middleware");
 const { safeDeleteFromCloudinary } = require("../config/cloudinary");
 
@@ -222,7 +223,25 @@ const createAssignment = async (data = {}, context = {}) => {
     isActive: isActive !== undefined ? Boolean(isActive) : true,
   });
 
-  return await newAssignment.save();
+  const savedAssignment = await newAssignment.save();
+
+  // Trigger tự động tạo thông báo cho các học sinh trong lớp khi giáo viên giao bài tập mới
+  if (savedAssignment.isActive !== false) {
+    try {
+      await notificationService.createAssignmentCreatedNotifications({
+        assignment: savedAssignment,
+        teachingAssignment: targetTeachingAssignment,
+        sender: user?.userId || user?._id || user?.id || null,
+      });
+    } catch (notifyErr) {
+      console.error(
+        "[Assignment] Không thể tạo thông báo giao bài tập mới:",
+        notifyErr.message
+      );
+    }
+  }
+
+  return savedAssignment;
 };
 
 /**

@@ -9,6 +9,26 @@ const handleServiceError = (res, next, error) => {
 };
 
 /**
+ * [POST] /api/v1/notifications
+ * Tạo thông báo mới cho người dùng (chỉ cho phép Teacher hoặc Admin tạo)
+ */
+const createNotification = async (req, res, next) => {
+  try {
+    const created = await notificationService.createNotification(req.body, {
+      user: req.user,
+    });
+    return successResponse(
+      res,
+      created,
+      "Tạo thông báo thành công",
+      201
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
  * [GET] /api/v1/notifications
  * Lấy danh sách thông báo của người dùng đang đăng nhập
  */
@@ -54,7 +74,10 @@ const markNotificationAsRead = async (req, res, next) => {
 const markAllNotificationsAsRead = async (req, res, next) => {
   try {
     const userId = req.user?.userId || req.user?._id || req.user?.id;
-    await notificationService.markAllNotificationsAsRead(userId);
+    await notificationService.markAllNotificationsAsRead(userId, {
+      ...req.query,
+      ...req.body,
+    });
     return successResponse(
       res,
       null,
@@ -66,8 +89,8 @@ const markAllNotificationsAsRead = async (req, res, next) => {
 };
 
 module.exports = {
+  createNotification,
   getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
 };
-

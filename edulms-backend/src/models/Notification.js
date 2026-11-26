@@ -1,5 +1,17 @@
 const mongoose = require("mongoose");
 
+const SUPPORTED_NOTIFICATION_TYPES = Object.freeze([
+  "assignment_created",
+  "assignment_graded",
+  "submission_updated",
+  "grade_created",
+  "grade_updated",
+  "assignment",
+  "grade",
+  "system",
+  "general",
+]);
+
 const notificationSchema = new mongoose.Schema(
   {
     recipient: {
@@ -14,30 +26,37 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
+      required: [true, "Loại thông báo (type) là bắt buộc"],
       enum: {
-        values: [
-          "assignment_graded",
-          "assignment_created",
-          "submission_updated",
-          "system",
-          "general",
-        ],
+        values: SUPPORTED_NOTIFICATION_TYPES,
         message: "Loại thông báo '{VALUE}' không hợp lệ",
       },
-      default: "assignment_graded",
+      default: "general",
       trim: true,
     },
     title: {
       type: String,
-      required: [true, "Tiêu đề thông báo là bắt buộc"],
       trim: true,
+      default: "Thông báo hệ thống",
       maxlength: [250, "Tiêu đề thông báo không được vượt quá 250 ký tự"],
+    },
+    content: {
+      type: String,
+      required: [true, "Nội dung thông báo (content) là bắt buộc"],
+      trim: true,
+      maxlength: [2000, "Nội dung thông báo không được vượt quá 2000 ký tự"],
     },
     message: {
       type: String,
-      required: [true, "Nội dung thông báo là bắt buộc"],
       trim: true,
+      default: "",
       maxlength: [2000, "Nội dung thông báo không được vượt quá 2000 ký tự"],
+    },
+    link: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: [500, "Đường dẫn liên kết (link) không được vượt quá 500 ký tự"],
     },
     submission: {
       type: mongoose.Schema.Types.ObjectId,
@@ -47,6 +66,11 @@ const notificationSchema = new mongoose.Schema(
     assignment: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Assignment",
+      default: null,
+    },
+    gradeRecord: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GradeRecord",
       default: null,
     },
     metadata: {
@@ -71,6 +95,19 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
+// Đồng bộ hai chiều giữa trường `content` (chuẩn schema) và `message` (tương thích ngược)
+notificationSchema.pre("validate", function () {
+  if (!this.content && this.message) {
+    this.content = this.message;
+  }
+  if (!this.message && this.content) {
+    this.message = this.content;
+  }
+  if (!this.title && this.content) {
+    this.title = String(this.content).slice(0, 120);
+  }
+});
+
 notificationSchema.index({
   recipient: 1,
   isRead: 1,
@@ -78,5 +115,7 @@ notificationSchema.index({
   isDeleted: 1,
 });
 
-module.exports = mongoose.model("Notification", notificationSchema);
+const Notification = mongoose.model("Notification", notificationSchema);
+Notification.SUPPORTED_NOTIFICATION_TYPES = SUPPORTED_NOTIFICATION_TYPES;
 
+module.exports = Notification;
