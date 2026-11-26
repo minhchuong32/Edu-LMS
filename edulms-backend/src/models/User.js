@@ -39,6 +39,18 @@ const userSchema = new mongoose.Schema(
       ref: "Class",
       default: null,
     },
+    // Danh sách học sinh được liên kết với tài khoản Phụ huynh (một phụ huynh có thể có một hoặc nhiều học sinh)
+    childrenRefs: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    phone: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     mustChangePassword: {
       type: Boolean,
       default: false,
@@ -47,10 +59,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
 userSchema.index({ classRef: 1, role: 1 });
+userSchema.index({ role: 1, childrenRefs: 1 });
 
 module.exports = mongoose.model("User", userSchema);

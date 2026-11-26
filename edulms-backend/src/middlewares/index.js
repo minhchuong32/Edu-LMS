@@ -7,6 +7,7 @@ const submissionPermissionMiddleware = require("./submissionPermission.middlewar
 const questionPermissionMiddleware = require("./questionPermission.middleware");
 const examPermissionMiddleware = require("./examPermission.middleware");
 const gradeRecordPermissionMiddleware = require("./gradeRecordPermission.middleware");
+const parentPermissionMiddleware = require("./parentPermission.middleware");
 const uploadMiddleware = require("./upload.middleware");
 
 module.exports = {
@@ -19,6 +20,7 @@ module.exports = {
   ...questionPermissionMiddleware,
   ...examPermissionMiddleware,
   ...gradeRecordPermissionMiddleware,
+  ...parentPermissionMiddleware,
   uploadFile: uploadMiddleware.uploadFile,
   uploadDocument: uploadMiddleware.uploadDocument,
   uploadSpreadsheet: uploadMiddleware.uploadSpreadsheet,

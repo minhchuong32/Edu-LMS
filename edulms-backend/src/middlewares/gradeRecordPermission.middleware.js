@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const GradeRecord = require("../models/GradeRecord");
 const TeachingAssignment = require("../models/TeachingAssignment");
 const Class = require("../models/Class");
+const User = require("../models/User");
 const { getStudentEnrolledClass } = require("./lessonPermission.middleware");
 const { errorResponse } = require("../utils/apiResponse");
 
@@ -236,6 +237,39 @@ const canViewGradeRecords = async (req, res, next) => {
       }
 
       req.query.student = userId.toString();
+    } else if (role === "parent") {
+      // Kiểm tra quyền xem điểm của Phụ huynh dựa trên childrenRefs
+      const parentQuery = User.findOne({
+        _id: userId,
+        role: "parent",
+        isDeleted: { $ne: true },
+      });
+      const parentDoc =
+        parentQuery && typeof parentQuery.select === "function"
+          ? await parentQuery.select("_id childrenRefs").lean()
+          : await parentQuery;
+
+      const childrenIdStrings = Array.isArray(parentDoc?.childrenRefs)
+        ? parentDoc.childrenRefs
+            .map((c) => (c?._id || c)?.toString())
+            .filter(Boolean)
+        : [];
+
+      const requestedStudentId =
+        req.params.studentId || req.query.student || req.query.studentId;
+
+      if (
+        requestedStudentId &&
+        !childrenIdStrings.includes(requestedStudentId.toString())
+      ) {
+        return errorResponse(
+          res,
+          "Phụ huynh chỉ có quyền xem điểm số của các học sinh được liên kết trong danh sách con (childrenRefs)!",
+          403
+        );
+      }
+
+      req.authorizedChildrenIds = childrenIdStrings;
     }
 
     if (teachingAssignmentId) {

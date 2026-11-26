@@ -802,6 +802,36 @@ const getGradeRecords = async (query = {}, context = {}) => {
       );
     }
     filter.student = currentUserId;
+  } else if (user?.role === "parent") {
+    // Phân quyền Phụ huynh: chỉ được xem điểm của các học sinh trong childrenRefs
+    const currentUserId = (user.userId || user._id || user.id)?.toString();
+    const parentQuery = User.findOne({
+      _id: currentUserId,
+      role: "parent",
+      isDeleted: { $ne: true },
+    });
+    const parentDoc =
+      parentQuery && typeof parentQuery.select === "function"
+        ? await parentQuery.select("_id childrenRefs").lean()
+        : await parentQuery;
+
+    const childrenIdStrings = Array.isArray(parentDoc?.childrenRefs)
+      ? parentDoc.childrenRefs
+          .map((c) => (c?._id || c)?.toString())
+          .filter(Boolean)
+      : [];
+
+    if (targetStudentId) {
+      if (!childrenIdStrings.includes(targetStudentId.toString())) {
+        throw createAppError(
+          "Phụ huynh chỉ có quyền xem điểm số của học sinh được liên kết trong danh sách con (childrenRefs)!",
+          403
+        );
+      }
+      filter.student = targetStudentId;
+    } else {
+      filter.student = { $in: childrenIdStrings };
+    }
   } else if (targetStudentId) {
     if (!mongoose.Types.ObjectId.isValid(targetStudentId)) {
       throw createAppError("Mã học sinh (student) không hợp lệ", 400);

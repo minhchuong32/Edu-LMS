@@ -7,10 +7,10 @@ const ROLE_CONFIG = {
     label: 'Học sinh',
     icon: Users,
     color: 'blue',
-    headers: ['Họ và Tên', 'Mã Học Sinh', 'Email', 'Lớp'],
+    headers: ['Họ và Tên', 'Mã Học Sinh', 'Email', 'Lớp', 'Họ tên Phụ huynh', 'Mã Phụ huynh', 'Email Phụ huynh'],
     sampleData: [
-      ['Nguyễn Văn A', 'HS001', 'nguyenvana@edu.vn', '10A1'],
-      ['Trần Thị B', 'HS002', 'tranthib@edu.vn', '10A2'],
+      ['Nguyễn Văn A', 'HS001', 'nguyenvana@edu.vn', '10A1', 'Nguyễn Văn Phụ Huynh', 'PH001', 'phuhuynha@edu.vn'],
+      ['Trần Thị B', 'HS002', 'tranthib@edu.vn', '10A2', 'Trần Văn Phụ Huynh', 'PH002', 'phuhuynhb@edu.vn'],
     ],
   },
   teacher: {
@@ -21,6 +21,15 @@ const ROLE_CONFIG = {
     sampleData: [
       ['Lê Văn C', 'GV001', 'levanc@edu.vn'],
       ['Phạm Thị D', 'GV002', 'phamthid@edu.vn'],
+    ],
+  },
+  parent: {
+    label: 'Phụ huynh',
+    icon: Users,
+    color: 'indigo',
+    headers: ['Họ và Tên', 'Mã Phụ Huynh', 'Email', 'Mã Học Sinh Con'],
+    sampleData: [
+      ['Nguyễn Văn Phụ Huynh', 'PH001', 'phuhuynh1@edu.vn', 'HS001, HS002'],
     ],
   },
 }
