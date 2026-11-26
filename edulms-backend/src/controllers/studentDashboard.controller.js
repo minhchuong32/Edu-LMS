@@ -14,13 +14,19 @@ const {
 } = require("../services/gradebook.service");
 const { successResponse, errorResponse } = require("../utils/apiResponse");
 
+const toObjectId = (id) =>
+  mongoose.Types.ObjectId.isValid(id)
+    ? new mongoose.Types.ObjectId(id.toString())
+    : id;
+
 /**
  * [GET] /api/v1/academic/student-dashboard
- * Lấy dữ liệu Dashboard cá nhân dành cho Học sinh:
- * - Điểm trung bình hiện tại (Overall GPA & Điểm trung bình từng môn học)
- * - Tiến độ bài tập (tổng bài tập, tỷ lệ hoàn thành, phân biệt rõ: Đã nộp, Chưa nộp & Còn hạn, Quá hạn)
- * - Danh sách lịch kiểm tra sắp tới (các đề thi đã phát hành cho lớp của học sinh)
- * - Kiểm soát quyền truy cập dữ liệu cá nhân: chỉ trả về dữ liệu của chính học sinh đang đăng nhập
+ * API thống kê cho Học sinh (theo tài khoản cá nhân), sử dụng MongoDB Aggregation:
+ * 1. Thống kê điểm trung bình hiện tại của cá nhân (GradeRecord.aggregate)
+ * 2. Theo dõi tiến độ bài tập: đã nộp / còn hạn / quá hạn (Assignment.aggregate / Submission)
+ * 3. Danh sách bài kiểm tra sắp tới (Exam.aggregate / ExamAttempt)
+ * 4. Phân quyền & Bảo mật: Học sinh chỉ được xem dữ liệu thống kê của chính mình;
+ *    truy cập dữ liệu của học sinh khác hoặc lớp khác trả về HTTP 403.
  */
 const getStudentDashboardStats = async (req, res, next) => {
   try {
@@ -53,6 +59,8 @@ const getStudentDashboardStats = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return errorResponse(res, "Mã học sinh không hợp lệ!", 400);
     }
+
+    const studentObjectId = toObjectId(userId);
 
     // 1. Lấy thông tin hồ sơ Học sinh đang đăng nhập & Lớp học hiện tại
     const studentDoc = await User.findOne({
@@ -91,10 +99,24 @@ const getStudentDashboardStats = async (req, res, next) => {
       }
     }
 
+    // Chặn học sinh cố tình truyền classId của lớp khác trên query/params (403 Forbidden)
+    const requestedClassId = req.query.classId || req.params.classId;
+    if (
+      requestedClassId &&
+      classId &&
+      requestedClassId.toString() !== classId.toString()
+    ) {
+      return errorResponse(
+        res,
+        "Học sinh không có quyền truy cập dữ liệu thống kê của lớp học khác!",
+        403
+      );
+    }
+
     // 2. Truy vấn các phân công giảng dạy (TeachingAssignment) thuộc lớp của học sinh
     const teachingAssignments = classId
       ? await TeachingAssignment.find({
-          class: classId,
+          class: toObjectId(classId),
           isDeleted: false,
         })
           .populate("class", "name room academicYear")
@@ -104,60 +126,141 @@ const getStudentDashboardStats = async (req, res, next) => {
       : [];
 
     const taIds = teachingAssignments.map((ta) => ta._id);
+    const taObjectIds = taIds.map(toObjectId);
+    const taMapById = new Map(
+      teachingAssignments.map((ta) => [ta._id.toString(), ta])
+    );
 
-    // 3. Tính Điểm trung bình hiện tại (GPA) của riêng học sinh đang đăng nhập
-    const gradeRecords = await GradeRecord.find({
-      student: userId,
-      isDeleted: false,
-    })
-      .populate({
-        path: "teachingAssignment",
-        select: "class subject academicYear semester",
-        populate: [
-          { path: "class", select: "name" },
-          { path: "subject", select: "name code" },
-        ],
-      })
-      .lean();
-
-    const subjectGroups = new Map();
-    gradeRecords.forEach((rec) => {
-      const subId = (
-        rec.teachingAssignment?.subject?._id ||
-        rec.teachingAssignment?.subject ||
-        rec.teachingAssignment?._id ||
-        "general"
-      ).toString();
-      const subName =
-        rec.teachingAssignment?.subject?.name || "Môn học";
-      const subCode =
-        rec.teachingAssignment?.subject?.code || "---";
-
-      if (!subjectGroups.has(subId)) {
-        subjectGroups.set(subId, {
-          subjectId: subId,
-          subjectName: subName,
-          subjectCode: subCode,
-          records: [],
-        });
-      }
-      subjectGroups.get(subId).records.push(rec);
-    });
-
+    // =========================================================================
+    // 3. THỐNG KÊ ĐIỂM TRUNG BÌNH HIỆN TẠI CỦA CÁ NHÂN (MongoDB Aggregation)
+    // =========================================================================
     const subjectAverages = [];
-    subjectGroups.forEach((group) => {
-      const avg = calculateWeightedAverage(group.records);
-      if (typeof avg === "number") {
-        subjectAverages.push({
-          subjectId: group.subjectId,
-          subjectName: group.subjectName,
-          subjectCode: group.subjectCode,
-          average: avg,
-          recordCount: group.records.length,
-          performance: classifyAcademicPerformance(avg),
-        });
-      }
-    });
+    let totalGradeRecords = 0;
+
+    let gradeAgg = null;
+    if (typeof GradeRecord.aggregate === "function") {
+      gradeAgg = await GradeRecord.aggregate([
+        {
+          $match: {
+            student: studentObjectId,
+            isDeleted: false,
+          },
+        },
+        {
+          $group: {
+            _id: "$teachingAssignment",
+            weightedSum: {
+              $sum: {
+                $multiply: ["$value", { $ifNull: ["$weight", 1] }],
+              },
+            },
+            totalWeight: {
+              $sum: { $ifNull: ["$weight", 1] },
+            },
+            recordCount: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            teachingAssignmentId: "$_id",
+            recordCount: 1,
+            average: {
+              $cond: [
+                { $gt: ["$totalWeight", 0] },
+                {
+                  $round: [
+                    { $divide: ["$weightedSum", "$totalWeight"] },
+                    1,
+                  ],
+                },
+                null,
+              ],
+            },
+          },
+        },
+      ]);
+    }
+
+    if (Array.isArray(gradeAgg)) {
+      gradeAgg.forEach((row) => {
+        if (typeof row.average === "number") {
+          const taIdStr = row.teachingAssignmentId?.toString();
+          const taDoc = taMapById.get(taIdStr) || null;
+          const subId = (
+            taDoc?.subject?._id ||
+            taDoc?.subject ||
+            taIdStr ||
+            "general"
+          ).toString();
+          const subName = taDoc?.subject?.name || "Môn học";
+          const subCode = taDoc?.subject?.code || "---";
+          const roundedAvg = Math.round(row.average * 10) / 10;
+
+          totalGradeRecords += Number(row.recordCount) || 0;
+          subjectAverages.push({
+            subjectId: subId,
+            teachingAssignmentId: taIdStr,
+            subjectName: subName,
+            subjectCode: subCode,
+            average: roundedAvg,
+            recordCount: Number(row.recordCount) || 0,
+            performance: classifyAcademicPerformance(roundedAvg),
+          });
+        }
+      });
+    } else if (typeof GradeRecord.find === "function") {
+      const gradeRecords = await GradeRecord.find({
+        student: userId,
+        isDeleted: false,
+      })
+        .populate({
+          path: "teachingAssignment",
+          select: "class subject academicYear semester",
+          populate: [
+            { path: "class", select: "name" },
+            { path: "subject", select: "name code" },
+          ],
+        })
+        .lean();
+
+      totalGradeRecords = gradeRecords.length;
+      const subjectGroups = new Map();
+      gradeRecords.forEach((rec) => {
+        const subId = (
+          rec.teachingAssignment?.subject?._id ||
+          rec.teachingAssignment?.subject ||
+          rec.teachingAssignment?._id ||
+          "general"
+        ).toString();
+        const subName = rec.teachingAssignment?.subject?.name || "Môn học";
+        const subCode = rec.teachingAssignment?.subject?.code || "---";
+
+        if (!subjectGroups.has(subId)) {
+          subjectGroups.set(subId, {
+            subjectId: subId,
+            subjectName: subName,
+            subjectCode: subCode,
+            records: [],
+          });
+        }
+        subjectGroups.get(subId).records.push(rec);
+      });
+
+      subjectGroups.forEach((group) => {
+        const avg = calculateWeightedAverage(group.records);
+        if (typeof avg === "number") {
+          subjectAverages.push({
+            subjectId: group.subjectId,
+            subjectName: group.subjectName,
+            subjectCode: group.subjectCode,
+            average: avg,
+            recordCount: group.records.length,
+            performance: classifyAcademicPerformance(avg),
+          });
+        }
+      });
+    }
 
     const currentGPA = calculateOverallGPA(
       subjectAverages.map((s) => ({
@@ -168,11 +271,13 @@ const getStudentDashboardStats = async (req, res, next) => {
     );
     const academicPerformance = classifyAcademicPerformance(currentGPA);
 
-    // 4. Truy vấn Tiến độ Bài tập của lớp & Bài nộp cá nhân của học sinh
+    // =========================================================================
+    // 4. THEO DÕI TIẾN ĐỘ BÀI TẬP: ĐÃ NỘP / CÒN HẠN / QUÁ HẠN
+    // =========================================================================
     const assignments =
-      taIds.length > 0
+      taObjectIds.length > 0
         ? await Assignment.find({
-            teachingAssignment: { $in: taIds },
+            teachingAssignment: { $in: taObjectIds },
             isDeleted: false,
             isActive: { $ne: false },
           })
@@ -188,20 +293,49 @@ const getStudentDashboardStats = async (req, res, next) => {
             .lean()
         : [];
 
-    const assignmentIds = assignments.map((a) => a._id);
-    const mySubmissions =
-      assignmentIds.length > 0
-        ? await Submission.find({
-            assignment: { $in: assignmentIds },
-            student: userId,
-            isDeleted: false,
-          }).lean()
-        : [];
-
+    const assignmentIds = assignments.map((a) => toObjectId(a._id));
     const submissionByAssignId = new Map();
-    mySubmissions.forEach((sub) => {
-      submissionByAssignId.set(sub.assignment.toString(), sub);
-    });
+
+    if (assignmentIds.length > 0) {
+      let subAgg = null;
+      if (typeof Submission.aggregate === "function") {
+        subAgg = await Submission.aggregate([
+          {
+            $match: {
+              assignment: { $in: assignmentIds },
+              student: studentObjectId,
+              isDeleted: false,
+            },
+          },
+          {
+            $project: {
+              assignment: 1,
+              student: 1,
+              fileUrl: 1,
+              score: 1,
+              isLate: 1,
+              submittedAt: 1,
+            },
+          },
+        ]);
+      }
+
+      const mySubmissions = Array.isArray(subAgg)
+        ? subAgg
+        : typeof Submission.find === "function"
+          ? await Submission.find({
+              assignment: { $in: assignmentIds },
+              student: userId,
+              isDeleted: false,
+            }).lean()
+          : [];
+
+      mySubmissions.forEach((sub) => {
+        if (sub && sub.assignment) {
+          submissionByAssignId.set(sub.assignment.toString(), sub);
+        }
+      });
+    }
 
     const now = new Date();
     let submittedCount = 0;
@@ -261,11 +395,13 @@ const getStudentDashboardStats = async (req, res, next) => {
         ? Math.round((submittedCount / totalAssignments) * 100)
         : 0;
 
-    // 5. Truy vấn Lịch kiểm tra sắp tới (các đề thi đã phát hành cho lớp của học sinh)
+    // =========================================================================
+    // 5. DANH SÁCH BÀI KIỂM TRA SẮP TỚI
+    // =========================================================================
     const publishedExams =
-      taIds.length > 0
+      taObjectIds.length > 0
         ? await Exam.find({
-            teachingAssignment: { $in: taIds },
+            teachingAssignment: { $in: taObjectIds },
             status: "published",
             isDeleted: false,
           })
@@ -282,19 +418,46 @@ const getStudentDashboardStats = async (req, res, next) => {
             .lean()
         : [];
 
-    const examIds = publishedExams.map((e) => e._id);
-    const myAttempts =
-      examIds.length > 0
-        ? await ExamAttempt.find({
-            exam: { $in: examIds },
-            student: userId,
-          }).lean()
-        : [];
-
+    const examIds = publishedExams.map((e) => toObjectId(e._id));
     const attemptByExamId = new Map();
-    myAttempts.forEach((att) => {
-      attemptByExamId.set(att.exam.toString(), att);
-    });
+
+    if (examIds.length > 0) {
+      let attemptAgg = null;
+      if (typeof ExamAttempt.aggregate === "function") {
+        attemptAgg = await ExamAttempt.aggregate([
+          {
+            $match: {
+              exam: { $in: examIds },
+              student: studentObjectId,
+            },
+          },
+          {
+            $project: {
+              exam: 1,
+              student: 1,
+              score: 1,
+              submittedAt: 1,
+              status: 1,
+            },
+          },
+        ]);
+      }
+
+      const myAttempts = Array.isArray(attemptAgg)
+        ? attemptAgg
+        : typeof ExamAttempt.find === "function"
+          ? await ExamAttempt.find({
+              exam: { $in: examIds },
+              student: userId,
+            }).lean()
+          : [];
+
+      myAttempts.forEach((att) => {
+        if (att && att.exam) {
+          attemptByExamId.set(att.exam.toString(), att);
+        }
+      });
+    }
 
     const upcomingExams = publishedExams.map((exam) => {
       const attempt = attemptByExamId.get(exam._id.toString()) || null;
@@ -337,7 +500,7 @@ const getStudentDashboardStats = async (req, res, next) => {
           currentGPA,
           academicPerformance,
           totalSubjectsEvaluated: subjectAverages.length,
-          totalGradeRecords: gradeRecords.length,
+          totalGradeRecords,
           subjectAverages,
         },
         assignmentProgress: {
@@ -360,4 +523,3 @@ const getStudentDashboardStats = async (req, res, next) => {
 module.exports = {
   getStudentDashboardStats,
 };
-

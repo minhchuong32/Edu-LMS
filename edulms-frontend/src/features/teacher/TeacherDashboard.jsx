@@ -650,7 +650,7 @@ export const TeacherDashboard = () => {
                     </p>
                   </div>
 
-                  {/* Thông tin Sĩ số Lớp */}
+                  {/* Thông tin Sĩ số Lớp & Điểm trung bình lớp */}
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-600 flex items-center gap-1.5 font-medium">
@@ -664,6 +664,24 @@ export const TeacherDashboard = () => {
                         {count} / {cap} học sinh
                       </strong>
                     </div>
+
+                    {typeof (cls.classAverage ?? cls.averageScore) ===
+                      'number' && (
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/70">
+                        <span className="text-slate-600 font-medium">
+                          Điểm trung bình lớp:
+                        </span>
+                        <strong
+                          data-testid={`class-average-${cls._id}`}
+                          className="text-blue-700 font-extrabold"
+                        >
+                          {Number(cls.classAverage ?? cls.averageScore).toFixed(
+                            1
+                          )}{' '}
+                          / 10
+                        </strong>
+                      </div>
+                    )}
 
                     <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                       <div
