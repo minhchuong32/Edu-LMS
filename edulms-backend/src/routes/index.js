@@ -73,4 +73,21 @@ const gradebookRoutes = require("./gradebook.routes");
 router.use("/gradebook", gradebookRoutes);
 router.use("/grade-records", gradebookRoutes);
 
+// Quản lý Cổng thông tin Phụ huynh & Liên kết Phụ huynh - Học sinh (childrenRefs)
+const parentRoutes = require("./parent.routes");
+const parentController = require("../controllers/parent.controller");
+router.use("/parent", parentRoutes);
+router.put(
+  "/admin/parents/:parentId/children",
+  protect,
+  authorize("admin"),
+  parentController.linkParentWithChildren
+);
+router.post(
+  "/admin/parents/:parentId/children",
+  protect,
+  authorize("admin"),
+  parentController.linkParentWithChildren
+);
+
 module.exports = router;
