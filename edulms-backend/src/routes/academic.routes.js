@@ -7,6 +7,7 @@ const classController = require("../controllers/class.controller");
 const assignmentController = require("../controllers/teachingAssignment.controller");
 const studentAssignmentController = require("../controllers/studentAssignment.controller");
 const teacherDashboardController = require("../controllers/teacherDashboard.controller");
+const studentDashboardController = require("../controllers/studentDashboard.controller");
 const timetableRoutes = require("./timetable.routes");
 
 const router = express.Router();
@@ -19,6 +20,13 @@ router.get(
   "/teacher-dashboard",
   authorize("teacher", "admin"),
   teacherDashboardController.getTeacherDashboardStats
+);
+
+// Thống kê Dashboard cá nhân dành cho Học sinh (chỉ trả về dữ liệu của học sinh đang đăng nhập)
+router.get(
+  "/student-dashboard",
+  authorize("student"),
+  studentDashboardController.getStudentDashboardStats
 );
 
 // Danh sách giáo viên hỗ trợ phân công

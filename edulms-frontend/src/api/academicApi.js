@@ -35,6 +35,8 @@ export const academicApi = {
     axiosClient.get(`/v1/academic/assignments/teacher/${teacherId}`, { params }),
   getTeacherDashboardStats: (params) =>
     axiosClient.get('/v1/academic/teacher-dashboard', { params }),
+  getStudentDashboardStats: (params) =>
+    axiosClient.get('/v1/academic/student-dashboard', { params }),
 
   // --- DANH SÁCH GIÁO VIÊN ---
   getTeachers: (params) => axiosClient.get('/v1/academic/teachers', { params }),
