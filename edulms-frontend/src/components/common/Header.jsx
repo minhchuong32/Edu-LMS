@@ -4,11 +4,11 @@ import {
   GraduationCap,
   LogOut,
   BookOpen,
-  Bell,
   Sparkles,
   Menu,
 } from 'lucide-react'
 import { ROLE_LABELS, ROLE_BADGE_CLASSES } from '@/constants/roles'
+import NotificationBell from '@/components/common/NotificationBell'
 
 export const Header = ({ onToggleSidebar, isSidebarOpen = false }) => {
   const { user, isAuthenticated, logout } = useAuth()
@@ -107,14 +107,7 @@ export const Header = ({ onToggleSidebar, isSidebarOpen = false }) => {
           <div className="flex items-center gap-2 sm:gap-3">
             {isAuthenticated ? (
               <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  title="Thông báo"
-                  className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-full transition-all relative"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
+                <NotificationBell />
 
                 {/* User Info & Avatar */}
                 <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-200">
