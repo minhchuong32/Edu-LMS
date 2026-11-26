@@ -44,5 +44,13 @@ router.get(
   parentController.getLinkedChildAcademicAndAttendance
 );
 
+// 3. Lấy danh sách thông báo từ nhà trường và giáo viên của từng học sinh được liên kết
+router.get(
+  "/children/:studentId/notifications",
+  authorize("parent"),
+  verifyParentChildAccess,
+  parentController.getLinkedChildNotifications
+);
+
 module.exports = router;
 

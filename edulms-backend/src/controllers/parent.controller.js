@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const User = require("../models/User");
 const Class = require("../models/Class");
 const GradeRecord = require("../models/GradeRecord");
+const Notification = require("../models/Notification");
 const {
   calculateWeightedAverage,
   calculateOverallGPA,
@@ -147,6 +148,27 @@ const buildChildAcademicAndAttendanceSummary = async (
     ? studentDoc.attendanceRecords
     : [];
 
+  // 4. Truy vấn danh sách thông báo từ nhà trường và giáo viên của học sinh
+  const notifQuery = Notification.find({
+    recipient: studentDoc._id,
+    isDeleted: false,
+  });
+  const notifications =
+    notifQuery && typeof notifQuery.sort === "function"
+      ? await notifQuery
+          .sort({ createdAt: -1 })
+          .populate("sender", "fullName email role")
+          .populate("assignment", "title dueDate status")
+          .populate("submission", "score feedback submittedAt isLate")
+          .lean()
+      : Array.isArray(notifQuery)
+        ? notifQuery
+        : [];
+
+  const unreadNotificationsCount = notifications.filter(
+    (n) => !n.isRead
+  ).length;
+
   return {
     student: {
       _id: studentId,
@@ -188,6 +210,8 @@ const buildChildAcademicAndAttendanceSummary = async (
             : "Cần lưu ý chuyên cần",
       records: attendanceRecords,
     },
+    notifications,
+    unreadNotificationsCount,
   };
 };
 
@@ -346,6 +370,65 @@ const getLinkedChildAcademicAndAttendance = async (req, res, next) => {
 };
 
 /**
+ * [GET] /api/v1/parent/children/:studentId/notifications
+ * API lấy danh sách thông báo từ nhà trường và giáo viên của từng học sinh được liên kết
+ */
+const getLinkedChildNotifications = async (req, res, next) => {
+  try {
+    const targetChildId = req.targetChildId || req.params.studentId;
+    const authorizedChildrenIds = req.authorizedChildrenIds || [];
+
+    if (
+      !targetChildId ||
+      !authorizedChildrenIds.includes(targetChildId.toString())
+    ) {
+      return errorResponse(
+        res,
+        "Bạn không có quyền xem thông báo của học sinh không nằm trong danh sách con được liên kết (childrenRefs)!",
+        403
+      );
+    }
+
+    const filter = {
+      recipient: targetChildId,
+      isDeleted: false,
+    };
+
+    if (req.query.type) {
+      filter.type = String(req.query.type).trim();
+    }
+
+    const notifQuery = Notification.find(filter);
+    const notifications =
+      notifQuery && typeof notifQuery.sort === "function"
+        ? await notifQuery
+            .sort({ createdAt: -1 })
+            .populate("sender", "fullName email role")
+            .populate("assignment", "title dueDate status")
+            .populate("submission", "score feedback submittedAt isLate")
+            .lean()
+        : Array.isArray(notifQuery)
+          ? notifQuery
+          : [];
+
+    const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+    return successResponse(
+      res,
+      {
+        studentId: targetChildId.toString(),
+        totalNotifications: notifications.length,
+        unreadCount,
+        notifications,
+      },
+      "Lấy danh sách thông báo của học sinh thành công"
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * [POST/PUT/PATCH/DELETE] /api/v1/admin/parents/:parentId/children
  * Cho phép Admin liên kết một tài khoản Phụ huynh với một hoặc nhiều học sinh (cập nhật childrenRefs)
  */
@@ -461,5 +544,6 @@ const linkParentWithChildren = async (req, res, next) => {
 module.exports = {
   getLinkedChildren,
   getLinkedChildAcademicAndAttendance,
+  getLinkedChildNotifications,
   linkParentWithChildren,
 };

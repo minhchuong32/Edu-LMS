@@ -3,6 +3,7 @@ const ExcelJS = require("exceljs");
 const User = require("../src/models/User");
 const Class = require("../src/models/Class");
 const GradeRecord = require("../src/models/GradeRecord");
+const Notification = require("../src/models/Notification");
 const { protect, authorize } = require("../src/middlewares");
 const {
   enforceParentReadOnly,
@@ -15,6 +16,7 @@ const {
 const {
   getLinkedChildren,
   getLinkedChildAcademicAndAttendance,
+  getLinkedChildNotifications,
   linkParentWithChildren,
 } = require("../src/controllers/parent.controller");
 const {
@@ -27,6 +29,7 @@ const { generateAccessToken } = require("../src/utils/jwt");
 jest.mock("../src/models/User");
 jest.mock("../src/models/Class");
 jest.mock("../src/models/GradeRecord");
+jest.mock("../src/models/Notification");
 
 /**
  * Helper tạo chainable Mongoose query mock (.populate().select().sort().lean())
@@ -156,6 +159,7 @@ describe("Parent-Child Linking (childrenRefs), Excel Import, Linked Children API
   beforeEach(() => {
     jest.clearAllMocks();
     Class.find.mockReturnValue(createChainableQuery([]));
+    Notification.find.mockReturnValue(createChainableQuery([]));
   });
 
   /* =========================================================================
@@ -602,6 +606,65 @@ describe("Parent-Child Linking (childrenRefs), Excel Import, Linked Children API
       expect(res.body.message).toMatch(
         /không nằm trong danh sách con được liên kết \(childrenRefs\)/i
       );
+    });
+
+    it("GET /api/v1/parent/children/:studentId/notifications trả về đúng danh sách thông báo của từng người con và chặn 403 nếu ngoài childrenRefs", async () => {
+      Notification.find.mockImplementation((filter) => {
+        const recId = filter?.recipient?.toString();
+        if (recId === child1Id) {
+          return createChainableQuery([
+            {
+              _id: "notif_c1",
+              recipient: child1Id,
+              type: "assignment_graded",
+              title: "Thông báo điểm Toán lớp 10A1",
+              message: "Con đạt 9.0 điểm",
+              isRead: false,
+            },
+          ]);
+        }
+        return createChainableQuery([
+          {
+            _id: "notif_c2",
+            recipient: child2Id,
+            type: "system",
+            title: "Thông báo họp phụ huynh lớp 12B2",
+            message: "Họp sáng Chủ nhật",
+            isRead: true,
+          },
+        ]);
+      });
+
+      const resNotif1 = await invokeParentPipeline({
+        token: parentToken,
+        method: "GET",
+        params: { studentId: child1Id },
+        controller: getLinkedChildNotifications,
+      });
+      expect(resNotif1.status).toBe(200);
+      expect(resNotif1.body.data.totalNotifications).toBe(1);
+      expect(resNotif1.body.data.notifications[0].title).toBe(
+        "Thông báo điểm Toán lớp 10A1"
+      );
+
+      const resNotif2 = await invokeParentPipeline({
+        token: parentToken,
+        method: "GET",
+        params: { studentId: child2Id },
+        controller: getLinkedChildNotifications,
+      });
+      expect(resNotif2.status).toBe(200);
+      expect(resNotif2.body.data.notifications[0].title).toBe(
+        "Thông báo họp phụ huynh lớp 12B2"
+      );
+
+      const resBlocked = await invokeParentPipeline({
+        token: parentToken,
+        method: "GET",
+        params: { studentId: unlinkedStudentId },
+        controller: getLinkedChildNotifications,
+      });
+      expect(resBlocked.status).toBe(403);
     });
 
     it("canViewGradeRecords cho phép Phụ huynh xem điểm của con trong childrenRefs nhưng trả về 403 nếu xem học sinh ngoài childrenRefs", async () => {
