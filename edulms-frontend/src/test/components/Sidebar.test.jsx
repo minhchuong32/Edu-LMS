@@ -28,7 +28,7 @@ describe('Sidebar Component & Role-Based Menu', () => {
     expect(screen.getByText(/báo cáo/i)).toBeInTheDocument()
   })
 
-  it('hiển thị menu Giáo viên (Teacher): Lớp của tôi, Điểm danh, Bài tập, Sổ điểm', () => {
+  it('hiển thị menu Giáo viên (Teacher): Lớp của tôi, Bài tập, Sổ điểm và không có Điểm danh', () => {
     vi.spyOn(useAuthModule, 'useAuth').mockReturnValue({
       user: { id: 't1', fullName: 'Thầy Giáo Viên', role: 'teacher' },
       logout: vi.fn(),
@@ -41,7 +41,7 @@ describe('Sidebar Component & Role-Based Menu', () => {
     )
 
     expect(screen.getByText(/lớp của tôi/i)).toBeInTheDocument()
-    expect(screen.getByText(/điểm danh/i)).toBeInTheDocument()
+    expect(screen.queryByText(/điểm danh/i)).not.toBeInTheDocument()
     expect(screen.getByText(/bài tập/i)).toBeInTheDocument()
     expect(screen.getByText(/sổ điểm/i)).toBeInTheDocument()
   })

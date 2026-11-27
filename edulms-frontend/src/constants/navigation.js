@@ -5,7 +5,6 @@ import {
   BarChart3,
   Building2,
   BookOpen,
-  CheckSquare,
   GraduationCap,
   ClipboardList,
   Calendar,
@@ -77,12 +76,7 @@ export const ROLE_NAVIGATION_MENU = {
     {
       label: 'Lớp của tôi',
       path: '/teacher/classes',
-      icon: BookOpen,
-    },
-    {
-      label: 'Điểm danh',
-      path: '/teacher/attendance',
-      icon: CheckSquare,
+      icon: Users,
     },
     {
       label: 'Bài tập',
