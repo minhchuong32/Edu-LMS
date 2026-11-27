@@ -1,4 +1,6 @@
 const notificationService = require("../services/notification.service");
+const emailNotificationService = require("../services/emailNotification.service");
+const EmailLog = require("../models/EmailLog");
 const { successResponse, errorResponse } = require("../utils/apiResponse");
 
 const handleServiceError = (res, next, error) => {
@@ -88,9 +90,81 @@ const markAllNotificationsAsRead = async (req, res, next) => {
   }
 };
 
+/**
+ * [GET] /api/v1/notifications/email-logs
+ * Lấy danh sách nhật ký gửi email tự động cho Phụ huynh (hỗ trợ kiểm tra lỗi / trạng thái gửi)
+ */
+const getEmailLogs = async (req, res, next) => {
+  try {
+    const filter = {};
+    if (req.query.status) filter.status = String(req.query.status).trim();
+    if (req.query.eventType) filter.eventType = String(req.query.eventType).trim();
+    if (req.query.studentId) filter.student = req.query.studentId;
+
+    const logsQuery = EmailLog.find(filter);
+    const logs =
+      logsQuery && typeof logsQuery.sort === "function"
+        ? await logsQuery
+            .sort({ createdAt: -1 })
+            .populate("student", "fullName userCode className")
+            .populate("parent", "fullName email userCode")
+            .lean()
+        : Array.isArray(logsQuery)
+          ? logsQuery
+          : [];
+
+    return successResponse(
+      res,
+      { total: logs.length, logs },
+      "Lấy nhật ký gửi email thành công"
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
+ * [POST] /api/v1/notifications/email-logs/retry
+ * Thực hiện retry các email gửi thất bại (status = 'failed')
+ */
+const retryFailedEmails = async (req, res, next) => {
+  try {
+    const result = await emailNotificationService.retryFailedEmails(req.body || {});
+    return successResponse(
+      res,
+      result,
+      "Đã thực hiện thử gửi lại (retry) các email thất bại"
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
+/**
+ * [POST] /api/v1/notifications/email-reports/periodic
+ * Kích hoạt job gửi email báo cáo học tập định kỳ cho Phụ huynh được liên kết
+ */
+const triggerPeriodicAcademicReports = async (req, res, next) => {
+  try {
+    const result = await emailNotificationService.sendPeriodicAcademicReportsJob(
+      req.body || {}
+    );
+    return successResponse(
+      res,
+      result,
+      "Đã thực thi job gửi email báo cáo học tập định kỳ cho Phụ huynh"
+    );
+  } catch (error) {
+    return handleServiceError(res, next, error);
+  }
+};
+
 module.exports = {
   createNotification,
   getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  getEmailLogs,
+  retryFailedEmails,
+  triggerPeriodicAcademicReports,
 };

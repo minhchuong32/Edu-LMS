@@ -3,6 +3,7 @@ const Submission = require("../models/Submission");
 const Assignment = require("../models/Assignment");
 const TeachingAssignment = require("../models/TeachingAssignment");
 const notificationService = require("./notification.service");
+const emailNotificationService = require("./emailNotification.service");
 const { getStudentEnrolledClass } = require("../middlewares/lessonPermission.middleware");
 const { safeDeleteFromCloudinary } = require("../config/cloudinary");
 
@@ -610,6 +611,25 @@ const gradeSubmission = async (submissionId, data = {}, context = {}) => {
       "[Submission] Không thể tạo thông báo kết quả chấm bài:",
       notifyErr.message
     );
+  }
+
+  // Trigger gửi email cảnh báo kết quả học tập / điểm thấp (< 5.0) cho Phụ huynh được liên kết
+  if (hasScoreInput) {
+    try {
+      await emailNotificationService.triggerParentAcademicGradeEmail({
+        student: submissionDoc.student,
+        submission: savedSubmission,
+        teachingAssignment: assignmentDoc?.teachingAssignment || null,
+        score: submissionDoc.score,
+        gradeType: "assignment",
+        note: submissionDoc.feedback,
+      });
+    } catch (emailErr) {
+      console.error(
+        "[Submission] Không thể gửi email kết quả chấm bài cho Phụ huynh:",
+        emailErr.message
+      );
+    }
   }
 
   return savedSubmission;

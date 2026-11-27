@@ -25,4 +25,21 @@ router.put("/read-all", notificationController.markAllNotificationsAsRead);
 router.patch("/:id/read", notificationController.markNotificationAsRead);
 router.put("/:id/read", notificationController.markNotificationAsRead);
 
+// 5. Quản lý nhật ký gửi Email tự động cho Phụ huynh, Retry lỗi & Job gửi báo cáo học tập định kỳ
+router.get(
+  "/email-logs",
+  authorize("teacher", "admin"),
+  notificationController.getEmailLogs
+);
+router.post(
+  "/email-logs/retry",
+  authorize("teacher", "admin"),
+  notificationController.retryFailedEmails
+);
+router.post(
+  "/email-reports/periodic",
+  authorize("teacher", "admin"),
+  notificationController.triggerPeriodicAcademicReports
+);
+
 module.exports = router;
