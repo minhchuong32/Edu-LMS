@@ -26,8 +26,12 @@ const getSmtpConfig = () => {
     process.env.SMTP_SECURE !== undefined
       ? String(process.env.SMTP_SECURE).toLowerCase() === "true"
       : port === 465;
-  const user = process.env.SMTP_USER || "";
-  const pass = process.env.SMTP_PASS || "";
+  const user = (process.env.SMTP_USER || "").trim();
+  const rawPass = (process.env.SMTP_PASS || "").trim();
+  // Nếu sử dụng Gmail SMTP, tự động loại bỏ khoảng trắng trong App Password 16 ký tự (vd: "abcd efgh ijkl mnop" -> "abcdefghijklmnop")
+  const pass = host.toLowerCase().includes("gmail.com")
+    ? rawPass.replace(/\s+/g, "")
+    : rawPass;
   const from =
     process.env.SMTP_FROM ||
     (user

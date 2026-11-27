@@ -17,7 +17,8 @@
     "seed:dry-run": "node src/scripts/seed.js --dry-run",
     "seed:lesson": "node src/seeds/lesson.seed.js",
     "seed:student-lessons": "node src/seeds/student-lesson.seed.js",
-    "test:cloudinary": "node src/scripts/test_cloudinary.js"
+    "test:cloudinary": "node src/scripts/test_cloudinary.js",
+    "test:email": "node src/scripts/test_email.js"
   },
   "engines": {
     "node": ">=24"
@@ -44,7 +45,8 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.12.1",
-    "multer": "^2.4.0"
+    "multer": "^2.4.0",
+    "nodemailer": "^10.6.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

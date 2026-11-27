@@ -248,7 +248,7 @@ const SAMPLE_USERS = [
   },
   {
     userCode: "PH002",
-    email: "parent2@edulms.test",
+    email: "23110187@student.hcmute.edu.vn",
     fullName: "Phụ huynh Trần Thị Lan",
     role: "parent",
     phone: "0904000002",
@@ -2118,7 +2118,7 @@ function printSampleAccountsTable(password) {
 if (require.main === module) {
   runMasterSeed().catch(async (err) => {
     console.error("LỖI KHI CHẠY SEED:", err.message || err);
-    await mongoose.disconnect().catch(() => {});
+    await mongoose.disconnect().catch(() => { });
     process.exit(1);
   });
 }
