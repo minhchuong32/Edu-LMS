@@ -9,7 +9,6 @@ import {
   ClipboardList,
   Calendar,
   Award,
-  Bell,
   HelpCircle,
   FileText,
 } from 'lucide-react'
@@ -133,14 +132,9 @@ export const ROLE_NAVIGATION_MENU = {
       icon: LayoutDashboard,
     },
     {
-      label: 'Điểm và điểm danh của con',
+      label: 'Điểm số của con',
       path: '/parent/grades',
       icon: Award,
-    },
-    {
-      label: 'Thông báo nhà trường',
-      path: '/parent/notifications',
-      icon: Bell,
     },
   ],
 }
