@@ -3,6 +3,8 @@ const GradeRecord = require("../models/GradeRecord");
 const TeachingAssignment = require("../models/TeachingAssignment");
 const User = require("../models/User");
 const Class = require("../models/Class");
+const notificationService = require("./notification.service");
+const emailNotificationService = require("./emailNotification.service");
 
 const {
   DEFAULT_GRADE_WEIGHTS,
@@ -545,7 +547,43 @@ const createGradeRecord = async (data = {}, context = {}) => {
     updatedBy: actorId,
   });
 
-  return await newRecord.save();
+  const savedRecord = await newRecord.save();
+
+  // Trigger tự động tạo thông báo cho học sinh khi có điểm mới
+  try {
+    await notificationService.createGradeRecordNotification({
+      recipient: student,
+      sender: actorId,
+      gradeRecord: savedRecord,
+      teachingAssignment: taDoc,
+      isUpdate: false,
+    });
+  } catch (notifyErr) {
+    console.error(
+      "[Gradebook] Không thể tạo thông báo nhập điểm mới:",
+      notifyErr.message
+    );
+  }
+
+  // Trigger tự động gửi email thông báo kết quả học tập / cảnh báo điểm thấp (< 5.0) cho Phụ huynh được liên kết
+  try {
+    await emailNotificationService.triggerParentAcademicGradeEmail({
+      student,
+      gradeRecord: savedRecord,
+      teachingAssignment: taDoc,
+      score: validatedValue,
+      gradeType: normalizedGradeType,
+      semester: normalizedSemester,
+      note: savedRecord.note,
+    });
+  } catch (emailErr) {
+    console.error(
+      "[Gradebook] Không thể gửi email cảnh báo điểm thấp cho Phụ huynh:",
+      emailErr.message
+    );
+  }
+
+  return savedRecord;
 };
 
 /**
@@ -618,7 +656,43 @@ const updateGradeRecord = async (id, data = {}, context = {}) => {
     recordDoc.updatedBy = actorId;
   }
 
-  return await recordDoc.save();
+  const updatedRecord = await recordDoc.save();
+
+  // Trigger tự động tạo thông báo cho học sinh khi cập nhật điểm
+  try {
+    await notificationService.createGradeRecordNotification({
+      recipient: updatedRecord.student || recordDoc.student,
+      sender: actorId,
+      gradeRecord: updatedRecord,
+      teachingAssignment: targetTeachingAssignment,
+      isUpdate: true,
+    });
+  } catch (notifyErr) {
+    console.error(
+      "[Gradebook] Không thể tạo thông báo cập nhật điểm:",
+      notifyErr.message
+    );
+  }
+
+  // Trigger tự động gửi email thông báo kết quả học tập / cảnh báo điểm thấp (< 5.0) cho Phụ huynh được liên kết
+  try {
+    await emailNotificationService.triggerParentAcademicGradeEmail({
+      student: updatedRecord.student || recordDoc.student,
+      gradeRecord: updatedRecord,
+      teachingAssignment: targetTeachingAssignment,
+      score: updatedRecord.value,
+      gradeType: updatedRecord.gradeType,
+      semester: updatedRecord.semester,
+      note: updatedRecord.note,
+    });
+  } catch (emailErr) {
+    console.error(
+      "[Gradebook] Không thể gửi email cập nhật điểm cho Phụ huynh:",
+      emailErr.message
+    );
+  }
+
+  return updatedRecord;
 };
 
 /**
@@ -745,6 +819,27 @@ const bulkUpsertGradeRecords = async (payload = {}, context = {}) => {
       }
       const updated = await recordDoc.save();
       savedRecords.push(updated);
+
+      try {
+        await notificationService.createGradeRecordNotification({
+          recipient: itemStudentId,
+          sender: actorId,
+          gradeRecord: updated,
+          teachingAssignment: taDoc,
+          isUpdate: true,
+        });
+        await emailNotificationService.triggerParentAcademicGradeEmail({
+          student: itemStudentId,
+          gradeRecord: updated,
+          teachingAssignment: taDoc,
+          score: validatedValue,
+          gradeType: itemGradeType,
+          semester: itemSemester,
+          note: updated.note,
+        });
+      } catch {
+        // Bỏ qua lỗi tạo thông báo để không gián đoạn lưu hàng loạt
+      }
     } else {
       const created = new GradeRecord({
         student: itemStudentId,
@@ -759,6 +854,27 @@ const bulkUpsertGradeRecords = async (payload = {}, context = {}) => {
       });
       const saved = await created.save();
       savedRecords.push(saved);
+
+      try {
+        await notificationService.createGradeRecordNotification({
+          recipient: itemStudentId,
+          sender: actorId,
+          gradeRecord: saved,
+          teachingAssignment: taDoc,
+          isUpdate: false,
+        });
+        await emailNotificationService.triggerParentAcademicGradeEmail({
+          student: itemStudentId,
+          gradeRecord: saved,
+          teachingAssignment: taDoc,
+          score: validatedValue,
+          gradeType: itemGradeType,
+          semester: itemSemester,
+          note: saved.note,
+        });
+      } catch {
+        // Bỏ qua lỗi tạo thông báo để không gián đoạn lưu hàng loạt
+      }
     }
   }
 

@@ -5,12 +5,10 @@ import {
   BarChart3,
   Building2,
   BookOpen,
-  CheckSquare,
   GraduationCap,
   ClipboardList,
   Calendar,
   Award,
-  Bell,
   HelpCircle,
   FileText,
 } from 'lucide-react'
@@ -77,12 +75,7 @@ export const ROLE_NAVIGATION_MENU = {
     {
       label: 'Lớp của tôi',
       path: '/teacher/classes',
-      icon: BookOpen,
-    },
-    {
-      label: 'Điểm danh',
-      path: '/teacher/attendance',
-      icon: CheckSquare,
+      icon: Users,
     },
     {
       label: 'Bài tập',
@@ -139,14 +132,9 @@ export const ROLE_NAVIGATION_MENU = {
       icon: LayoutDashboard,
     },
     {
-      label: 'Điểm và điểm danh của con',
+      label: 'Điểm số của con',
       path: '/parent/grades',
       icon: Award,
-    },
-    {
-      label: 'Thông báo nhà trường',
-      path: '/parent/notifications',
-      icon: Bell,
     },
   ],
 }

@@ -28,7 +28,7 @@ describe('Sidebar Component & Role-Based Menu', () => {
     expect(screen.getByText(/báo cáo/i)).toBeInTheDocument()
   })
 
-  it('hiển thị menu Giáo viên (Teacher): Lớp của tôi, Điểm danh, Bài tập, Sổ điểm', () => {
+  it('hiển thị menu Giáo viên (Teacher): Lớp của tôi, Bài tập, Sổ điểm và không có Điểm danh', () => {
     vi.spyOn(useAuthModule, 'useAuth').mockReturnValue({
       user: { id: 't1', fullName: 'Thầy Giáo Viên', role: 'teacher' },
       logout: vi.fn(),
@@ -41,7 +41,7 @@ describe('Sidebar Component & Role-Based Menu', () => {
     )
 
     expect(screen.getByText(/lớp của tôi/i)).toBeInTheDocument()
-    expect(screen.getByText(/điểm danh/i)).toBeInTheDocument()
+    expect(screen.queryByText(/điểm danh/i)).not.toBeInTheDocument()
     expect(screen.getByText(/bài tập/i)).toBeInTheDocument()
     expect(screen.getByText(/sổ điểm/i)).toBeInTheDocument()
   })
@@ -64,38 +64,41 @@ describe('Sidebar Component & Role-Based Menu', () => {
     expect(screen.getByText(/điểm/i)).toBeInTheDocument()
   })
 
-  it('hiển thị menu Phụ huynh (Parent): Điểm và điểm danh của con', () => {
-    vi.spyOn(useAuthModule, 'useAuth').mockReturnValue({
-      user: { id: 'p1', fullName: 'Bác Phụ Huynh', role: 'parent' },
-      logout: vi.fn(),
+    it('hiển thị menu Phụ huynh (Parent): Tổng quan con em, Điểm số của con và không có điểm danh hay trang thông báo riêng', () => {
+      vi.spyOn(useAuthModule, 'useAuth').mockReturnValue({
+        user: { id: 'p1', fullName: 'Bác Phụ Huynh', role: 'parent' },
+        logout: vi.fn(),
+      })
+
+      render(
+        <MemoryRouter>
+          <Sidebar />
+        </MemoryRouter>
+      )
+
+      expect(screen.getByText(/tổng quan con em/i)).toBeInTheDocument()
+      expect(screen.getByText(/điểm số của con/i)).toBeInTheDocument()
+      expect(screen.queryByText(/điểm danh/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/thông báo nhà trường/i)).not.toBeInTheDocument()
     })
 
-    render(
-      <MemoryRouter>
-        <Sidebar />
-      </MemoryRouter>
-    )
+    it('kích hoạt onItemClick khi người dùng click vào menu item', () => {
+      vi.spyOn(useAuthModule, 'useAuth').mockReturnValue({
+        user: { id: 's1', fullName: 'Em Học Sinh', role: 'student' },
+        logout: vi.fn(),
+      })
 
-    expect(screen.getByText(/điểm và điểm danh của con/i)).toBeInTheDocument()
-  })
+      const onItemClickMock = vi.fn()
 
-  it('kích hoạt onItemClick khi người dùng click vào menu item', () => {
-    vi.spyOn(useAuthModule, 'useAuth').mockReturnValue({
-      user: { id: 's1', fullName: 'Em Học Sinh', role: 'student' },
-      logout: vi.fn(),
+      render(
+        <MemoryRouter>
+          <Sidebar onItemClick={onItemClickMock} isMobile={true} />
+        </MemoryRouter>
+      )
+
+      const timetableLink = screen.getByText(/thời khóa biểu/i)
+      fireEvent.click(timetableLink)
+
+      expect(onItemClickMock).toHaveBeenCalledTimes(1)
     })
-
-    const onItemClickMock = vi.fn()
-
-    render(
-      <MemoryRouter>
-        <Sidebar onItemClick={onItemClickMock} isMobile={true} />
-      </MemoryRouter>
-    )
-
-    const timetableLink = screen.getByText(/thời khóa biểu/i)
-    fireEvent.click(timetableLink)
-
-    expect(onItemClickMock).toHaveBeenCalledTimes(1)
   })
-})

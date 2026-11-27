@@ -75,6 +75,17 @@ describe('AppRoutes Guard Integration', () => {
     expect(screen.getByText(/cổng giáo viên/i)).toBeInTheDocument()
     unmount()
 
+    const { unmount: unmountClasses } = render(
+      <MemoryRouter initialEntries={['/teacher/classes']}>
+        <AppRoutes />
+      </MemoryRouter>
+    )
+
+    expect(
+      screen.getByRole('heading', { name: /lớp của tôi/i })
+    ).toBeInTheDocument()
+    unmountClasses()
+
     render(
       <MemoryRouter initialEntries={['/admin/dashboard']}>
         <AppRoutes />
