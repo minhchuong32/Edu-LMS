@@ -34,11 +34,10 @@ const gradeSchema = new mongoose.Schema(
 );
 
 // Tự động gán tên khối chuẩn nếu chưa có
-gradeSchema.pre("validate", function (next) {
+gradeSchema.pre("validate", function () {
   if (this.level && !this.name) {
     this.name = `Khối ${this.level}`;
   }
-  next();
 });
 
 module.exports = mongoose.model("Grade", gradeSchema);

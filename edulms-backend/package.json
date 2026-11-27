@@ -13,6 +13,8 @@
     "test": "jest --runInBand",
     "test:ci": "jest --coverage --runInBand --ci",
     "seed": "node src/scripts/seed.js",
+    "seed:reset": "node src/scripts/seed.js --reset",
+    "seed:dry-run": "node src/scripts/seed.js --dry-run",
     "seed:lesson": "node src/seeds/lesson.seed.js",
     "seed:student-lessons": "node src/seeds/student-lesson.seed.js",
     "test:cloudinary": "node src/scripts/test_cloudinary.js"
